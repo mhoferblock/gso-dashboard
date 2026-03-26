@@ -548,7 +548,7 @@
 
       <!-- Rep GPV Chart -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 class="text-sm font-semibold text-gray-700 mb-3">Rep GPV (Gross Payment Volume)</h3>
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">Rep Local GPV (Gross Payment Volume)</h3>
         <div class="chart-container" style="height: 440px;">
           <canvas id="chartRepGPV"></canvas>
         </div>
@@ -854,22 +854,22 @@ function fmtNum(n) {
 }
 
 /**
- * Format GPV in compact form ($1.2B, $3.4M, $500K)
+ * Format GPV in compact form for mixed local currencies (1.2B, 3.4M, 500K)
  */
 function fmtGPV(n) {
-  if (n == null || n === 0) return '$0';
-  if (Math.abs(n) >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
-  if (Math.abs(n) >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
-  if (Math.abs(n) >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
-  return '$' + n.toFixed(0);
+  if (n == null || n === 0) return '0';
+  if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+  return n.toFixed(0);
 }
 
 /**
- * Format GPV with full dollar amount
+ * Format GPV with full amount for mixed local currencies
  */
 function fmtGPVFull(n) {
-  if (n == null) return '$0';
-  return '$' + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (n == null) return '0';
+  return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 }
 
 /**
@@ -1918,7 +1918,7 @@ function renderTeam() {
     kpiCard('Active', fmtNum(ta), 'blue', '🔄') +
     kpiCard('On Hold', fmtNum(th), 'yellow', '⏸️') +
     kpiCard('Cancelled', fmtNum(tx), 'red', '❌') +
-    kpiCard('Total GPV', fmtGPV(tg), 'purple', '💰');
+    kpiCard('Total Local GPV', fmtGPV(tg), 'purple', '💰', 'mixed market currencies');
 
   // Build rep data array
   const repData = repsToShow
@@ -1972,7 +1972,7 @@ function renderTeam() {
     data: {
       labels: repGPV.map(r => r.name.length > 12 ? r.name.split(' ')[0] : r.name),
       datasets: [{
-        label: 'GPV',
+        label: 'Local GPV',
         data: repGPV.map(r => r.gpv),
         backgroundColor: CHART_PALETTE.slice(0, repGPV.length),
         borderRadius: 4
@@ -1986,7 +1986,7 @@ function renderTeam() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => 'GPV: ' + fmtGPV(ctx.parsed.x),
+            label: ctx => 'Local GPV: ' + fmtGPV(ctx.parsed.x),
             title: items => repGPV[items[0].dataIndex].name
           }
         }
@@ -2463,8 +2463,8 @@ function renderCompleted() {
   document.getElementById('completedKPIs').innerHTML =
     kpiCard(`Completed (${timeframeLabel})`, fmtNum(totalCount), 'green', '✅') +
     kpiCard('Median Days', medianDays, 'blue', '⏱️', 'to complete') +
-    kpiCard('Total GPV', fmtGPV(totalGPV), 'purple', '💰') +
-    kpiCard('Avg GPV', fmtGPV(avgGPV), 'teal', '📊', 'per seller');
+    kpiCard('Total Local GPV', fmtGPV(totalGPV), 'purple', '💰', 'mixed local currencies') +
+    kpiCard('Avg Local GPV', fmtGPV(avgGPV), 'teal', '📊', 'per seller');
 
   // --- Weekly Completion Trend ---
   const weeks = Object.keys(WC).sort();
@@ -2634,8 +2634,8 @@ function renderSellers() {
   // --- KPI Cards ---
   document.getElementById('sellersKPIs').innerHTML =
     kpiCard('Sellers Launched', fmtNum(filtered.length), 'green', '🚀') +
-    kpiCard('Total GPV', fmtGPV(totalGPV), 'purple', '💰') +
-    kpiCard('Top Seller GPV', fmtGPV(topGPV), 'indigo', '🏆',
+    kpiCard('Total Local GPV', fmtGPV(totalGPV), 'purple', '💰', 'mixed local currencies') +
+    kpiCard('Top Seller Local GPV', fmtGPV(topGPV), 'indigo', '🏆',
       byGPV[0] ? byGPV[0].seller.substring(0, 30) : '') +
     kpiCard('Countries', countries.length, 'teal', '🌍');
 
@@ -2654,7 +2654,7 @@ function renderSellers() {
     data: {
       labels: repGPVSorted.map(r => r[0].split(' ')[0]),
       datasets: [{
-        label: 'GPV',
+        label: 'Local GPV',
         data: repGPVSorted.map(r => r[1]),
         backgroundColor: CHART_PALETTE.slice(0, repGPVSorted.length),
         borderRadius: 4,
@@ -2669,7 +2669,7 @@ function renderSellers() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => 'GPV: ' + fmtGPV(ctx.parsed.x),
+            label: ctx => 'Local GPV: ' + fmtGPV(ctx.parsed.x),
             title: items => repGPVSorted[items[0].dataIndex][0]
           }
         }
@@ -2717,7 +2717,7 @@ function renderSellers() {
           callbacks: {
             label: ctx => {
               const pct = (ctx.parsed / totalGPV * 100).toFixed(1);
-              return ctx.label + ': ' + fmtGPV(ctx.parsed) + ' (' + pct + '%)';
+              return ctx.label + ': ' + fmtGPV(ctx.parsed) + ' local GPV (' + pct + '%)';
             }
           }
         }
