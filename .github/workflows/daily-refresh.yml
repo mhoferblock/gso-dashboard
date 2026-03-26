@@ -11,44 +11,56 @@ on:
 jobs:
   refresh-dashboard:
     runs-on: self-hosted
-    timeout-minutes: 30
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run Goose refresh
+      - name: Pull fresh data from Looker
         env:
           TZ: America/Indiana/Indianapolis
           HOME: /Users/mhofer
-          PATH: /Applications/Goose.app/Contents/Resources/bin:/Users/mhofer/.config/goose/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
-        shell: bash
+          PATH: /Applications/Goose.app/Contents/Resources/bin:/Users/mhofer/.config/goose/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin
         run: |
           echo "🔄 Starting GSO Dashboard refresh at $(date)"
-          echo "Working directory: $(pwd)"
-          
-          # Run goose with only the extensions we need
-          goose run \
-            --no-session \
-            --with-extension "/Users/mhofer/.config/goose/bin/uvx-wrapper mcp_block_data@latest" \
-            --with-extension "/Users/mhofer/.config/goose/bin/uvx-wrapper mcp_blockcell@latest" \
-            --with-builtin developer \
-            --no-profile \
-            --instructions "${{ github.workspace }}/.github/refresh-instructions.md"
-          
-          echo "✅ Goose refresh completed"
+          python3 "${{ github.workspace }}/.github/refresh.py"
 
-      - name: Commit and push updated dashboard
+      - name: Update dashboard HTML with fresh data
+        env:
+          HOME: /Users/mhofer
+          PATH: /Applications/Goose.app/Contents/Resources/bin:/Users/mhofer/.config/goose/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin
+        run: |
+          # If we got fresh data, use goose to update the HTML
+          if [ -f "${{ github.workspace }}/.github/latest-data.json" ]; then
+            DATA_SIZE=$(wc -c < "${{ github.workspace }}/.github/latest-data.json")
+            echo "📊 Fresh data available: ${DATA_SIZE} bytes"
+            
+            if [ "$DATA_SIZE" -gt 1000 ]; then
+              echo "📝 Updating dashboard HTML..."
+              goose run \
+                --no-session \
+                --with-builtin developer \
+                --no-profile \
+                --text "Read the file ${{ github.workspace }}/.github/latest-data.json which contains fresh Looker dashboard data. Update ONLY the GSO_DATA JavaScript object in ${{ github.workspace }}/index.html with the new numbers. Keep all HTML structure, CSS, and chart configs unchanged. Only update data values. Be fast, do not explain."
+              echo "✅ HTML updated"
+            else
+              echo "⚠️ Data file too small, skipping HTML update"
+            fi
+          else
+            echo "⚠️ No data file found"
+          fi
+
+      - name: Commit and push
         run: |
           git config user.name "GSO Dashboard Bot"
           git config user.email "gso-dashboard-bot@block.xyz"
           
-          if git diff --quiet index.html; then
-            echo "ℹ️ No data changes detected"
+          if git diff --quiet; then
+            echo "ℹ️ No changes detected"
           else
             REFRESH_DATE=$(TZ='America/Indiana/Indianapolis' date '+%Y-%m-%d %I:%M %p %Z')
-            git add index.html
-            git add .github/latest-data.json || true
+            git add -A
             git commit -m "🔄 Daily refresh: ${REFRESH_DATE}"
             git push
             echo "✅ Changes committed and pushed"
