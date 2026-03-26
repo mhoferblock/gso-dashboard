@@ -27,7 +27,7 @@ FILTERS = {
 class MCPClient:
     """Simple MCP client that communicates with an MCP server via stdio."""
     
-    def __init__(self, cmd, args, startup_wait=5):
+    def __init__(self, cmd, args, startup_wait=8):
         env = {**os.environ, "GOOSE_UV_REGISTRY": "https://global.block-artifacts.com/artifactory/api/pypi/block-pypi/simple/"}
         self.proc = subprocess.Popen(
             [cmd] + args,
@@ -47,7 +47,7 @@ class MCPClient:
         self.proc.stdin.write(data)
         self.proc.stdin.flush()
     
-    def _recv(self, timeout=120):
+    def _recv(self, timeout=180):
         end_time = time.time() + timeout
         while time.time() < end_time:
             ready, _, _ = select.select([self.proc.stdout], [], [], 5)
