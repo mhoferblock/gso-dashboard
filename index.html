@@ -274,6 +274,48 @@
     .journey-tone-summary {
       background: linear-gradient(145deg, #ede9fe, #c4b5fd);
     }
+
+    /* ===== KPI Help Tooltip ===== */
+    .kpi-help {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 9999px;
+      background: rgba(148, 163, 184, 0.18);
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: help;
+      margin-left: 6px;
+    }
+    .kpi-help::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 10px);
+      transform: translateX(-50%);
+      width: 220px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #0f172a;
+      color: white;
+      font-size: 11px;
+      line-height: 1.4;
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24);
+      z-index: 20;
+    }
+    .kpi-help:hover::after {
+      opacity: 1;
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -990,7 +1032,7 @@ const charts = {};
 // ================================================================
 // KPI CARD BUILDER
 // ================================================================
-function kpiCard(label, value, color, icon, sub) {
+function kpiCard(label, value, color, icon, sub, helpText) {
   const colorMap = {
     blue:   'border-blue-400 bg-blue-50',
     green:  'border-green-400 bg-green-50',
@@ -1016,7 +1058,7 @@ function kpiCard(label, value, color, icon, sub) {
   return `
     <div class="kpi-card rounded-xl border-l-4 ${colorMap[color] || colorMap.blue} p-4 shadow-sm bg-white">
       <div class="flex items-center justify-between mb-1">
-        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">${label}</span>
+        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center">${label}${helpText ? `<span class="kpi-help" data-tip="${helpText.replace(/"/g, '&quot;')}">?</span>` : ''}</span>
         <span class="${iconColorMap[color] || ''} text-lg">${icon || ''}</span>
       </div>
       <div class="text-2xl font-bold text-gray-900">${value}</div>
@@ -1520,15 +1562,21 @@ function renderOverview() {
 
   // --- KPI Cards ---
   document.getElementById('overviewKPIs').innerHTML =
-    kpiCard('Total DSRs', fmtNum(T.dsrs), 'indigo', '📋', 'lifetime total') +
+    kpiCard('Total DSRs', fmtNum(T.dsrs), 'indigo', '📋', 'lifetime total',
+      'Total count of DSRs in the dashboard dataset. This card is currently a lifetime total and does not change with the date filter.') +
     kpiCard('Completed', fmtNum(T.completed), 'green', '✅',
-      (T.completed / T.dsrs * 100).toFixed(1) + '% lifetime completion rate') +
+      (T.completed / T.dsrs * 100).toFixed(1) + '% lifetime completion rate',
+      'Total DSRs marked completed across the full dataset. This remains a lifetime metric until full row-level completion history is added.') +
     kpiCard('Active Pipeline', fmtNum(activePipelineCount), 'blue', '🔄',
-      `${activeCount} active + ${onHoldCount} on hold (${timeframeLabel})`) +
-    kpiCard('On Hold', fmtNum(onHoldCount), 'yellow', '⏸️', timeframeLabel) +
+      `${activeCount} active + ${onHoldCount} on hold (${timeframeLabel})`,
+      'Current pipeline records that match the selected filters. In filtered mode this updates from row-level active pipeline data.') +
+    kpiCard('On Hold', fmtNum(onHoldCount), 'yellow', '⏸️', timeframeLabel,
+      'Pipeline records currently in the On Hold stage that match the selected filters and timeframe.') +
     kpiCard('Cancelled', fmtNum(T.cancelled), 'red', '❌',
-      (T.cancelled / T.dsrs * 100).toFixed(1) + '% lifetime cancel rate') +
-    kpiCard('Median Days', medianDays, 'purple', '⏱️', `${timeframeLabel} completions`);
+      (T.cancelled / T.dsrs * 100).toFixed(1) + '% lifetime cancel rate',
+      'Total DSRs marked cancelled across the lifetime dataset. This remains a lifetime metric with the current source data.') +
+    kpiCard('Median Days', medianDays, 'purple', '⏱️', `${timeframeLabel} completions`,
+      'Median days to complete for the completed sellers included in the current filtered timeframe.');
 
   // --- Monthly Trend Line Chart ---
   let months = Object.keys(GSO_DATA.monthly);
