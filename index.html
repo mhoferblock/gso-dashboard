@@ -364,6 +364,61 @@ Chart.defaults.animation.duration = 800;
 </div>
 
 <!-- ============================================================
+     GLOBAL FILTER BAR
+     ============================================================ -->
+<div class="bg-white border-b border-gray-200 shadow-sm">
+  <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-3">
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Filter icon + label -->
+      <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+        Filters
+      </div>
+
+      <!-- Time Frame -->
+      <div class="flex flex-col">
+        <select id="filterTimeFrame" onchange="applyFilters()" class="search-input text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none min-w-[150px]">
+          <option value="all">All Time (Trend Data)</option>
+          <option value="4">Last 4 Weeks</option>
+          <option value="8">Last 8 Weeks</option>
+          <option value="13" selected>Last 13 Weeks (Default)</option>
+        </select>
+      </div>
+
+      <!-- Country -->
+      <div class="flex flex-col">
+        <select id="filterCountryGlobal" onchange="applyFilters()" class="search-input text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none min-w-[130px]">
+          <option value="all">All Countries</option>
+          <option value="US">🇺🇸 US</option>
+          <option value="AU">🇦🇺 AU</option>
+          <option value="GB">🇬🇧 GB</option>
+          <option value="JP">🇯🇵 JP</option>
+          <option value="CA">🇨🇦 CA</option>
+          <option value="FR">🇫🇷 FR</option>
+          <option value="ES">🇪🇸 ES</option>
+          <option value="IE">🇮🇪 IE</option>
+        </select>
+      </div>
+
+      <!-- GSO Rep -->
+      <div class="flex flex-col">
+        <select id="filterRep" onchange="applyFilters()" class="search-input text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none min-w-[170px]">
+          <option value="all">All GSO Reps</option>
+        </select>
+      </div>
+
+      <!-- Active filter pills + Clear -->
+      <div id="activeFilters" class="flex items-center gap-2 flex-wrap"></div>
+
+      <!-- Clear All button -->
+      <button id="clearFilters" onclick="clearAllFilters()" class="hidden text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors">
+        ✕ Clear All
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      MAIN CONTENT AREA
      ============================================================ -->
 <main class="max-w-[1440px] mx-auto px-4 sm:px-6 py-6">
@@ -800,7 +855,7 @@ document.getElementById('lastRefreshed').textContent = new Date().toLocaleString
 // ══════════════════════════════════════════════════════════════
 
 // ── Chart: Median Go Live by Country (horizontal bar) ──────────
-new Chart(document.getElementById('chartMedianByCountry'), {
+window._chartMedianByCountry = new Chart(document.getElementById('chartMedianByCountry'), {
   type: 'bar',
   data: {
     labels: GSO_DATA.goLive.medianByCountry.labels,
@@ -847,7 +902,7 @@ new Chart(document.getElementById('chartMedianByCountry'), {
 });
 
 // ── Chart: DSRs Completed Donut ────────────────────────────────
-new Chart(document.getElementById('chartDSRsDonut'), {
+window._chartDSRsDonut = new Chart(document.getElementById('chartDSRsDonut'), {
   type: 'doughnut',
   data: {
     labels: GSO_DATA.goLive.dsrsDonut.labels,
@@ -901,7 +956,7 @@ new Chart(document.getElementById('chartDSRsDonut'), {
 });
 
 // ── Chart: Global Trend All Merchants ──────────────────────────
-new Chart(document.getElementById('chartGlobalTrendAll'), {
+window._chartGlobalTrendAll = new Chart(document.getElementById('chartGlobalTrendAll'), {
   type: 'line',
   data: {
     labels: GSO_DATA.goLive.globalTrendAllMerchants.weeks.map(formatWeekLabel),
@@ -943,7 +998,7 @@ new Chart(document.getElementById('chartGlobalTrendAll'), {
 });
 
 // ── Chart: Global Trend Ready Merchants ────────────────────────
-new Chart(document.getElementById('chartGlobalTrendReady'), {
+window._chartGlobalTrendReady = new Chart(document.getElementById('chartGlobalTrendReady'), {
   type: 'line',
   data: {
     labels: GSO_DATA.goLive.globalTrendReadyMerchants.weeks.map(formatWeekLabel),
@@ -1016,7 +1071,7 @@ function initAKCharts() {
   const d = GSO_DATA.assignmentKickoff;
 
   // ── Assignment & Kickoff by Market (All) ─────────────────────
-  new Chart(document.getElementById('chartAKByMarketAll'), {
+  window._chartByMarketAll = new Chart(document.getElementById('chartAKByMarketAll'), {
     type: 'bar',
     data: {
       labels: d.byMarketAll.countries,
@@ -1055,7 +1110,7 @@ function initAKCharts() {
   });
 
   // ── Ready Merchants Assignment & Kickoff by Market ───────────
-  new Chart(document.getElementById('chartAKByMarketReady'), {
+  window._chartByMarketReady = new Chart(document.getElementById('chartAKByMarketReady'), {
     type: 'bar',
     data: {
       labels: d.byMarketReady.countries,
@@ -1099,7 +1154,7 @@ function initAKCharts() {
   });
 
   // ── Assignment & Kickoff Trends (All) ────────────────────────
-  new Chart(document.getElementById('chartAKTrendsAll'), {
+  window._chartTrendsAll = new Chart(document.getElementById('chartAKTrendsAll'), {
     type: 'line',
     data: {
       labels: d.trendsAll.weeks.map(formatWeekLabel),
@@ -1140,7 +1195,7 @@ function initAKCharts() {
   });
 
   // ── Ready Merchants Trends ───────────────────────────────────
-  new Chart(document.getElementById('chartAKTrendsReady'), {
+  window._chartTrendsReady = new Chart(document.getElementById('chartAKTrendsReady'), {
     type: 'line',
     data: {
       labels: d.trendsReady.weeks.map(formatWeekLabel),
@@ -1181,7 +1236,7 @@ function initAKCharts() {
   });
 
   // ── SLA by Week Chart ────────────────────────────────────────
-  new Chart(document.getElementById('chartSLAByWeek'), {
+  window._chartSLATrend = new Chart(document.getElementById('chartSLAByWeek'), {
     type: 'bar',
     data: {
       labels: d.slaByWeek.weeks.map(formatWeekLabel),
@@ -1236,6 +1291,11 @@ function initAKCharts() {
       }
     }]
   });
+
+  // Store original colors for filter highlighting
+  [window._chartByMarketAll, window._chartByMarketReady].forEach(chart => {
+    if (chart) chart.data.datasets.forEach(ds => { ds._origColor = typeof ds.backgroundColor === 'string' ? ds.backgroundColor : ds.backgroundColor?.[0]; });
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1245,7 +1305,7 @@ function initPipelineCharts() {
   const d = GSO_DATA.dsrPipeline;
 
   // ── MoM Average Go Live ──────────────────────────────────────
-  new Chart(document.getElementById('chartMoM'), {
+  window._chartMoM = new Chart(document.getElementById('chartMoM'), {
     type: 'bar',
     data: {
       labels: d.momByCountry.countries,
@@ -1350,6 +1410,9 @@ function initPipelineCharts() {
       }
     }
   });
+
+  // Store original colors for filter highlighting
+  if (window._chartMoM) window._chartMoM.data.datasets.forEach(ds => { ds._origColor = typeof ds.backgroundColor === 'string' ? ds.backgroundColor : ds.backgroundColor?.[0]; });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1403,6 +1466,319 @@ document.getElementById('filterCountry').addEventListener('change', e => {
 // ── Initialize Sellers tab immediately (for total GPV calc) ────
 initSellersTab();
 window._sellersInit = true;
+
+// ══════════════════════════════════════════════════════════════════
+// GLOBAL FILTER SYSTEM
+// ══════════════════════════════════════════════════════════════════
+
+// Populate GSO Rep dropdown from sellers data
+(function populateRepDropdown() {
+  const reps = [...new Set(GSO_DATA.sellersLaunched.map(s => s.specialist))].sort();
+  const sel = document.getElementById('filterRep');
+  reps.forEach(rep => {
+    const opt = document.createElement('option');
+    opt.value = rep;
+    opt.textContent = rep;
+    sel.appendChild(opt);
+  });
+})();
+
+// Current filter state
+const FILTERS = { timeFrame: 'all', country: 'all', rep: 'all' };
+
+function applyFilters() {
+  FILTERS.timeFrame = document.getElementById('filterTimeFrame').value;
+  FILTERS.country = document.getElementById('filterCountryGlobal').value;
+  FILTERS.rep = document.getElementById('filterRep').value;
+
+  updateFilterPills();
+  filterGoLiveTab();
+  filterAssignmentTab();
+  filterDSRPipelineTab();
+  filterSellersTab();
+}
+
+function clearAllFilters() {
+  document.getElementById('filterTimeFrame').value = 'all';
+  document.getElementById('filterCountryGlobal').value = 'all';
+  document.getElementById('filterRep').value = 'all';
+  applyFilters();
+}
+
+function updateFilterPills() {
+  const container = document.getElementById('activeFilters');
+  const clearBtn = document.getElementById('clearFilters');
+  const pills = [];
+
+  if (FILTERS.timeFrame !== 'all') {
+    const label = document.getElementById('filterTimeFrame').selectedOptions[0].text;
+    pills.push(`<span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">⏱ ${label}<button onclick="document.getElementById('filterTimeFrame').value='all';applyFilters()" class="ml-0.5 hover:text-blue-900">×</button></span>`);
+  }
+  if (FILTERS.country !== 'all') {
+    const flags = {US:'🇺🇸',AU:'🇦🇺',GB:'🇬🇧',JP:'🇯🇵',CA:'🇨🇦',FR:'🇫🇷',ES:'🇪🇸',IE:'🇮🇪'};
+    pills.push(`<span class="inline-flex items-center gap-1 bg-green-50 text-green-700 text-xs font-medium px-2.5 py-1 rounded-full">${flags[FILTERS.country]||''} ${FILTERS.country}<button onclick="document.getElementById('filterCountryGlobal').value='all';applyFilters()" class="ml-0.5 hover:text-green-900">×</button></span>`);
+  }
+  if (FILTERS.rep !== 'all') {
+    pills.push(`<span class="inline-flex items-center gap-1 bg-purple-50 text-purple-700 text-xs font-medium px-2.5 py-1 rounded-full">👤 ${FILTERS.rep}<button onclick="document.getElementById('filterRep').value='all';applyFilters()" class="ml-0.5 hover:text-purple-900">×</button></span>`);
+  }
+
+  container.innerHTML = pills.join('');
+  clearBtn.classList.toggle('hidden', pills.length === 0);
+}
+
+// ── Filter: Go Live Metrics Tab ────────────────────────────────
+function filterGoLiveTab() {
+  const c = FILTERS.country;
+  const d = GSO_DATA.goLive;
+
+  // Update KPI cards based on country filter
+  const kpiContainer = document.querySelector('#tab-goLive .grid');
+  if (c !== 'all') {
+    // Update DSRs Completed for selected country
+    const countryDSRs = d.dsrsCompleted.byCountry[c] || 0;
+    const dsrCard = kpiContainer.querySelector('.border-green-500 .text-3xl');
+    if (dsrCard) dsrCard.textContent = countryDSRs;
+    const dsrSub = kpiContainer.querySelector('.border-green-500 .text-xs.text-gray-400.mt-1');
+    if (dsrSub) dsrSub.textContent = `Filtered: ${c} only`;
+
+    // Update median go live for selected country
+    const idx = d.medianByCountry.labels.indexOf(c);
+    if (idx !== -1) {
+      const medCard = kpiContainer.querySelector('.border-blue-500 .text-3xl');
+      if (medCard) medCard.textContent = d.medianByCountry.values[idx] + ' days';
+    }
+  } else {
+    // Reset to defaults
+    const dsrCard = kpiContainer.querySelector('.border-green-500 .text-3xl');
+    if (dsrCard) dsrCard.textContent = '150';
+    const dsrSub = kpiContainer.querySelector('.border-green-500 .text-xs.text-gray-400.mt-1');
+    if (dsrSub) dsrSub.textContent = 'US:75 AU:42 GB:15 +5 more';
+    const medCard = kpiContainer.querySelector('.border-blue-500 .text-3xl');
+    if (medCard) medCard.textContent = '17 days';
+  }
+
+  // Filter comparison table rows
+  const tableRows = document.querySelectorAll('#goLiveComparisonTable tbody tr');
+  tableRows.forEach(row => {
+    const rowCountry = row.cells[0]?.textContent?.trim();
+    if (c === 'all' || rowCountry === c) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+
+  // Filter bar chart — highlight selected country
+  if (window._chartMedianByCountry) {
+    const chart = window._chartMedianByCountry;
+    const colors = d.medianByCountry.labels.map(label => {
+      if (c === 'all') return '#2563eb';
+      return label === c ? '#2563eb' : '#e2e8f0';
+    });
+    chart.data.datasets[0].backgroundColor = colors;
+    chart.update();
+  }
+
+  // Filter donut chart — highlight selected country
+  if (window._chartDSRsDonut) {
+    const chart = window._chartDSRsDonut;
+    if (c === 'all') {
+      chart.data.datasets[0].backgroundColor = d.dsrsDonut.colors;
+    } else {
+      const idx = d.dsrsDonut.labels.indexOf(c);
+      chart.data.datasets[0].backgroundColor = d.dsrsDonut.colors.map((color, i) => i === idx ? color : color + '30');
+    }
+    chart.update();
+  }
+
+  // Filter time-series charts by timeFrame
+  filterTimeSeriesCharts();
+}
+
+function filterTimeSeriesCharts() {
+  const weeks = parseInt(FILTERS.timeFrame) || 999;
+  const d = GSO_DATA.goLive;
+
+  // Global Trend All Merchants
+  if (window._chartGlobalTrendAll) {
+    const chart = window._chartGlobalTrendAll;
+    const sliceStart = Math.max(0, d.globalTrendAllMerchants.weeks.length - weeks);
+    chart.data.labels = d.globalTrendAllMerchants.weeks.slice(sliceStart);
+    chart.data.datasets[0].data = d.globalTrendAllMerchants.median.slice(sliceStart);
+    chart.data.datasets[1].data = d.globalTrendAllMerchants.average.slice(sliceStart);
+    chart.update();
+  }
+
+  // Global Trend Ready Merchants
+  if (window._chartGlobalTrendReady) {
+    const chart = window._chartGlobalTrendReady;
+    const sliceStart = Math.max(0, d.globalTrendReadyMerchants.weeks.length - weeks);
+    chart.data.labels = d.globalTrendReadyMerchants.weeks.slice(sliceStart);
+    chart.data.datasets[0].data = d.globalTrendReadyMerchants.requestCount.slice(sliceStart);
+    chart.data.datasets[1].data = d.globalTrendReadyMerchants.median.slice(sliceStart);
+    chart.update();
+  }
+
+  // Assignment trends
+  const ak = GSO_DATA.assignmentKickoff;
+  if (window._chartTrendsAll) {
+    const chart = window._chartTrendsAll;
+    const sliceStart = Math.max(0, ak.trendsAll.weeks.length - weeks);
+    chart.data.labels = ak.trendsAll.weeks.slice(sliceStart);
+    chart.data.datasets[0].data = ak.trendsAll.medianAssign.slice(sliceStart);
+    chart.data.datasets[1].data = ak.trendsAll.medianKickoff.slice(sliceStart);
+    chart.update();
+  }
+
+  if (window._chartTrendsReady) {
+    const chart = window._chartTrendsReady;
+    const sliceStart = Math.max(0, ak.trendsReady.weeks.length - weeks);
+    chart.data.labels = ak.trendsReady.weeks.slice(sliceStart);
+    chart.data.datasets[0].data = ak.trendsReady.medianAssign.slice(sliceStart);
+    chart.data.datasets[1].data = ak.trendsReady.medianKickoff.slice(sliceStart);
+    chart.update();
+  }
+
+  // SLA trend
+  if (window._chartSLATrend) {
+    const chart = window._chartSLATrend;
+    const sliceStart = Math.max(0, ak.slaByWeek.weeks.length - weeks);
+    chart.data.labels = ak.slaByWeek.weeks.slice(sliceStart);
+    chart.data.datasets[0].data = ak.slaByWeek.slaPct.slice(sliceStart);
+    chart.update();
+  }
+}
+
+// ── Filter: Assignment & Kickoff Tab ───────────────────────────
+function filterAssignmentTab() {
+  const c = FILTERS.country;
+  const ak = GSO_DATA.assignmentKickoff;
+
+  // Highlight country in bar charts
+  if (window._chartByMarketAll) {
+    const chart = window._chartByMarketAll;
+    chart.data.datasets.forEach(ds => {
+      ds.backgroundColor = ak.byMarketAll.countries.map(label =>
+        c === 'all' || label === c ? ds._origColor : ds._origColor + '30'
+      );
+    });
+    chart.update();
+  }
+
+  if (window._chartByMarketReady) {
+    const chart = window._chartByMarketReady;
+    chart.data.datasets.forEach(ds => {
+      ds.backgroundColor = ak.byMarketReady.countries.map(label =>
+        c === 'all' || label === c ? ds._origColor : ds._origColor + '30'
+      );
+    });
+    chart.update();
+  }
+
+  // Update KPIs if country selected
+  if (c !== 'all') {
+    const idxAll = ak.byMarketAll.countries.indexOf(c);
+    if (idxAll !== -1) {
+      const kpiCards = document.querySelectorAll('#tab-assignKickoff .kpi-card');
+      if (kpiCards[0]) kpiCards[0].querySelector('.text-3xl').textContent = ak.byMarketAll.avgSubmittedToAssigned[idxAll].toFixed(1) + ' days';
+      if (kpiCards[1]) kpiCards[1].querySelector('.text-3xl').textContent = ak.byMarketAll.avgAssignedToCC[idxAll].toFixed(1) + ' days';
+    }
+  } else {
+    const kpiCards = document.querySelectorAll('#tab-assignKickoff .kpi-card');
+    if (kpiCards[0]) kpiCards[0].querySelector('.text-3xl').textContent = '2.5 days';
+    if (kpiCards[1]) kpiCards[1].querySelector('.text-3xl').textContent = '12.6 days';
+  }
+}
+
+// ── Filter: DSR Pipeline Tab ───────────────────────────────────
+function filterDSRPipelineTab() {
+  const c = FILTERS.country;
+  const dp = GSO_DATA.dsrPipeline;
+
+  // Highlight country in MoM chart
+  if (window._chartMoM) {
+    const chart = window._chartMoM;
+    chart.data.datasets.forEach(ds => {
+      ds.backgroundColor = dp.momByCountry.countries.map(label =>
+        c === 'all' || label === c ? ds._origColor : ds._origColor + '30'
+      );
+    });
+    chart.update();
+  }
+
+  // Update KPIs for selected country
+  if (c !== 'all') {
+    const idx = dp.momByCountry.countries.indexOf(c);
+    if (idx !== -1) {
+      const kpiCards = document.querySelectorAll('#tab-dsrPipeline .kpi-card');
+      if (kpiCards[0]) kpiCards[0].querySelector('.text-3xl').textContent = dp.momByCountry.mar2026.avg[idx].toFixed(1) + ' days';
+      if (kpiCards[1]) kpiCards[1].querySelector('.text-3xl').textContent = dp.momByCountry.feb2026.avg[idx].toFixed(1) + ' days';
+    }
+  } else {
+    const kpiCards = document.querySelectorAll('#tab-dsrPipeline .kpi-card');
+    if (kpiCards[0]) kpiCards[0].querySelector('.text-3xl').textContent = '21.2 days';
+    if (kpiCards[1]) kpiCards[1].querySelector('.text-3xl').textContent = '22.6 days';
+  }
+}
+
+// ── Filter: Sellers Launched Tab ───────────────────────────────
+function filterSellersTab() {
+  const c = FILTERS.country;
+  const r = FILTERS.rep;
+  const searchVal = document.getElementById('searchSellers')?.value || '';
+  const countryVal = document.getElementById('filterCountry')?.value || 'all';
+
+  // Apply global filters on top of tab-level search/country
+  let filtered = GSO_DATA.sellersLaunched;
+
+  // Global country filter takes priority
+  if (c !== 'all') {
+    filtered = filtered.filter(s => s.country === c);
+    // Sync the tab-level country dropdown
+    if (document.getElementById('filterCountry')) {
+      document.getElementById('filterCountry').value = c;
+    }
+  } else if (countryVal !== 'all') {
+    filtered = filtered.filter(s => s.country === countryVal);
+  }
+
+  // Global rep filter
+  if (r !== 'all') {
+    filtered = filtered.filter(s => s.specialist === r);
+  }
+
+  // Search text
+  if (searchVal) {
+    const q = searchVal.toLowerCase();
+    filtered = filtered.filter(s =>
+      s.seller.toLowerCase().includes(q) ||
+      s.specialist.toLowerCase().includes(q) ||
+      s.country.toLowerCase().includes(q)
+    );
+  }
+
+  // Render filtered table
+  const tbody = document.getElementById('sellersTableBody');
+  if (tbody) {
+    tbody.innerHTML = filtered.map((s, i) => `
+      <tr class="border-b border-gray-100 hover:bg-blue-50 transition-colors">
+        <td class="py-2.5 px-4 text-xs text-gray-800">${s.seller}</td>
+        <td class="py-2.5 px-4 text-right font-semibold text-gray-900 text-xs">${formatCurrency(s.gpv)}</td>
+        <td class="py-2.5 px-4 text-xs text-gray-600">${s.specialist}</td>
+        <td class="py-2.5 px-4 text-xs"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">${s.country}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  // Update count
+  const countEl = document.getElementById('sellersCount');
+  if (countEl) countEl.textContent = `Showing ${filtered.length} of ${GSO_DATA.sellersLaunched.length} sellers`;
+
+  // Update total GPV
+  const totalGPV = filtered.reduce((sum, s) => sum + s.gpv, 0);
+  const gpvEl = document.getElementById('totalGPV');
+  if (gpvEl) gpvEl.textContent = formatCurrency(totalGPV);
+}
 
 // ── Refresh Button ─────────────────────────────────────────────
 function triggerRefresh(e) {
