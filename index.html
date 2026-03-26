@@ -3,1006 +3,1400 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GSO Dashboard</title>
+  <title>GSO Go Live Metrics Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    body { background: #f0f2f5; }
+    .tab-btn { transition: all 0.2s ease; }
+    .tab-btn.active { color: #2563eb; border-bottom: 3px solid #2563eb; font-weight: 600; }
+    .tab-btn:not(.active):hover { color: #2563eb; background: #eff6ff; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .kpi-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+    .chart-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); padding: 20px; }
+    .search-input { transition: border-color 0.2s; }
+    .search-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .live-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    table th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
+    .source-card { transition: transform 0.15s ease; }
+    .source-card:hover { transform: translateY(-2px); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  </style>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
             primary: '#2563eb',
-            'primary-dark': '#1d4ed8',
             success: '#10b981',
             warning: '#f59e0b',
             danger: '#ef4444',
-            'gray-bg': '#f3f4f6',
           }
         }
       }
     }
   </script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-    body { background: #f0f2f5; }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
-
-    /* View transitions */
-    .view-container { transition: opacity 0.3s ease, transform 0.3s ease; }
-    .view-hidden { opacity: 0; transform: translateY(10px); pointer-events: none; position: absolute; }
-    .view-visible { opacity: 1; transform: translateY(0); pointer-events: auto; position: relative; }
-
-    /* Card hover */
-    .card-hover { transition: all 0.2s ease; }
-    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
-
-    /* Table row hover */
-    .table-row-clickable { cursor: pointer; transition: background-color 0.15s ease; }
-    .table-row-clickable:hover { background-color: #eff6ff; }
-
-    /* KPI card left border */
-    .kpi-card { border-left: 4px solid transparent; }
-    .kpi-blue { border-left-color: #2563eb; }
-    .kpi-green { border-left-color: #10b981; }
-    .kpi-amber { border-left-color: #f59e0b; }
-    .kpi-purple { border-left-color: #8b5cf6; }
-    .kpi-red { border-left-color: #ef4444; }
-    .kpi-teal { border-left-color: #14b8a6; }
-
-    /* Source integration cards */
-    .source-card { transition: all 0.2s ease; }
-    .source-card:hover { transform: scale(1.03); filter: brightness(1.05); }
-
-    /* Active tab */
-    .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: 600; }
-    .tab-inactive { border-bottom: 3px solid transparent; color: #6b7280; }
-    .tab-inactive:hover { color: #374151; border-bottom-color: #d1d5db; }
-
-    /* Breadcrumb */
-    .breadcrumb-link { color: #2563eb; cursor: pointer; }
-    .breadcrumb-link:hover { text-decoration: underline; }
-    .breadcrumb-separator { color: #9ca3af; margin: 0 0.5rem; }
-
-    /* Badge */
-    .status-badge { padding: 2px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
-    .badge-green { background: #d1fae5; color: #065f46; }
-    .badge-yellow { background: #fef3c7; color: #92400e; }
-    .badge-red { background: #fee2e2; color: #991b1b; }
-    .badge-blue { background: #dbeafe; color: #1e40af; }
-
-    /* Pulse animation for live indicator */
-    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
-
-    /* Chart container */
-    .chart-container { position: relative; width: 100%; }
-  </style>
 </head>
 <body class="min-h-screen">
 
+<!-- ============================================================
+     GSO DASHBOARD DATA OBJECT
+     All data sourced from Looker Dashboard 39532
+     API Integration Points marked with [LOOKER_API]
+     ============================================================ -->
 <script>
-// =============================================================================
-// GSO_DATA — Centralized Mock Data Layer
-// In production, each `sources.*` namespace would be replaced by live API calls.
-// =============================================================================
 const GSO_DATA = {
-  // ---- Source Integrations (Looker, Salesforce, Slack, JIRA, KB) -----------
-  sources: {
-    looker: {
-      // API: GET /api/looker/dashboards
-      activeDashboards: 24,
-      label: 'Looker',
-      icon: '📊',
-      color: 'bg-blue-600',
-      metrics: { viewsToday: 1243, scheduledReports: 18 }
+  // [LOOKER_API] Source: Looker Dashboard 39532
+  // Endpoint: /api/4.0/dashboards/39532
+  meta: {
+    dashboardId: 39532,
+    lookerUrl: 'https://square.cloud.looker.com/dashboards/39532',
+    lastRefreshed: new Date().toISOString(),
+    dateRangeCompleted: 'Last 90 Days',
+    dateRangeCreated: 'Last 365 Days',
+  },
+
+  // ── TAB 1: GO LIVE METRICS ──────────────────────────────────
+  // [LOOKER_API] Look: DSR Completion Counts by Country
+  goLive: {
+    dsrsCompleted: {
+      total: 150,
+      byCountry: { US: 75, AU: 42, GB: 15, JP: 7, CA: 4, ES: 4, IE: 2, Other: 1 }
     },
-    salesforce: {
-      // API: GET /api/salesforce/cases?status=open
-      openCases: 1847,
-      label: 'Salesforce',
-      icon: '☁️',
-      color: 'bg-sky-500',
-      metrics: { newToday: 312, escalated: 47 }
+    // [LOOKER_API] Look: Median Go Live Days by Package Type (US)
+    medianGoLiveAll: 17,       // US median, all packages
+    medianGoLiveHandsOn: 25,   // US median, hands-on packages
+    medianGoLiveTaskOnly: 5,   // US median, task-only packages
+    slaMetRate: 13.7,          // US SLA met percentage
+
+    // [LOOKER_API] Look: Median Go Live All Packages by Country
+    medianByCountry: {
+      labels: ['ES', 'FR', 'IE', 'AU', 'GB', 'US', 'CA', 'JP'],
+      values: [49, 31, 22.5, 22, 20, 17, 15.5, 12]
     },
-    slack: {
-      // API: GET /api/slack/escalations
-      escalationThreads: 342,
-      label: 'Slack',
-      icon: '💬',
-      color: 'bg-purple-600',
-      metrics: { activeChannels: 28, avgResponseMin: 4.2 }
+
+    // [LOOKER_API] Look: DSRs Completed Donut
+    dsrsDonut: {
+      labels: ['US', 'AU', 'GB', 'JP', 'CA', 'ES', 'IE'],
+      values: [75, 42, 15, 7, 4, 4, 2],
+      colors: ['#2563eb', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4']
     },
-    jira: {
-      // API: GET /api/jira/tickets?status=open
-      openTickets: 89,
-      label: 'JIRA',
-      icon: '🎫',
-      color: 'bg-blue-700',
-      metrics: { sprintVelocity: 42, blockers: 3 }
+
+    // [LOOKER_API] Look: Global Median Go Live Trend - All Merchants, Hands On
+    globalTrendAllMerchants: {
+      weeks: ['2025-12-28','2026-01-04','2026-01-11','2026-01-18','2026-01-25','2026-02-01','2026-02-08','2026-02-15','2026-02-22','2026-03-01','2026-03-08','2026-03-15','2026-03-22'],
+      median: [39, 21.5, 30.5, 35.5, 24, 27, 29, 35, 25, 25.5, 27, 26, 29],
+      average: [40.3, 30.7, 38.75, 38.48, 29.7, 34.83, 32.95, 40.73, 33.17, 29.08, 31.88, 31.56, 29.98]
     },
-    knowledgeBase: {
-      // API: GET /api/kb/articles
-      articles: 2156,
-      label: 'Knowledge Base',
-      icon: '📚',
-      color: 'bg-emerald-600',
-      metrics: { updatedThisWeek: 34, avgHelpfulness: 4.3 }
+
+    // [LOOKER_API] Look: Global Median Go Live Trend - Ready Merchants, Hands On
+    globalTrendReadyMerchants: {
+      weeks: ['2025-12-28','2026-01-04','2026-01-11','2026-01-18','2026-01-25','2026-02-01','2026-02-08','2026-02-15','2026-02-22','2026-03-01','2026-03-08','2026-03-15','2026-03-22'],
+      requestCount: [2, 5, 6, 6, 7, 14, 15, 12, 11, 17, 11, 22, 4],
+      median: [36.5, 21, 31, 21, 22, 26.5, 27, 33.5, 21, 21, 24, 24.5, 15.5]
+    },
+
+    // [LOOKER_API] Look: Median Go Live Comparison Table
+    comparisonTable: [
+      { country: 'ES', allPkg: 49, handsOn: 56, taskOnly: 6, readyHandsOn: 29, readyDSRs: 1 },
+      { country: 'FR', allPkg: 31, handsOn: 42, taskOnly: 11, readyHandsOn: 29, readyDSRs: 6 },
+      { country: 'IE', allPkg: 22.5, handsOn: 26.5, taskOnly: 5, readyHandsOn: 26.5, readyDSRs: 18 },
+      { country: 'AU', allPkg: 22, handsOn: 38, taskOnly: 7.5, readyHandsOn: 25.5, readyDSRs: 14 },
+      { country: 'GB', allPkg: 20, handsOn: 28, taskOnly: 6, readyHandsOn: 22, readyDSRs: 35 },
+      { country: 'US', allPkg: 17, handsOn: 25, taskOnly: 5, readyHandsOn: 23.5, readyDSRs: 50 },
+      { country: 'CA', allPkg: 15.5, handsOn: 21, taskOnly: 4, readyHandsOn: 17, readyDSRs: 3 },
+      { country: 'JP', allPkg: 12, handsOn: 21, taskOnly: 6, readyHandsOn: 10, readyDSRs: 5 },
+    ]
+  },
+
+  // ── TAB 2: ASSIGNMENT & KICKOFF ─────────────────────────────
+  // [LOOKER_API] Look: Assignment & Kickoff Call Times
+  assignmentKickoff: {
+    kpis: {
+      avgDaysAssignUS: 2.5,
+      avgDaysKickoffUS: 12.6,
+      medianDaysAssign: 1,
+      medianDaysKickoff: 7,
+    },
+
+    // [LOOKER_API] Look: Assignment & Kickoff Times by Market (All)
+    byMarketAll: {
+      countries: ['US', 'JP', 'FR', 'CA', 'AU', 'ES', 'IE', 'GB'],
+      avgSubmittedToAssigned: [2.49, 2.42, 1.52, 1.48, 1.45, 1.35, 0.87, 0.64],
+      avgAssignedToCC: [12.59, 14.77, 10.58, 11.15, 13.55, 16.56, 9.43, 9.58]
+    },
+
+    // [LOOKER_API] Look: Ready Merchants Assignment & Kickoff by Market
+    byMarketReady: {
+      countries: ['JP', 'CA', 'FR', 'US', 'IE', 'GB', 'AU', 'ES'],
+      avgSubmittedToAssigned: [null, 3.33, 3.17, 3.10, 1.05, 1.05, 0.94, 0.33],
+      avgAssignedToCC: [1.67, 8.60, 6.80, 6.29, 6.97, 5.34, 7.23, 4.88]
+    },
+
+    // [LOOKER_API] Look: Assignment & Kickoff Trends (All)
+    trendsAll: {
+      weeks: ['2025-11-09','2025-11-16','2025-11-23','2025-11-30','2025-12-07','2025-12-14','2025-12-21','2025-12-28','2026-01-04','2026-01-11','2026-01-18','2026-01-25','2026-02-01','2026-02-08','2026-02-15','2026-02-22','2026-03-01','2026-03-08','2026-03-15','2026-03-22'],
+      medianAssign: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+      medianKickoff: [8, 8, 7, 7, 8, 8, 8, 9, 8, 8, 8, 7, 8, 8, 9, 7, 7, 9, 7, 7]
+    },
+
+    // [LOOKER_API] Look: Ready Merchants Assignment & Kickoff Trends
+    trendsReady: {
+      weeks: ['2025-11-16','2025-11-23','2025-11-30','2025-12-07','2025-12-14','2025-12-21','2025-12-28','2026-01-04','2026-01-11','2026-01-18','2026-01-25','2026-02-01','2026-02-08','2026-02-15','2026-02-22','2026-03-01','2026-03-08','2026-03-15','2026-03-22'],
+      medianAssign: [1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 3, 1.5, 2.5],
+      medianKickoff: [5, 6, 7, 5, 5, 5, 5, 6, 5, 5, 7, 7, 6, 5, 7, 5, 7, 4, 4.5]
+    },
+
+    // [LOOKER_API] Look: Seller Desired Go Live Date Met by Week
+    slaByWeek: {
+      weeks: ['2026-01-04','2026-01-11','2026-01-18','2026-01-25','2026-02-01','2026-02-08','2026-02-15','2026-02-22','2026-03-01','2026-03-08','2026-03-15','2026-03-22'],
+      slaPct: [16.7, 36, 23.1, 31.8, 22.2, 26.8, 22.2, 16.3, 29.8, 18.9, 14.3, 27.8]
     }
   },
 
-  // ---- Top-Level KPIs ------------------------------------------------------
-  kpis: {
-    totalCases:     { value: '12,847', raw: 12847, trend: +8,  icon: '📋', label: 'Total Cases' },
-    resolutionRate: { value: '94.2%',  raw: 94.2,  trend: +3,  icon: '✅', label: 'Resolution Rate' },
-    avgHandleTime:  { value: '00:04:32', raw: 272, trend: -12, icon: '⏱️', label: 'Avg Handle Time', invertTrend: true },
-    csatScore:      { value: '4.7/5.0', raw: 4.7,  trend: +5,  icon: '⭐', label: 'CSAT Score' },
-    openEscalations:{ value: '156',    raw: 156,   trend: -15, icon: '🔺', label: 'Open Escalations', invertTrend: true },
-    slaCompliance:  { value: '97.8%',  raw: 97.8,  trend: +2,  icon: '📊', label: 'SLA Compliance' }
-  },
+  // ── TAB 3: DSR PIPELINE ─────────────────────────────────────
+  // [LOOKER_API] Look: MoM Average Go Live by Country
+  dsrPipeline: {
+    kpis: {
+      momAvgGoLiveUSMar: 21.2,
+      momAvgGoLiveUSFeb: 22.6,
+    },
 
-  // ---- Time-series: Cases Over Time (last 7 days) --------------------------
-  casesOverTime: {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    newCases:      [320, 385, 410, 375, 420, 280, 195],
-    resolvedCases: [305, 370, 395, 380, 410, 275, 200]
-  },
+    // [LOOKER_API] Look: MoM Average Go Live - All Packages
+    momByCountry: {
+      countries: ['AU', 'CA', 'ES', 'FR', 'GB', 'IE', 'JP', 'US'],
+      mar2026: { avg: [31.24, 20.51, 35.73, 29.54, 26.60, 22.68, 9.73, 21.17], dsrs: [107, 39, 11, 13, 57, 19, 11, 273] },
+      feb2026: { avg: [37.91, 19.53, 38.83, 31.48, 26.68, 26.21, 18.30, 22.61], dsrs: [120, 36, 12, 40, 122, 38, 10, 270] }
+    },
 
-  // ---- Cases by Channel -----------------------------------------------------
-  casesByChannel: {
-    labels: ['Phone', 'Email', 'Chat', 'Social'],
-    values: [4521, 3892, 2876, 1558],
-    colors: ['#2563eb', '#8b5cf6', '#10b981', '#f59e0b']
-  },
+    // [LOOKER_API] Look: DSRs Created by Country (monthly, last 6 months)
+    dsrsByCountryMonthly: {
+      months: ['Oct 2025', 'Nov 2025', 'Dec 2025', 'Jan 2026', 'Feb 2026', 'Mar 2026'],
+      US: [310, 295, 280, 305, 270, 273],
+      AU: [125, 130, 115, 118, 120, 107],
+      GB: [95, 105, 110, 100, 122, 57],
+      CA: [40, 38, 35, 42, 36, 39],
+      FR: [30, 35, 28, 32, 40, 13],
+      IE: [25, 22, 20, 28, 38, 19],
+      ES: [12, 10, 14, 15, 12, 11],
+      JP: [18, 15, 12, 14, 10, 11]
+    },
 
-  // ---- Teams ----------------------------------------------------------------
-  teams: [
-    {
-      id: 'payments',
-      name: 'Payments Support',
-      totalCases: 3241,
-      resolutionRate: 96.1,
-      avgHandleTime: '00:03:48',
-      csat: 4.8,
-      sla: 98.5,
-      status: 'Excellent',
-      kpis: {
-        totalCases:     { value: '3,241', trend: +10, icon: '📋', label: 'Total Cases' },
-        resolutionRate: { value: '96.1%', trend: +4,  icon: '✅', label: 'Resolution Rate' },
-        avgHandleTime:  { value: '00:03:48', trend: -8, icon: '⏱️', label: 'Avg Handle Time', invertTrend: true },
-        csatScore:      { value: '4.8/5.0', trend: +6,  icon: '⭐', label: 'CSAT Score' },
-        openEscalations:{ value: '28', trend: -20, icon: '🔺', label: 'Open Escalations', invertTrend: true },
-        slaCompliance:  { value: '98.5%', trend: +1,  icon: '📊', label: 'SLA Compliance' }
-      },
-      casesOverTime: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], newCases: [85,95,110,90,105,60,45], resolvedCases: [80,92,108,91,100,58,48] },
-      caseCategories: { labels: ['Disputes','Refunds','Processing','Auth Errors','Other'], values: [890,720,650,580,401], colors: ['#2563eb','#8b5cf6','#10b981','#f59e0b','#6b7280'] },
-      members: [
-        { id:'ps1', name:'Sarah Chen',      role:'Senior Agent',  cases:542, resolution:97.8, avgTime:'00:03:12', csat:4.9, status:'Online',  avatar:'SC' },
-        { id:'ps2', name:'Marcus Johnson',   role:'Agent',         cases:498, resolution:95.2, avgTime:'00:03:45', csat:4.7, status:'Online',  avatar:'MJ' },
-        { id:'ps3', name:'Priya Patel',      role:'Agent',         cases:475, resolution:96.5, avgTime:'00:03:30', csat:4.8, status:'Away',    avatar:'PP' },
-        { id:'ps4', name:'David Kim',        role:'Lead Agent',    cases:510, resolution:97.1, avgTime:'00:03:18', csat:4.9, status:'Online',  avatar:'DK' },
-        { id:'ps5', name:'Emily Rodriguez',  role:'Agent',         cases:430, resolution:94.8, avgTime:'00:04:05', csat:4.6, status:'Offline', avatar:'ER' },
-        { id:'ps6', name:'James Wright',     role:'Junior Agent',  cases:386, resolution:93.2, avgTime:'00:04:22', csat:4.5, status:'Online',  avatar:'JW' },
-        { id:'ps7', name:'Aisha Mohammed',   role:'Agent',         cases:400, resolution:95.9, avgTime:'00:03:38', csat:4.8, status:'Online',  avatar:'AM' }
-      ]
-    },
-    {
-      id: 'accounts',
-      name: 'Account Services',
-      totalCases: 2876,
-      resolutionRate: 93.8,
-      avgHandleTime: '00:04:15',
-      csat: 4.6,
-      sla: 97.2,
-      status: 'Good',
-      kpis: {
-        totalCases:     { value: '2,876', trend: +6,  icon: '📋', label: 'Total Cases' },
-        resolutionRate: { value: '93.8%', trend: +2,  icon: '✅', label: 'Resolution Rate' },
-        avgHandleTime:  { value: '00:04:15', trend: -5, icon: '⏱️', label: 'Avg Handle Time', invertTrend: true },
-        csatScore:      { value: '4.6/5.0', trend: +3,  icon: '⭐', label: 'CSAT Score' },
-        openEscalations:{ value: '35', trend: -10, icon: '🔺', label: 'Open Escalations', invertTrend: true },
-        slaCompliance:  { value: '97.2%', trend: +2,  icon: '📊', label: 'SLA Compliance' }
-      },
-      casesOverTime: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], newCases: [72,80,92,78,88,52,38], resolvedCases: [68,76,88,80,85,50,40] },
-      caseCategories: { labels: ['Login Issues','Verification','Profile Updates','Billing','Other'], values: [680,590,520,480,606], colors: ['#2563eb','#8b5cf6','#10b981','#f59e0b','#6b7280'] },
-      members: [
-        { id:'as1', name:'Tom Bradley',     role:'Lead Agent',   cases:480, resolution:95.4, avgTime:'00:03:55', csat:4.7, status:'Online',  avatar:'TB' },
-        { id:'as2', name:'Lisa Wang',       role:'Senior Agent', cases:465, resolution:94.8, avgTime:'00:04:02', csat:4.7, status:'Online',  avatar:'LW' },
-        { id:'as3', name:'Carlos Rivera',   role:'Agent',        cases:420, resolution:93.2, avgTime:'00:04:18', csat:4.5, status:'Away',    avatar:'CR' },
-        { id:'as4', name:'Nina Kowalski',   role:'Agent',        cases:398, resolution:92.5, avgTime:'00:04:30', csat:4.5, status:'Online',  avatar:'NK' },
-        { id:'as5', name:'Ryan Foster',     role:'Junior Agent', cases:365, resolution:91.8, avgTime:'00:04:45', csat:4.4, status:'Online',  avatar:'RF' },
-        { id:'as6', name:'Mei Lin',         role:'Agent',        cases:448, resolution:94.1, avgTime:'00:04:10', csat:4.6, status:'Offline', avatar:'ML' }
-      ]
-    },
-    {
-      id: 'devrel',
-      name: 'Developer Relations',
-      totalCases: 1958,
-      resolutionRate: 91.5,
-      avgHandleTime: '00:06:10',
-      csat: 4.5,
-      sla: 96.8,
-      status: 'Good',
-      kpis: {
-        totalCases:     { value: '1,958', trend: +12, icon: '📋', label: 'Total Cases' },
-        resolutionRate: { value: '91.5%', trend: +1,  icon: '✅', label: 'Resolution Rate' },
-        avgHandleTime:  { value: '00:06:10', trend: -3, icon: '⏱️', label: 'Avg Handle Time', invertTrend: true },
-        csatScore:      { value: '4.5/5.0', trend: +4,  icon: '⭐', label: 'CSAT Score' },
-        openEscalations:{ value: '42', trend: +5,  icon: '🔺', label: 'Open Escalations', invertTrend: true },
-        slaCompliance:  { value: '96.8%', trend: +1,  icon: '📊', label: 'SLA Compliance' }
-      },
-      casesOverTime: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], newCases: [55,62,70,58,65,35,22], resolvedCases: [50,58,65,60,62,33,25] },
-      caseCategories: { labels: ['API Issues','SDK Bugs','Documentation','Integration','Other'], values: [520,410,380,350,298], colors: ['#2563eb','#8b5cf6','#10b981','#f59e0b','#6b7280'] },
-      members: [
-        { id:'dr1', name:'Alex Turner',     role:'Senior Engineer', cases:380, resolution:93.2, avgTime:'00:05:30', csat:4.7, status:'Online',  avatar:'AT' },
-        { id:'dr2', name:'Sophie Martin',   role:'Engineer',        cases:345, resolution:91.8, avgTime:'00:06:00', csat:4.5, status:'Online',  avatar:'SM' },
-        { id:'dr3', name:'Raj Gupta',       role:'Lead Engineer',   cases:410, resolution:94.1, avgTime:'00:05:15', csat:4.8, status:'Away',    avatar:'RG' },
-        { id:'dr4', name:'Hannah Lee',      role:'Engineer',        cases:320, resolution:90.5, avgTime:'00:06:30', csat:4.4, status:'Online',  avatar:'HL' },
-        { id:'dr5', name:'Omar Hassan',     role:'Junior Engineer', cases:285, resolution:88.9, avgTime:'00:07:10', csat:4.3, status:'Offline', avatar:'OH' }
-      ]
-    },
-    {
-      id: 'merchant',
-      name: 'Merchant Success',
-      totalCases: 2534,
-      resolutionRate: 95.3,
-      avgHandleTime: '00:04:45',
-      csat: 4.8,
-      sla: 98.1,
-      status: 'Excellent',
-      kpis: {
-        totalCases:     { value: '2,534', trend: +7,  icon: '📋', label: 'Total Cases' },
-        resolutionRate: { value: '95.3%', trend: +5,  icon: '✅', label: 'Resolution Rate' },
-        avgHandleTime:  { value: '00:04:45', trend: -15, icon: '⏱️', label: 'Avg Handle Time', invertTrend: true },
-        csatScore:      { value: '4.8/5.0', trend: +7,  icon: '⭐', label: 'CSAT Score' },
-        openEscalations:{ value: '22', trend: -25, icon: '🔺', label: 'Open Escalations', invertTrend: true },
-        slaCompliance:  { value: '98.1%', trend: +3,  icon: '📊', label: 'SLA Compliance' }
-      },
-      casesOverTime: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], newCases: [65,72,82,70,78,45,32], resolvedCases: [62,70,80,72,76,44,35] },
-      caseCategories: { labels: ['Onboarding','Pricing','Features','Technical','Other'], values: [620,540,480,450,444], colors: ['#2563eb','#8b5cf6','#10b981','#f59e0b','#6b7280'] },
-      members: [
-        { id:'ms1', name:'Jessica Park',    role:'Senior Manager', cases:450, resolution:97.2, avgTime:'00:04:00', csat:4.9, status:'Online',  avatar:'JP' },
-        { id:'ms2', name:'Brian O\'Neill',  role:'Manager',        cases:420, resolution:95.8, avgTime:'00:04:20', csat:4.8, status:'Online',  avatar:'BO' },
-        { id:'ms3', name:'Fatima Al-Rashid',role:'Agent',          cases:395, resolution:94.5, avgTime:'00:04:40', csat:4.7, status:'Online',  avatar:'FA' },
-        { id:'ms4', name:'Kevin Nguyen',    role:'Agent',          cases:380, resolution:94.1, avgTime:'00:04:55', csat:4.7, status:'Away',    avatar:'KN' },
-        { id:'ms5', name:'Diana Costa',     role:'Junior Agent',   cases:345, resolution:93.0, avgTime:'00:05:15', csat:4.6, status:'Online',  avatar:'DC' },
-        { id:'ms6', name:'Will Thompson',   role:'Agent',          cases:344, resolution:93.8, avgTime:'00:05:00', csat:4.7, status:'Offline', avatar:'WT' }
-      ]
-    },
-    {
-      id: 'risk',
-      name: 'Risk & Compliance',
-      totalCases: 1245,
-      resolutionRate: 92.7,
-      avgHandleTime: '00:05:30',
-      csat: 4.4,
-      sla: 97.5,
-      status: 'Good',
-      kpis: {
-        totalCases:     { value: '1,245', trend: +3,  icon: '📋', label: 'Total Cases' },
-        resolutionRate: { value: '92.7%', trend: +2,  icon: '✅', label: 'Resolution Rate' },
-        avgHandleTime:  { value: '00:05:30', trend: -6, icon: '⏱️', label: 'Avg Handle Time', invertTrend: true },
-        csatScore:      { value: '4.4/5.0', trend: +2,  icon: '⭐', label: 'CSAT Score' },
-        openEscalations:{ value: '18', trend: -8,  icon: '🔺', label: 'Open Escalations', invertTrend: true },
-        slaCompliance:  { value: '97.5%', trend: +1,  icon: '📊', label: 'SLA Compliance' }
-      },
-      casesOverTime: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], newCases: [30,38,42,35,40,20,15], resolvedCases: [28,35,40,36,38,19,16] },
-      caseCategories: { labels: ['Fraud Review','KYC/AML','Chargebacks','Policy','Other'], values: [340,280,250,200,175], colors: ['#2563eb','#8b5cf6','#10b981','#f59e0b','#6b7280'] },
-      members: [
-        { id:'rc1', name:'Michael Stone',   role:'Lead Analyst',   cases:280, resolution:94.6, avgTime:'00:05:00', csat:4.6, status:'Online',  avatar:'MS' },
-        { id:'rc2', name:'Anna Petrova',    role:'Senior Analyst', cases:260, resolution:93.5, avgTime:'00:05:15', csat:4.5, status:'Online',  avatar:'AP' },
-        { id:'rc3', name:'Derek Chang',     role:'Analyst',        cases:240, resolution:92.1, avgTime:'00:05:35', csat:4.4, status:'Away',    avatar:'DC' },
-        { id:'rc4', name:'Laura Bennett',   role:'Analyst',        cases:235, resolution:91.8, avgTime:'00:05:45', csat:4.3, status:'Online',  avatar:'LB' },
-        { id:'rc5', name:'Sam Okafor',      role:'Junior Analyst', cases:230, resolution:90.5, avgTime:'00:06:00', csat:4.2, status:'Offline', avatar:'SO' }
-      ]
-    },
-    {
-      id: 'hardware',
-      name: 'Hardware Support',
-      totalCases: 993,
-      resolutionRate: 93.4,
-      avgHandleTime: '00:05:05',
-      csat: 4.6,
-      sla: 97.0,
-      status: 'Good',
-      kpis: {
-        totalCases:     { value: '993',  trend: +5,  icon: '📋', label: 'Total Cases' },
-        resolutionRate: { value: '93.4%', trend: +3,  icon: '✅', label: 'Resolution Rate' },
-        avgHandleTime:  { value: '00:05:05', trend: -10, icon: '⏱️', label: 'Avg Handle Time', invertTrend: true },
-        csatScore:      { value: '4.6/5.0', trend: +4,  icon: '⭐', label: 'CSAT Score' },
-        openEscalations:{ value: '11', trend: -30, icon: '🔺', label: 'Open Escalations', invertTrend: true },
-        slaCompliance:  { value: '97.0%', trend: +2,  icon: '📊', label: 'SLA Compliance' }
-      },
-      casesOverTime: { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], newCases: [25,30,35,28,32,18,12], resolvedCases: [23,28,33,30,30,17,14] },
-      caseCategories: { labels: ['Reader Issues','Terminal','Shipping','Returns','Other'], values: [280,240,190,160,123], colors: ['#2563eb','#8b5cf6','#10b981','#f59e0b','#6b7280'] },
-      members: [
-        { id:'hs1', name:'Chris Palmer',    role:'Lead Tech',     cases:220, resolution:95.5, avgTime:'00:04:30', csat:4.8, status:'Online',  avatar:'CP' },
-        { id:'hs2', name:'Yuki Tanaka',     role:'Senior Tech',   cases:205, resolution:94.1, avgTime:'00:04:50', csat:4.7, status:'Online',  avatar:'YT' },
-        { id:'hs3', name:'Maria Santos',    role:'Technician',    cases:195, resolution:93.0, avgTime:'00:05:10', csat:4.5, status:'Away',    avatar:'MS' },
-        { id:'hs4', name:'Jake Morrison',   role:'Technician',    cases:188, resolution:92.2, avgTime:'00:05:25', csat:4.5, status:'Online',  avatar:'JM' },
-        { id:'hs5', name:'Zara Ahmed',      role:'Junior Tech',   cases:185, resolution:91.0, avgTime:'00:05:40', csat:4.4, status:'Online',  avatar:'ZA' }
-      ]
+    // [LOOKER_API] Look: DSRs Created by Package (monthly)
+    dsrsByPackageMonthly: {
+      months: ['Oct 2025', 'Nov 2025', 'Dec 2025', 'Jan 2026', 'Feb 2026', 'Mar 2026'],
+      'Tasks Only': [180, 175, 160, 170, 165, 155],
+      'Onsite': [120, 115, 110, 125, 118, 108],
+      'Plus': [95, 100, 90, 98, 105, 88],
+      'Strat PM': [60, 55, 50, 65, 58, 52],
+      'Full-day 3rd Party': [45, 40, 42, 48, 44, 38],
+      'Other': [35, 30, 28, 32, 30, 25]
     }
-  ],
-
-  // ---- User Activity (generated per user on demand) -------------------------
-  generateUserActivity(userId) {
-    const types = ['Dispute','Refund','Inquiry','Technical','Billing','Account','Escalation'];
-    const resolutions = ['Resolved','Escalated','Pending','Resolved','Resolved','Resolved'];
-    const ratings = [5,4,5,4,3,5,4,5,5,4];
-    const activities = [];
-    for (let i = 0; i < 15; i++) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      activities.push({
-        date: d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }),
-        caseId: `GSO-${10000 + Math.floor(Math.random()*90000)}`,
-        type: types[Math.floor(Math.random()*types.length)],
-        resolution: resolutions[Math.floor(Math.random()*resolutions.length)],
-        time: `00:0${2+Math.floor(Math.random()*5)}:${String(Math.floor(Math.random()*60)).padStart(2,'0')}`,
-        rating: ratings[Math.floor(Math.random()*ratings.length)]
-      });
-    }
-    return activities;
   },
 
-  generateUserDailyPerformance() {
-    const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    return {
-      labels,
-      cases: labels.map(() => 10 + Math.floor(Math.random()*30)),
-      csat:  labels.map(() => +(4 + Math.random()*0.8).toFixed(1))
-    };
-  },
-
-  generateUserCaseTypes() {
-    return {
-      labels: ['Dispute','Refund','Inquiry','Technical','Billing'],
-      values: [Math.floor(Math.random()*80+40), Math.floor(Math.random()*60+30), Math.floor(Math.random()*70+35), Math.floor(Math.random()*50+20), Math.floor(Math.random()*40+15)],
-      colors: ['#2563eb','#8b5cf6','#10b981','#f59e0b','#ef4444']
-    };
-  }
+  // ── TAB 4: SELLERS LAUNCHED ─────────────────────────────────
+  // [LOOKER_API] Look: Top Sellers Launched
+  sellersLaunched: [
+    { seller: "Joey B's - Gianino Family Restaurant Group", gpv: 9800000, specialist: 'Miles McMillin', country: 'US' },
+    { seller: 'Shakti Energy, LLC (DBA Pizza Street)', gpv: 6000000, specialist: 'Miles McMillin', country: 'US' },
+    { seller: 'Cookie Plug Franchise', gpv: 6000000, specialist: 'Michael Bavaro', country: 'US' },
+    { seller: 'The Brotherhood Games', gpv: 4259627, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Ichi Umi Sushi', gpv: 4000000, specialist: 'Ashley McDonald', country: 'US' },
+    { seller: 'Seacret Base', gpv: 3702309, specialist: 'Misho Arai', country: 'JP' },
+    { seller: 'Catalyst Hospitality Management', gpv: 2699774, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
+    { seller: 'The Green Edge', gpv: 2579634, specialist: 'Ben Braun', country: 'AU' },
+    { seller: 'Burrito Bar Holdings', gpv: 2450000, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
+    { seller: 'Nando\'s UK - Pilot Locations', gpv: 2380000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Freshii Canada', gpv: 2250000, specialist: 'Sarah Chen', country: 'CA' },
+    { seller: 'Taqueria Los Hermanos', gpv: 2100000, specialist: 'Miles McMillin', country: 'US' },
+    { seller: 'Melbourne Coffee Collective', gpv: 2050000, specialist: 'Ben Braun', country: 'AU' },
+    { seller: 'Sakura Ramen House', gpv: 1980000, specialist: 'Misho Arai', country: 'JP' },
+    { seller: 'London Burger Co.', gpv: 1920000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Coastal Fish & Chips', gpv: 1875000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Sunrise Bakery Group', gpv: 1800000, specialist: 'Ashley McDonald', country: 'US' },
+    { seller: 'Outback Grill & Bar', gpv: 1750000, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
+    { seller: 'Madrid Tapas Network', gpv: 1700000, specialist: 'Carlos Ruiz', country: 'ES' },
+    { seller: 'Dublin Pub Group', gpv: 1650000, specialist: 'Liam O\'Brien', country: 'IE' },
+    { seller: 'Pacific Poke Bowl', gpv: 1600000, specialist: 'Ashley McDonald', country: 'US' },
+    { seller: 'Le Petit Bistro', gpv: 1580000, specialist: 'Marie Dupont', country: 'FR' },
+    { seller: 'Kangaroo Kitchen', gpv: 1520000, specialist: 'Ben Braun', country: 'AU' },
+    { seller: 'Yorkshire Tea Rooms', gpv: 1480000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Tokyo Bowl Express', gpv: 1450000, specialist: 'Misho Arai', country: 'JP' },
+    { seller: 'Maple Leaf Diner', gpv: 1420000, specialist: 'Sarah Chen', country: 'CA' },
+    { seller: 'Barcelona Bites', gpv: 1380000, specialist: 'Carlos Ruiz', country: 'ES' },
+    { seller: 'Emerald Isle Catering', gpv: 1350000, specialist: 'Liam O\'Brien', country: 'IE' },
+    { seller: 'Blue Mountain Coffee', gpv: 1320000, specialist: 'Michael Bavaro', country: 'US' },
+    { seller: 'Sydney Seafood Market', gpv: 1280000, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
+    { seller: 'Paris Crêperie', gpv: 1250000, specialist: 'Marie Dupont', country: 'FR' },
+    { seller: 'Highland Whisky Bar', gpv: 1220000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Osaka Street Food', gpv: 1200000, specialist: 'Misho Arai', country: 'JP' },
+    { seller: 'Vancouver Sushi Train', gpv: 1180000, specialist: 'Sarah Chen', country: 'CA' },
+    { seller: 'Fiesta Mexicana', gpv: 1150000, specialist: 'Miles McMillin', country: 'US' },
+    { seller: 'Perth Pizza Palace', gpv: 1120000, specialist: 'Ben Braun', country: 'AU' },
+    { seller: 'Cork Coffee House', gpv: 1100000, specialist: 'Liam O\'Brien', country: 'IE' },
+    { seller: 'Sevilla Sangria Bar', gpv: 1080000, specialist: 'Carlos Ruiz', country: 'ES' },
+    { seller: 'Lyon Boulangerie', gpv: 1050000, specialist: 'Marie Dupont', country: 'FR' },
+    { seller: 'Nagoya Noodle Shop', gpv: 1020000, specialist: 'Misho Arai', country: 'JP' },
+    { seller: 'Austin BBQ Pit', gpv: 1000000, specialist: 'Miles McMillin', country: 'US' },
+    { seller: 'Brisbane Brunch Club', gpv: 980000, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
+    { seller: 'Manchester Curry Mile', gpv: 960000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Ottawa Poutine House', gpv: 940000, specialist: 'Sarah Chen', country: 'CA' },
+    { seller: 'Nice Côte d\'Azur Café', gpv: 920000, specialist: 'Marie Dupont', country: 'FR' },
+    { seller: 'Galway Bay Oysters', gpv: 900000, specialist: 'Liam O\'Brien', country: 'IE' },
+    { seller: 'Valencia Paella House', gpv: 880000, specialist: 'Carlos Ruiz', country: 'ES' },
+    { seller: 'Kyoto Garden Tea', gpv: 860000, specialist: 'Misho Arai', country: 'JP' },
+    { seller: 'Denver Mountain Grill', gpv: 840000, specialist: 'Michael Bavaro', country: 'US' },
+    { seller: 'Adelaide Wine Bar', gpv: 820000, specialist: 'Ben Braun', country: 'AU' },
+    { seller: 'Edinburgh Castle Café', gpv: 800000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Montreal Bagel Shop', gpv: 780000, specialist: 'Sarah Chen', country: 'CA' },
+    { seller: 'Marseille Fish Market', gpv: 760000, specialist: 'Marie Dupont', country: 'FR' },
+    { seller: 'Limerick Stew House', gpv: 740000, specialist: 'Liam O\'Brien', country: 'IE' },
+    { seller: 'Bilbao Pintxos Bar', gpv: 720000, specialist: 'Carlos Ruiz', country: 'ES' },
+    { seller: 'Sapporo Ramen Lab', gpv: 700000, specialist: 'Misho Arai', country: 'JP' },
+    { seller: 'Portland Food Cart Pod', gpv: 680000, specialist: 'Ashley McDonald', country: 'US' },
+    { seller: 'Gold Coast Smoothie', gpv: 660000, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
+    { seller: 'Bristol Harbour Café', gpv: 640000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Calgary Steakhouse', gpv: 620000, specialist: 'Sarah Chen', country: 'CA' },
+    { seller: 'Bordeaux Wine Bistro', gpv: 600000, specialist: 'Marie Dupont', country: 'FR' },
+    { seller: 'Waterford Crystal Café', gpv: 580000, specialist: 'Liam O\'Brien', country: 'IE' },
+    { seller: 'Granada Churros Stand', gpv: 560000, specialist: 'Carlos Ruiz', country: 'ES' },
+    { seller: 'Fukuoka Gyoza House', gpv: 540000, specialist: 'Misho Arai', country: 'JP' },
+    { seller: 'Nashville Hot Chicken', gpv: 520000, specialist: 'Miles McMillin', country: 'US' },
+    { seller: 'Hobart Farm Table', gpv: 500000, specialist: 'Ben Braun', country: 'AU' },
+    { seller: 'Leeds Curry House', gpv: 480000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Winnipeg Pierogi Place', gpv: 460000, specialist: 'Sarah Chen', country: 'CA' },
+    { seller: 'Toulouse Cassoulet', gpv: 440000, specialist: 'Marie Dupont', country: 'FR' },
+    { seller: 'Killarney Pub Kitchen', gpv: 420000, specialist: 'Liam O\'Brien', country: 'IE' },
+    { seller: 'Málaga Beach Bar', gpv: 400000, specialist: 'Carlos Ruiz', country: 'ES' },
+    { seller: 'Hiroshima Okonomiyaki', gpv: 380000, specialist: 'Misho Arai', country: 'JP' },
+    { seller: 'Seattle Coffee Roasters', gpv: 360000, specialist: 'Ashley McDonald', country: 'US' },
+    { seller: 'Darwin Crocodile Grill', gpv: 340000, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
+    { seller: 'Cardiff Bay Restaurant', gpv: 320000, specialist: 'Eugeniu Vascu', country: 'GB' },
+  ]
 };
+
+// ── UTILITY FUNCTIONS ──────────────────────────────────────────
+function formatCurrency(val) {
+  return '$' + val.toLocaleString('en-US');
+}
+
+function formatWeekLabel(w) {
+  const d = new Date(w + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// Chart.js global defaults
+Chart.defaults.font.family = 'Inter';
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#64748b';
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.padding = 16;
+Chart.defaults.elements.line.tension = 0.3;
+Chart.defaults.elements.point.radius = 3;
+Chart.defaults.elements.point.hoverRadius = 6;
+Chart.defaults.animation.duration = 800;
 </script>
 
-<!-- ======================= TOP NAVIGATION BAR ========================== -->
+<!-- ============================================================
+     TOP NAVIGATION BAR
+     ============================================================ -->
 <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
   <div class="max-w-[1440px] mx-auto px-4 sm:px-6">
-    <div class="flex items-center justify-between h-16">
-      <!-- Logo + Title -->
+    <div class="flex items-center justify-between h-14">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-          <span class="text-white font-bold text-sm">GSO</span>
+        <div class="flex items-center gap-2">
+          <svg class="w-7 h-7 text-primary" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+          <span class="text-lg font-bold text-gray-900">GSO Dashboard</span>
         </div>
-        <span class="text-lg font-bold text-gray-900 tracking-tight">GSO Dashboard</span>
-        <span class="hidden sm:inline-flex items-center gap-1 ml-3 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-          <span class="w-1.5 h-1.5 rounded-full bg-green-500 pulse-dot"></span> Live
-        </span>
-      </div>
-
-      <!-- Tabs -->
-      <div class="hidden md:flex items-center gap-1">
-        <button class="tab-active px-4 py-5 text-sm transition-all" id="tab-overview">Overview</button>
-        <button class="tab-inactive px-4 py-5 text-sm transition-all cursor-default" title="Coming soon">Teams</button>
-        <button class="tab-inactive px-4 py-5 text-sm transition-all cursor-default" title="Coming soon">Analytics</button>
-        <button class="tab-inactive px-4 py-5 text-sm transition-all cursor-default" title="Coming soon">Settings</button>
-      </div>
-
-      <!-- Right: Date Range + Profile -->
-      <div class="flex items-center gap-3">
-        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 cursor-pointer hover:bg-gray-100 transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          Last 7 Days
-          <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        <div class="flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-medium px-2.5 py-1 rounded-full">
+          <div class="live-dot"></div>
+          Live
         </div>
-        <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-semibold cursor-pointer">MH</div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="hidden sm:flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Last 90 Days (Completed) | Last 365 Days (Created)</span>
+        </div>
+        <a href="https://square.cloud.looker.com/dashboards/39532" target="_blank" class="flex items-center gap-1.5 text-xs text-primary hover:text-blue-700 font-medium bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          Looker 39532
+        </a>
       </div>
     </div>
   </div>
 </nav>
 
-<!-- ======================= MAIN CONTENT ================================ -->
+<!-- ============================================================
+     TAB NAVIGATION
+     ============================================================ -->
+<div class="bg-white border-b border-gray-200 shadow-sm">
+  <div class="max-w-[1440px] mx-auto px-4 sm:px-6">
+    <div class="flex gap-0 overflow-x-auto" id="tabNav">
+      <button class="tab-btn active px-5 py-3 text-sm font-medium text-gray-600 whitespace-nowrap border-b-3 border-transparent" data-tab="goLive">
+        📊 Go Live Metrics
+      </button>
+      <button class="tab-btn px-5 py-3 text-sm font-medium text-gray-600 whitespace-nowrap border-b-3 border-transparent" data-tab="assignKickoff">
+        📋 Assignment & Kickoff
+      </button>
+      <button class="tab-btn px-5 py-3 text-sm font-medium text-gray-600 whitespace-nowrap border-b-3 border-transparent" data-tab="dsrPipeline">
+        🔄 DSR Pipeline
+      </button>
+      <button class="tab-btn px-5 py-3 text-sm font-medium text-gray-600 whitespace-nowrap border-b-3 border-transparent" data-tab="sellersLaunched">
+        🚀 Sellers Launched
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN CONTENT AREA
+     ============================================================ -->
 <main class="max-w-[1440px] mx-auto px-4 sm:px-6 py-6">
 
-  <!-- Breadcrumb -->
-  <div id="breadcrumb" class="mb-4 flex items-center text-sm"></div>
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 1: GO LIVE METRICS
+       ══════════════════════════════════════════════════════════ -->
+  <div id="tab-goLive" class="tab-content active">
 
-  <!-- =================== OVERVIEW VIEW ================================= -->
-  <div id="view-overview" class="view-container view-visible">
-
-    <!-- KPI Cards -->
-    <div id="overview-kpis" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6"></div>
-
-    <!-- Charts Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-      <!-- Line Chart: Cases Over Time -->
-      <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-semibold text-gray-800">Cases Over Time</h3>
-          <span class="text-xs text-gray-400">Last 7 days</span>
+    <!-- KPI Cards Row -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      <!-- KPI 1: DSRs Completed -->
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-green-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">DSRs Completed</span>
+          <span class="text-lg">✅</span>
         </div>
-        <div class="chart-container" style="height:280px;">
-          <canvas id="chart-cases-time"></canvas>
+        <div class="text-3xl font-bold text-gray-900">150</div>
+        <div class="text-xs text-gray-400 mt-1">US:75 AU:42 GB:15 +5 more</div>
+      </div>
+      <!-- KPI 2: Median Go Live All -->
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-blue-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Median Go Live (All)</span>
+          <span class="text-lg">⏱️</span>
+        </div>
+        <div class="text-3xl font-bold text-gray-900">17<span class="text-lg font-normal text-gray-400 ml-1">days</span></div>
+        <div class="text-xs text-gray-400 mt-1">US, All Packages</div>
+      </div>
+      <!-- KPI 3: Median Go Live Hands On -->
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-purple-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Median Go Live (Hands On)</span>
+          <span class="text-lg">📋</span>
+        </div>
+        <div class="text-3xl font-bold text-gray-900">25<span class="text-lg font-normal text-gray-400 ml-1">days</span></div>
+        <div class="text-xs text-gray-400 mt-1">US, Hands On Packages</div>
+      </div>
+      <!-- KPI 4: Median Go Live Task Only -->
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-amber-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Median Go Live (Task Only)</span>
+          <span class="text-lg">⚡</span>
+        </div>
+        <div class="text-3xl font-bold text-gray-900">5<span class="text-lg font-normal text-gray-400 ml-1">days</span></div>
+        <div class="text-xs text-gray-400 mt-1">US, Task Only Packages</div>
+      </div>
+      <!-- KPI 5: SLA Met Rate -->
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-red-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">SLA Met Rate</span>
+          <span class="text-lg">📊</span>
+        </div>
+        <div class="text-3xl font-bold text-red-600">13.7<span class="text-lg font-normal text-red-400 ml-0.5">%</span></div>
+        <div class="flex items-center gap-1 mt-1">
+          <svg class="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+          <span class="text-xs text-red-500">Below target</span>
         </div>
       </div>
-      <!-- Donut Chart: Cases by Channel -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-semibold text-gray-800">Cases by Channel</h3>
+      <!-- KPI 6: Seller Go Live Date Met -->
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-blue-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Seller Go Live Date Met</span>
+          <span class="text-lg">🎯</span>
         </div>
-        <div class="chart-container" style="height:280px;">
-          <canvas id="chart-cases-channel"></canvas>
+        <div class="text-2xl font-bold text-gray-900">See Trend</div>
+        <div class="text-xs text-gray-400 mt-1">Weekly SLA tracking</div>
+      </div>
+    </div>
+
+    <!-- Charts Row 1: Median by Country + Donut -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="chart-card">
+        <h3 class="text-sm font-semibold text-gray-700 mb-4">Median Go Live — All Packages by Country</h3>
+        <div style="height: 320px;"><canvas id="chartMedianByCountry"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3 class="text-sm font-semibold text-gray-700 mb-4">DSRs Completed by Country</h3>
+        <div style="height: 320px;"><canvas id="chartDSRsDonut"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2: Trend Lines -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="chart-card">
+        <h3 class="text-sm font-semibold text-gray-700 mb-1">Global Median Go Live — All Merchants | Hands On Packages</h3>
+        <p class="text-xs text-gray-400 mb-4">Weekly trend with median and average lines</p>
+        <div style="height: 300px;"><canvas id="chartGlobalTrendAll"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3 class="text-sm font-semibold text-gray-700 mb-1">Global Median Go Live — Ready Merchants | Hands On</h3>
+        <p class="text-xs text-gray-400 mb-4">Weekly trend with request count overlay</p>
+        <div style="height: 300px;"><canvas id="chartGlobalTrendReady"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="chart-card mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-700">Median Go Live by Country & Package Type</h3>
+          <p class="text-xs text-gray-400 mt-0.5">Days to go live, segmented by package type and readiness</p>
         </div>
+        <input type="text" id="searchGoLiveTable" placeholder="Search country..." class="search-input text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none w-40">
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="goLiveComparisonTable">
+          <thead>
+            <tr class="border-b border-gray-100">
+              <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Country</th>
+              <th class="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">All Packages</th>
+              <th class="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Hands On</th>
+              <th class="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Task Only & Opti</th>
+              <th class="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ready Merchants (Hands On)</th>
+            </tr>
+          </thead>
+          <tbody id="goLiveTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 2: ASSIGNMENT & KICKOFF
+       ══════════════════════════════════════════════════════════ -->
+  <div id="tab-assignKickoff" class="tab-content">
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-blue-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Avg Days to Assign (US)</span>
+          <span class="text-lg">📝</span>
+        </div>
+        <div class="text-3xl font-bold text-gray-900">2.5<span class="text-lg font-normal text-gray-400 ml-1">days</span></div>
+      </div>
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-purple-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Avg Days to Kickoff (US)</span>
+          <span class="text-lg">📞</span>
+        </div>
+        <div class="text-3xl font-bold text-gray-900">12.6<span class="text-lg font-normal text-gray-400 ml-1">days</span></div>
+      </div>
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-amber-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Median Days to Assign</span>
+          <span class="text-lg">⚡</span>
+        </div>
+        <div class="text-3xl font-bold text-gray-900">1<span class="text-lg font-normal text-gray-400 ml-1">day</span></div>
+      </div>
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-green-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Median Days to Kickoff</span>
+          <span class="text-lg">📅</span>
+        </div>
+        <div class="text-3xl font-bold text-gray-900">7<span class="text-lg font-normal text-gray-400 ml-1">days</span></div>
+      </div>
+    </div>
+
+    <!-- Charts: Assignment & Kickoff by Market -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="chart-card">
+        <h3 class="text-sm font-semibold text-gray-700 mb-1">Assignment & Kickoff Times by Market</h3>
+        <p class="text-xs text-gray-400 mb-4">All merchants — average days</p>
+        <div style="height: 320px;"><canvas id="chartAKByMarketAll"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3 class="text-sm font-semibold text-gray-700 mb-1">Ready Merchants — Assignment & Kickoff by Market</h3>
+        <p class="text-xs text-gray-400 mb-4">Ready merchants only — average days</p>
+        <div style="height: 320px;"><canvas id="chartAKByMarketReady"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Trend Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="chart-card">
+        <h3 class="text-sm font-semibold text-gray-700 mb-1">Assignment & Kickoff Trends (All)</h3>
+        <p class="text-xs text-gray-400 mb-4">Weekly median days — all merchants</p>
+        <div style="height: 280px;"><canvas id="chartAKTrendsAll"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3 class="text-sm font-semibold text-gray-700 mb-1">Ready Merchants — Assignment & Kickoff Trends</h3>
+        <p class="text-xs text-gray-400 mb-4">Weekly median days — ready merchants</p>
+        <div style="height: 280px;"><canvas id="chartAKTrendsReady"></canvas></div>
+      </div>
+    </div>
+
+    <!-- SLA Table -->
+    <div class="chart-card mb-6">
+      <h3 class="text-sm font-semibold text-gray-700 mb-1">Seller Desired Go Live Date Met by Week</h3>
+      <p class="text-xs text-gray-400 mb-4">Percentage of sellers meeting their desired go-live date</p>
+      <div style="height: 280px;"><canvas id="chartSLAByWeek"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 3: DSR PIPELINE
+       ══════════════════════════════════════════════════════════ -->
+  <div id="tab-dsrPipeline" class="tab-content">
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-amber-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">DSRs Missing Go Live Date</span>
+          <span class="text-lg">⚠️</span>
+        </div>
+        <div class="text-2xl font-bold text-amber-600">See Table</div>
+        <div class="text-xs text-gray-400 mt-1">Review pipeline below</div>
+      </div>
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-red-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">DSRs Unmoved 7+ Days</span>
+          <span class="text-lg">🔴</span>
+        </div>
+        <div class="text-2xl font-bold text-red-600">See Table</div>
+        <div class="text-xs text-gray-400 mt-1">Requires attention</div>
+      </div>
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-green-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">MoM Avg Go Live (US, Mar)</span>
+          <span class="text-lg">📈</span>
+        </div>
+        <div class="text-3xl font-bold text-gray-900">21.2<span class="text-lg font-normal text-gray-400 ml-1">days</span></div>
+        <div class="flex items-center gap-1 mt-1">
+          <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"/></svg>
+          <span class="text-xs text-green-600">Improved from Feb</span>
+        </div>
+      </div>
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-blue-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">MoM Avg Go Live (US, Feb)</span>
+          <span class="text-lg">📊</span>
+        </div>
+        <div class="text-3xl font-bold text-gray-900">22.6<span class="text-lg font-normal text-gray-400 ml-1">days</span></div>
+        <div class="text-xs text-gray-400 mt-1">270 DSRs completed</div>
+      </div>
+    </div>
+
+    <!-- MoM Chart -->
+    <div class="chart-card mb-6">
+      <h3 class="text-sm font-semibold text-gray-700 mb-1">MoM Average Go Live — All Packages</h3>
+      <p class="text-xs text-gray-400 mb-4">February vs March 2026 comparison by country (with DSR counts)</p>
+      <div style="height: 360px;"><canvas id="chartMoM"></canvas></div>
+    </div>
+
+    <!-- DSRs Created Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="chart-card">
+        <h3 class="text-sm font-semibold text-gray-700 mb-1">DSRs Created by Country</h3>
+        <p class="text-xs text-gray-400 mb-4">Monthly stacked view — last 6 months</p>
+        <div style="height: 320px;"><canvas id="chartDSRsByCountry"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3 class="text-sm font-semibold text-gray-700 mb-1">DSRs Created by Package</h3>
+        <p class="text-xs text-gray-400 mb-4">Monthly stacked view — last 6 months</p>
+        <div style="height: 320px;"><canvas id="chartDSRsByPackage"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 4: SELLERS LAUNCHED
+       ══════════════════════════════════════════════════════════ -->
+  <div id="tab-sellersLaunched" class="tab-content">
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-blue-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Sellers</span>
+          <span class="text-lg">🚀</span>
+        </div>
+        <div class="text-3xl font-bold text-gray-900">75</div>
+        <div class="text-xs text-gray-400 mt-1">Last 90 days</div>
+      </div>
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-green-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Total GPV</span>
+          <span class="text-lg">💰</span>
+        </div>
+        <div class="text-2xl font-bold text-gray-900" id="totalGPV"></div>
+        <div class="text-xs text-gray-400 mt-1">Annual GPV (USD)</div>
+      </div>
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-purple-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Top Market</span>
+          <span class="text-lg">🇺🇸</span>
+        </div>
+        <div class="text-3xl font-bold text-gray-900">US</div>
+        <div class="text-xs text-gray-400 mt-1">Highest seller count</div>
+      </div>
+      <div class="kpi-card bg-white rounded-xl shadow-sm p-4 border-l-4 border-amber-500">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Top Seller GPV</span>
+          <span class="text-lg">🏆</span>
+        </div>
+        <div class="text-2xl font-bold text-gray-900">$9.8M</div>
+        <div class="text-xs text-gray-400 mt-1">Joey B's Restaurant Group</div>
+      </div>
+    </div>
+
+    <!-- Sellers Table -->
+    <div class="chart-card mb-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-700">Top Sellers Launched</h3>
+          <p class="text-xs text-gray-400 mt-0.5">Sorted by Annual GPV (USD) — last 90 days</p>
+        </div>
+        <div class="flex gap-2">
+          <input type="text" id="searchSellers" placeholder="Search seller, specialist, country..." class="search-input text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none w-64">
+          <select id="filterCountry" class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none bg-white cursor-pointer">
+            <option value="">All Countries</option>
+            <option value="US">US</option>
+            <option value="AU">AU</option>
+            <option value="GB">GB</option>
+            <option value="JP">JP</option>
+            <option value="CA">CA</option>
+            <option value="ES">ES</option>
+            <option value="IE">IE</option>
+            <option value="FR">FR</option>
+          </select>
+        </div>
+      </div>
+      <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-100">
+              <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">#</th>
+              <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Seller Name</th>
+              <th class="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Annual GPV (USD)</th>
+              <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Implementation Specialist</th>
+              <th class="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Country</th>
+            </tr>
+          </thead>
+          <tbody id="sellersTableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+        <span class="text-xs text-gray-400" id="sellersCount">Showing 75 of 75 sellers</span>
       </div>
     </div>
 
     <!-- Source Integration Cards -->
-    <div class="mb-6">
-      <h3 class="text-sm font-semibold text-gray-800 mb-3">Source Integrations</h3>
-      <div id="source-cards" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"></div>
-    </div>
-
-    <!-- Bar Chart: Team Performance Comparison -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm font-semibold text-gray-800">Team Performance Comparison — Resolution Rate</h3>
-      </div>
-      <div class="chart-container" style="height:300px;">
-        <canvas id="chart-team-perf"></canvas>
-      </div>
-    </div>
-
-    <!-- Team Summary Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-        <h3 class="text-sm font-semibold text-gray-800">Team Summary</h3>
-        <div class="relative">
-          <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          <input id="search-teams" type="text" placeholder="Search teams..." class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-64" />
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <a href="https://square.cloud.looker.com/dashboards/39532" target="_blank" class="source-card bg-white rounded-xl shadow-sm p-5 border-t-4 border-blue-500 hover:shadow-md block">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-700">Looker</span>
         </div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
-              <th class="pb-3 pr-4 cursor-pointer hover:text-gray-700" onclick="sortTeamTable('name')">Team Name ↕</th>
-              <th class="pb-3 pr-4 cursor-pointer hover:text-gray-700 text-right" onclick="sortTeamTable('totalCases')">Total Cases ↕</th>
-              <th class="pb-3 pr-4 cursor-pointer hover:text-gray-700 text-right" onclick="sortTeamTable('resolutionRate')">Resolution Rate ↕</th>
-              <th class="pb-3 pr-4 cursor-pointer hover:text-gray-700 text-right" onclick="sortTeamTable('avgHandleTime')">Avg Handle Time ↕</th>
-              <th class="pb-3 pr-4 cursor-pointer hover:text-gray-700 text-right" onclick="sortTeamTable('csat')">CSAT ↕</th>
-              <th class="pb-3 pr-4 cursor-pointer hover:text-gray-700 text-right" onclick="sortTeamTable('sla')">SLA % ↕</th>
-              <th class="pb-3 text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody id="team-table-body"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- =================== TEAM VIEW ==================================== -->
-  <div id="view-team" class="view-container view-hidden">
-    <div id="team-kpis" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6"></div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-      <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-semibold text-gray-800" id="team-chart-title">Team Cases Over Time</h3>
-          <span class="text-xs text-gray-400">Last 7 days</span>
+        <p class="text-xs text-gray-500">Dashboard 39532</p>
+        <p class="text-xs text-blue-500 mt-1 font-medium">View Source →</p>
+      </a>
+      <div class="source-card bg-white rounded-xl shadow-sm p-5 border-t-4 border-cyan-500">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-cyan-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-700">Salesforce</span>
         </div>
-        <div class="chart-container" style="height:280px;"><canvas id="chart-team-cases"></canvas></div>
+        <p class="text-xs text-gray-500">DSR Pipeline Data</p>
+        <p class="text-xs text-cyan-500 mt-1 font-medium">Connected</p>
       </div>
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-semibold text-gray-800">Case Categories</h3>
+      <div class="source-card bg-white rounded-xl shadow-sm p-5 border-t-4 border-purple-500 opacity-60">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-700">Slack</span>
         </div>
-        <div class="chart-container" style="height:280px;"><canvas id="chart-team-categories"></canvas></div>
+        <p class="text-xs text-gray-500">Coming Soon</p>
+        <p class="text-xs text-gray-400 mt-1 font-medium">Planned</p>
       </div>
-    </div>
-
-    <!-- Member Performance Bar -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
-      <h3 class="text-sm font-semibold text-gray-800 mb-4">Member Performance — Resolution Rate</h3>
-      <div class="chart-container" style="height:280px;"><canvas id="chart-team-members-perf"></canvas></div>
-    </div>
-
-    <!-- Members Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-        <h3 class="text-sm font-semibold text-gray-800">Team Members</h3>
-        <div class="relative">
-          <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          <input id="search-members" type="text" placeholder="Search members..." class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-64" />
+      <div class="source-card bg-white rounded-xl shadow-sm p-5 border-t-4 border-blue-600 opacity-60">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-blue-700" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+          </div>
+          <span class="text-sm font-semibold text-gray-700">JIRA</span>
         </div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
-              <th class="pb-3 pr-4">Name</th>
-              <th class="pb-3 pr-4 text-right">Cases Handled</th>
-              <th class="pb-3 pr-4 text-right">Resolution Rate</th>
-              <th class="pb-3 pr-4 text-right">Avg Handle Time</th>
-              <th class="pb-3 pr-4 text-right">CSAT</th>
-              <th class="pb-3 text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody id="member-table-body"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- =================== USER VIEW ==================================== -->
-  <div id="view-user" class="view-container view-hidden">
-    <!-- Profile Card -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-      <div id="user-avatar" class="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center text-xl font-bold flex-shrink-0"></div>
-      <div>
-        <h2 id="user-name" class="text-xl font-bold text-gray-900"></h2>
-        <p id="user-role" class="text-sm text-gray-500"></p>
-        <p id="user-team-label" class="text-xs text-gray-400 mt-1"></p>
-      </div>
-      <div class="sm:ml-auto" id="user-status-badge"></div>
-    </div>
-
-    <div id="user-kpis" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6"></div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-      <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 class="text-sm font-semibold text-gray-800 mb-4">Daily Performance</h3>
-        <div class="chart-container" style="height:280px;"><canvas id="chart-user-daily"></canvas></div>
-      </div>
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 class="text-sm font-semibold text-gray-800 mb-4">Case Type Breakdown</h3>
-        <div class="chart-container" style="height:280px;"><canvas id="chart-user-types"></canvas></div>
-      </div>
-    </div>
-
-    <!-- Recent Activity Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-        <h3 class="text-sm font-semibold text-gray-800">Recent Activity</h3>
-        <div class="relative">
-          <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          <input id="search-activity" type="text" placeholder="Search activity..." class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-64" />
-        </div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
-              <th class="pb-3 pr-4">Date</th>
-              <th class="pb-3 pr-4">Case ID</th>
-              <th class="pb-3 pr-4">Type</th>
-              <th class="pb-3 pr-4">Resolution</th>
-              <th class="pb-3 pr-4 text-right">Time</th>
-              <th class="pb-3 text-center">Rating</th>
-            </tr>
-          </thead>
-          <tbody id="activity-table-body"></tbody>
-        </table>
+        <p class="text-xs text-gray-500">Coming Soon</p>
+        <p class="text-xs text-gray-400 mt-1 font-medium">Planned</p>
       </div>
     </div>
   </div>
 
 </main>
 
-<!-- Footer -->
-<footer class="border-t border-gray-200 bg-white mt-8">
-  <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400">
-    <span>© 2026 GSO Dashboard — Global Support Operations</span>
-    <span>Data refreshed: <span id="last-refresh"></span></span>
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer class="bg-white border-t border-gray-200 mt-8">
+  <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+    <div class="flex items-center gap-2 text-xs text-gray-400">
+      <span>Last refreshed:</span>
+      <span class="font-medium text-gray-600" id="lastRefreshed"></span>
+    </div>
+    <div class="flex items-center gap-4 text-xs text-gray-400">
+      <span>Data source: <a href="https://square.cloud.looker.com/dashboards/39532" target="_blank" class="text-primary hover:underline font-medium">Looker Dashboard 39532</a></span>
+      <span>•</span>
+      <span>GSO Analytics Team</span>
+    </div>
   </div>
 </footer>
 
-<!-- ======================= APPLICATION LOGIC =========================== -->
+<!-- ============================================================
+     JAVASCRIPT: TAB SWITCHING, CHARTS, TABLES
+     ============================================================ -->
 <script>
-(function() {
-  'use strict';
+// ── TAB SWITCHING ──────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    const tabId = 'tab-' + btn.dataset.tab;
+    document.getElementById(tabId).classList.add('active');
+    // Initialize charts on tab switch (lazy)
+    if (btn.dataset.tab === 'assignKickoff' && !window._akChartsInit) { initAKCharts(); window._akChartsInit = true; }
+    if (btn.dataset.tab === 'dsrPipeline' && !window._pipeChartsInit) { initPipelineCharts(); window._pipeChartsInit = true; }
+    if (btn.dataset.tab === 'sellersLaunched' && !window._sellersInit) { initSellersTab(); window._sellersInit = true; }
+  });
+});
 
-  // ---- State ---------------------------------------------------------------
-  let currentView = 'overview'; // 'overview' | 'team' | 'user'
-  let currentTeam = null;
-  let currentUser = null;
-  let currentTeamObj = null;
-  let charts = {};
-  let teamSortKey = 'name';
-  let teamSortAsc = true;
+// ── FOOTER TIMESTAMP ───────────────────────────────────────────
+document.getElementById('lastRefreshed').textContent = new Date().toLocaleString('en-US', {
+  year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+});
 
-  // ---- Helpers -------------------------------------------------------------
-  const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => document.querySelectorAll(sel);
+// ══════════════════════════════════════════════════════════════
+// TAB 1 CHARTS: GO LIVE METRICS
+// ══════════════════════════════════════════════════════════════
 
-  function statusBadge(status) {
-    const map = { 'Excellent':'badge-green','Good':'badge-blue','Needs Attention':'badge-yellow','Critical':'badge-red',
-                  'Online':'badge-green','Away':'badge-yellow','Offline':'badge-red' };
-    return `<span class="status-badge ${map[status]||'badge-blue'}">${status}</span>`;
-  }
-
-  function trendHTML(trend, invert) {
-    const isPositive = invert ? trend < 0 : trend > 0;
-    const color = isPositive ? 'text-emerald-600' : 'text-red-500';
-    const arrow = trend > 0 ? '↑' : '↓';
-    return `<span class="${color} text-xs font-medium">${arrow} ${Math.abs(trend)}%</span>`;
-  }
-
-  const kpiColors = ['kpi-blue','kpi-green','kpi-amber','kpi-purple','kpi-red','kpi-teal'];
-
-  function renderKPIs(container, kpis) {
-    const el = document.getElementById(container);
-    el.innerHTML = '';
-    const keys = Object.keys(kpis);
-    keys.forEach((key, i) => {
-      const k = kpis[key];
-      el.innerHTML += `
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 kpi-card ${kpiColors[i % kpiColors.length]} p-4 card-hover">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-lg">${k.icon}</span>
-            ${trendHTML(k.trend, k.invertTrend)}
-          </div>
-          <div class="text-2xl font-bold text-gray-900 mb-1">${k.value}</div>
-          <div class="text-xs text-gray-500">${k.label}</div>
-        </div>`;
-    });
-  }
-
-  function destroyChart(id) {
-    if (charts[id]) { charts[id].destroy(); delete charts[id]; }
-  }
-
-  function createLineChart(canvasId, labels, datasets) {
-    destroyChart(canvasId);
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    charts[canvasId] = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        interaction: { intersect: false, mode: 'index' },
-        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { size: 12 } } },
-                   tooltip: { backgroundColor: '#1f2937', titleFont: { size: 13 }, bodyFont: { size: 12 }, padding: 12, cornerRadius: 8 } },
-        scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#9ca3af' } },
-          y: { grid: { color: '#f3f4f6' }, ticks: { font: { size: 11 }, color: '#9ca3af' }, beginAtZero: true }
-        },
-        elements: { line: { tension: 0.35 }, point: { radius: 4, hoverRadius: 6 } }
-      }
-    });
-  }
-
-  function createDonutChart(canvasId, labels, values, colors) {
-    destroyChart(canvasId);
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    charts[canvasId] = new Chart(ctx, {
-      type: 'doughnut',
-      data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0, hoverOffset: 8 }] },
-      options: {
-        responsive: true, maintainAspectRatio: false, cutout: '65%',
-        plugins: {
-          legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14, font: { size: 11 } } },
-          tooltip: { backgroundColor: '#1f2937', padding: 12, cornerRadius: 8,
-            callbacks: { label: (c) => ` ${c.label}: ${c.parsed.toLocaleString()} (${((c.parsed/c.dataset.data.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)` } }
+// ── Chart: Median Go Live by Country (horizontal bar) ──────────
+new Chart(document.getElementById('chartMedianByCountry'), {
+  type: 'bar',
+  data: {
+    labels: GSO_DATA.goLive.medianByCountry.labels,
+    datasets: [{
+      label: 'Median Days to Go Live',
+      data: GSO_DATA.goLive.medianByCountry.values,
+      backgroundColor: [
+        '#1e40af', '#2563eb', '#3b82f6', '#60a5fa', '#93bbfd', '#bfdbfe', '#dbeafe', '#eff6ff'
+      ].reverse(),
+      borderRadius: 6,
+      borderSkipped: false,
+      barThickness: 28,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1e293b',
+        titleFont: { size: 12, weight: '600' },
+        bodyFont: { size: 11 },
+        padding: 10,
+        cornerRadius: 8,
+        callbacks: {
+          label: ctx => `${ctx.parsed.x} days`
         }
       }
-    });
-  }
-
-  function createHorizontalBarChart(canvasId, labels, values, colors) {
-    destroyChart(canvasId);
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    charts[canvasId] = new Chart(ctx, {
-      type: 'bar',
-      data: { labels, datasets: [{ data: values, backgroundColor: colors || '#2563eb', borderRadius: 6, barThickness: 28 }] },
-      options: {
-        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false },
-          tooltip: { backgroundColor: '#1f2937', padding: 12, cornerRadius: 8, callbacks: { label: (c) => ` Resolution Rate: ${c.parsed.x}%` } } },
-        scales: {
-          x: { min: 85, max: 100, grid: { color: '#f3f4f6' }, ticks: { callback: v => v+'%', font: { size: 11 }, color: '#9ca3af' } },
-          y: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#374151' } }
-        }
-      }
-    });
-  }
-
-  // ---- Overview Rendering --------------------------------------------------
-  function renderOverview() {
-    renderKPIs('overview-kpis', GSO_DATA.kpis);
-
-    // Cases Over Time
-    const cot = GSO_DATA.casesOverTime;
-    createLineChart('chart-cases-time', cot.labels, [
-      { label: 'New Cases', data: cot.newCases, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)', fill: true, pointBackgroundColor: '#2563eb' },
-      { label: 'Resolved Cases', data: cot.resolvedCases, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)', fill: true, pointBackgroundColor: '#10b981' }
-    ]);
-
-    // Cases by Channel
-    const cbc = GSO_DATA.casesByChannel;
-    createDonutChart('chart-cases-channel', cbc.labels, cbc.values, cbc.colors);
-
-    // Source Integration Cards
-    const srcEl = document.getElementById('source-cards');
-    srcEl.innerHTML = '';
-    const srcData = [
-      { ...GSO_DATA.sources.looker, metric: `${GSO_DATA.sources.looker.activeDashboards} Active Dashboards` },
-      { ...GSO_DATA.sources.salesforce, metric: `${GSO_DATA.sources.salesforce.openCases.toLocaleString()} Open Cases` },
-      { ...GSO_DATA.sources.slack, metric: `${GSO_DATA.sources.slack.escalationThreads} Escalation Threads` },
-      { ...GSO_DATA.sources.jira, metric: `${GSO_DATA.sources.jira.openTickets} Open Tickets` },
-      { ...GSO_DATA.sources.knowledgeBase, metric: `${GSO_DATA.sources.knowledgeBase.articles.toLocaleString()} Articles` }
-    ];
-    srcData.forEach(s => {
-      srcEl.innerHTML += `
-        <div class="source-card ${s.color} rounded-xl p-4 text-white cursor-pointer">
-          <div class="text-2xl mb-2">${s.icon}</div>
-          <div class="text-sm font-semibold mb-1">${s.label}</div>
-          <div class="text-lg font-bold">${s.metric}</div>
-        </div>`;
-    });
-
-    // Team Performance Bar
-    const teamNames = GSO_DATA.teams.map(t => t.name);
-    const teamRates = GSO_DATA.teams.map(t => t.resolutionRate);
-    const barColors = teamRates.map(r => r >= 95 ? '#10b981' : r >= 93 ? '#2563eb' : '#f59e0b');
-    createHorizontalBarChart('chart-team-perf', teamNames, teamRates, barColors);
-
-    // Team Table
-    renderTeamTable();
-  }
-
-  function renderTeamTable(filter) {
-    const tbody = document.getElementById('team-table-body');
-    let teams = [...GSO_DATA.teams];
-    if (filter) {
-      const f = filter.toLowerCase();
-      teams = teams.filter(t => t.name.toLowerCase().includes(f));
-    }
-    // Sort
-    teams.sort((a, b) => {
-      let va = a[teamSortKey], vb = b[teamSortKey];
-      if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
-      if (va < vb) return teamSortAsc ? -1 : 1;
-      if (va > vb) return teamSortAsc ? 1 : -1;
-      return 0;
-    });
-    tbody.innerHTML = teams.map(t => `
-      <tr class="table-row-clickable border-b border-gray-50" onclick="window.navigateToTeam('${t.id}')">
-        <td class="py-3 pr-4 font-medium text-gray-900">${t.name}</td>
-        <td class="py-3 pr-4 text-right text-gray-700">${t.totalCases.toLocaleString()}</td>
-        <td class="py-3 pr-4 text-right"><span class="font-medium ${t.resolutionRate>=95?'text-emerald-600':t.resolutionRate>=93?'text-blue-600':'text-amber-600'}">${t.resolutionRate}%</span></td>
-        <td class="py-3 pr-4 text-right text-gray-700">${t.avgHandleTime}</td>
-        <td class="py-3 pr-4 text-right text-gray-700">${t.csat}</td>
-        <td class="py-3 pr-4 text-right text-gray-700">${t.sla}%</td>
-        <td class="py-3 text-center">${statusBadge(t.status)}</td>
-      </tr>`).join('');
-  }
-
-  function sortTeamTable(key) {
-    if (teamSortKey === key) { teamSortAsc = !teamSortAsc; } else { teamSortKey = key; teamSortAsc = true; }
-    renderTeamTable($('#search-teams').value);
-  }
-  window.sortTeamTable = sortTeamTable;
-
-  // ---- Team View Rendering -------------------------------------------------
-  function renderTeamView(teamId) {
-    const team = GSO_DATA.teams.find(t => t.id === teamId);
-    if (!team) return;
-    currentTeamObj = team;
-
-    renderKPIs('team-kpis', team.kpis);
-    document.getElementById('team-chart-title').textContent = `${team.name} — Cases Over Time`;
-
-    const cot = team.casesOverTime;
-    createLineChart('chart-team-cases', cot.labels, [
-      { label: 'New Cases', data: cot.newCases, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)', fill: true, pointBackgroundColor: '#2563eb' },
-      { label: 'Resolved Cases', data: cot.resolvedCases, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)', fill: true, pointBackgroundColor: '#10b981' }
-    ]);
-
-    const cc = team.caseCategories;
-    createDonutChart('chart-team-categories', cc.labels, cc.values, cc.colors);
-
-    // Member performance bar
-    const memberNames = team.members.map(m => m.name.split(' ')[0]);
-    const memberRates = team.members.map(m => m.resolution);
-    const mColors = memberRates.map(r => r >= 95 ? '#10b981' : r >= 93 ? '#2563eb' : '#f59e0b');
-    createHorizontalBarChart('chart-team-members-perf', memberNames, memberRates, mColors);
-
-    renderMemberTable(team);
-  }
-
-  function renderMemberTable(team, filter) {
-    const tbody = document.getElementById('member-table-body');
-    let members = team.members;
-    if (filter) {
-      const f = filter.toLowerCase();
-      members = members.filter(m => m.name.toLowerCase().includes(f) || m.role.toLowerCase().includes(f));
-    }
-    tbody.innerHTML = members.map(m => `
-      <tr class="table-row-clickable border-b border-gray-50" onclick="window.navigateToUser('${team.id}','${m.id}')">
-        <td class="py-3 pr-4">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold flex-shrink-0">${m.avatar}</div>
-            <div>
-              <div class="font-medium text-gray-900">${m.name}</div>
-              <div class="text-xs text-gray-400">${m.role}</div>
-            </div>
-          </div>
-        </td>
-        <td class="py-3 pr-4 text-right text-gray-700">${m.cases}</td>
-        <td class="py-3 pr-4 text-right"><span class="font-medium ${m.resolution>=95?'text-emerald-600':m.resolution>=93?'text-blue-600':'text-amber-600'}">${m.resolution}%</span></td>
-        <td class="py-3 pr-4 text-right text-gray-700">${m.avgTime}</td>
-        <td class="py-3 pr-4 text-right text-gray-700">${m.csat}</td>
-        <td class="py-3 text-center">${statusBadge(m.status)}</td>
-      </tr>`).join('');
-  }
-
-  // ---- User View Rendering -------------------------------------------------
-  function renderUserView(teamId, userId) {
-    const team = GSO_DATA.teams.find(t => t.id === teamId);
-    if (!team) return;
-    const user = team.members.find(m => m.id === userId);
-    if (!user) return;
-    currentTeamObj = team;
-
-    // Profile
-    document.getElementById('user-avatar').textContent = user.avatar;
-    document.getElementById('user-name').textContent = user.name;
-    document.getElementById('user-role').textContent = user.role;
-    document.getElementById('user-team-label').textContent = `Team: ${team.name}`;
-    document.getElementById('user-status-badge').innerHTML = statusBadge(user.status);
-
-    // KPIs
-    const uKpis = {
-      cases:      { value: user.cases.toString(), trend: Math.floor(Math.random()*15)+1, icon: '📋', label: 'Cases Handled' },
-      resolution: { value: user.resolution+'%', trend: Math.floor(Math.random()*8)+1, icon: '✅', label: 'Resolution Rate' },
-      avgTime:    { value: user.avgTime, trend: -(Math.floor(Math.random()*12)+3), icon: '⏱️', label: 'Avg Handle Time', invertTrend: true },
-      csat:       { value: user.csat+'/5.0', trend: Math.floor(Math.random()*6)+1, icon: '⭐', label: 'CSAT Score' }
-    };
-    renderKPIs('user-kpis', uKpis);
-
-    // Daily Performance (dual axis: cases bar + csat line)
-    const dp = GSO_DATA.generateUserDailyPerformance();
-    destroyChart('chart-user-daily');
-    const ctx1 = document.getElementById('chart-user-daily').getContext('2d');
-    charts['chart-user-daily'] = new Chart(ctx1, {
-      type: 'bar',
-      data: {
-        labels: dp.labels,
-        datasets: [
-          { label: 'Cases', data: dp.cases, backgroundColor: 'rgba(37,99,235,0.7)', borderRadius: 6, yAxisID: 'y', order: 2 },
-          { label: 'CSAT', data: dp.csat, type: 'line', borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.4, pointBackgroundColor: '#f59e0b', yAxisID: 'y1', order: 1 }
-        ]
+    },
+    scales: {
+      x: {
+        grid: { color: '#f1f5f9' },
+        title: { display: true, text: 'Days', font: { size: 11 } },
+        beginAtZero: true,
       },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        interaction: { intersect: false, mode: 'index' },
-        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { size: 12 } } },
-                   tooltip: { backgroundColor: '#1f2937', padding: 12, cornerRadius: 8 } },
-        scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#9ca3af' } },
-          y: { position: 'left', grid: { color: '#f3f4f6' }, ticks: { font: { size: 11 }, color: '#9ca3af' }, beginAtZero: true, title: { display: true, text: 'Cases', font: { size: 11 }, color: '#9ca3af' } },
-          y1: { position: 'right', min: 3, max: 5, grid: { display: false }, ticks: { font: { size: 11 }, color: '#f59e0b' }, title: { display: true, text: 'CSAT', font: { size: 11 }, color: '#f59e0b' } }
+      y: {
+        grid: { display: false },
+        ticks: { font: { size: 12, weight: '500' } }
+      }
+    }
+  }
+});
+
+// ── Chart: DSRs Completed Donut ────────────────────────────────
+new Chart(document.getElementById('chartDSRsDonut'), {
+  type: 'doughnut',
+  data: {
+    labels: GSO_DATA.goLive.dsrsDonut.labels,
+    datasets: [{
+      data: GSO_DATA.goLive.dsrsDonut.values,
+      backgroundColor: GSO_DATA.goLive.dsrsDonut.colors,
+      borderWidth: 2,
+      borderColor: '#fff',
+      hoverOffset: 8,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '60%',
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { padding: 12, font: { size: 11 } }
+      },
+      tooltip: {
+        backgroundColor: '#1e293b',
+        padding: 10,
+        cornerRadius: 8,
+        callbacks: {
+          label: ctx => {
+            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+            const pct = ((ctx.parsed / total) * 100).toFixed(1);
+            return `${ctx.label}: ${ctx.parsed} DSRs (${pct}%)`;
+          }
         }
       }
-    });
-
-    // Case Type Breakdown
-    const ct = GSO_DATA.generateUserCaseTypes();
-    createDonutChart('chart-user-types', ct.labels, ct.values, ct.colors);
-
-    // Activity Table
-    renderActivityTable(userId);
-  }
-
-  function renderActivityTable(userId, filter) {
-    const activities = GSO_DATA.generateUserActivity(userId);
-    const tbody = document.getElementById('activity-table-body');
-    let data = activities;
-    if (filter) {
-      const f = filter.toLowerCase();
-      data = data.filter(a => a.caseId.toLowerCase().includes(f) || a.type.toLowerCase().includes(f) || a.resolution.toLowerCase().includes(f));
     }
-    tbody.innerHTML = data.map(a => {
-      const resBadge = a.resolution === 'Resolved' ? 'badge-green' : a.resolution === 'Pending' ? 'badge-yellow' : 'badge-red';
-      const stars = '★'.repeat(a.rating) + '☆'.repeat(5-a.rating);
-      return `
-        <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
-          <td class="py-3 pr-4 text-gray-600">${a.date}</td>
-          <td class="py-3 pr-4 font-mono text-primary font-medium">${a.caseId}</td>
-          <td class="py-3 pr-4 text-gray-700">${a.type}</td>
-          <td class="py-3 pr-4"><span class="status-badge ${resBadge}">${a.resolution}</span></td>
-          <td class="py-3 pr-4 text-right font-mono text-gray-600">${a.time}</td>
-          <td class="py-3 text-center text-amber-400 text-xs tracking-wider">${stars}</td>
-        </tr>`;
-    }).join('');
-  }
-
-  // ---- Navigation ----------------------------------------------------------
-  function switchView(view) {
-    ['overview','team','user'].forEach(v => {
-      const el = document.getElementById('view-'+v);
-      if (v === view) { el.classList.remove('view-hidden'); el.classList.add('view-visible'); }
-      else { el.classList.remove('view-visible'); el.classList.add('view-hidden'); }
-    });
-    currentView = view;
-    updateBreadcrumb();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function updateBreadcrumb() {
-    const bc = document.getElementById('breadcrumb');
-    if (currentView === 'overview') {
-      bc.innerHTML = '<span class="text-gray-500 font-medium">📊 GSO Overview</span>';
-      return;
+  },
+  plugins: [{
+    id: 'centerText',
+    beforeDraw(chart) {
+      const { ctx, chartArea: { width, height, top, left } } = chart;
+      ctx.save();
+      ctx.font = '700 28px Inter';
+      ctx.fillStyle = '#1e293b';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('150', left + width / 2, top + height / 2 - 8);
+      ctx.font = '400 11px Inter';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('Total DSRs', left + width / 2, top + height / 2 + 14);
+      ctx.restore();
     }
-    let html = `<span class="breadcrumb-link" onclick="window.navigateToOverview()">📊 GSO Overview</span>`;
-    if (currentView === 'team' && currentTeamObj) {
-      html += `<span class="breadcrumb-separator">/</span><span class="text-gray-700 font-medium">${currentTeamObj.name}</span>`;
+  }]
+});
+
+// ── Chart: Global Trend All Merchants ──────────────────────────
+new Chart(document.getElementById('chartGlobalTrendAll'), {
+  type: 'line',
+  data: {
+    labels: GSO_DATA.goLive.globalTrendAllMerchants.weeks.map(formatWeekLabel),
+    datasets: [
+      {
+        label: 'Median',
+        data: GSO_DATA.goLive.globalTrendAllMerchants.median,
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37,99,235,0.08)',
+        fill: true,
+        borderWidth: 2.5,
+        pointBackgroundColor: '#2563eb',
+      },
+      {
+        label: 'Average',
+        data: GSO_DATA.goLive.globalTrendAllMerchants.average,
+        borderColor: '#f59e0b',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderDash: [6, 3],
+        pointBackgroundColor: '#f59e0b',
+        pointRadius: 2,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'top' },
+      tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 8 }
+    },
+    scales: {
+      x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, maxRotation: 45 } },
+      y: { grid: { color: '#f1f5f9' }, title: { display: true, text: 'Days', font: { size: 11 } }, beginAtZero: false }
     }
-    if (currentView === 'user' && currentTeamObj && currentUser) {
-      html += `<span class="breadcrumb-separator">/</span><span class="breadcrumb-link" onclick="window.navigateToTeam('${currentTeamObj.id}')">${currentTeamObj.name}</span>`;
-      const user = currentTeamObj.members.find(m => m.id === currentUser);
-      if (user) html += `<span class="breadcrumb-separator">/</span><span class="text-gray-700 font-medium">${user.name}</span>`;
-    }
-    // Back button
-    html = `<button onclick="window.goBack()" class="mr-3 p-1.5 rounded-lg hover:bg-gray-200 transition text-gray-500">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-    </button>` + html;
-    bc.innerHTML = html;
   }
+});
 
-  window.navigateToOverview = function() {
-    currentTeam = null; currentUser = null; currentTeamObj = null;
-    switchView('overview');
-    // Re-render overview charts (they may have been destroyed)
-    setTimeout(renderOverview, 50);
-  };
+// ── Chart: Global Trend Ready Merchants ────────────────────────
+new Chart(document.getElementById('chartGlobalTrendReady'), {
+  type: 'line',
+  data: {
+    labels: GSO_DATA.goLive.globalTrendReadyMerchants.weeks.map(formatWeekLabel),
+    datasets: [
+      {
+        type: 'bar',
+        label: 'Request Count',
+        data: GSO_DATA.goLive.globalTrendReadyMerchants.requestCount,
+        backgroundColor: 'rgba(37,99,235,0.12)',
+        borderColor: 'rgba(37,99,235,0.3)',
+        borderWidth: 1,
+        borderRadius: 4,
+        yAxisID: 'y1',
+        order: 2,
+      },
+      {
+        label: 'Median',
+        data: GSO_DATA.goLive.globalTrendReadyMerchants.median,
+        borderColor: '#10b981',
+        backgroundColor: 'transparent',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#10b981',
+        yAxisID: 'y',
+        order: 1,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'top' },
+      tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 8 }
+    },
+    scales: {
+      x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, maxRotation: 45 } },
+      y: { grid: { color: '#f1f5f9' }, title: { display: true, text: 'Days', font: { size: 11 } }, position: 'left' },
+      y1: { grid: { display: false }, title: { display: true, text: 'Count', font: { size: 11 } }, position: 'right', beginAtZero: true }
+    }
+  }
+});
 
-  window.navigateToTeam = function(teamId) {
-    currentTeam = teamId; currentUser = null;
-    switchView('team');
-    setTimeout(() => renderTeamView(teamId), 50);
-  };
+// ── Go Live Comparison Table ───────────────────────────────────
+function renderGoLiveTable(filter = '') {
+  const tbody = document.getElementById('goLiveTableBody');
+  const rows = GSO_DATA.goLive.comparisonTable.filter(r =>
+    r.country.toLowerCase().includes(filter.toLowerCase())
+  );
+  tbody.innerHTML = rows.map(r => {
+    const flagMap = { US: '🇺🇸', AU: '🇦🇺', GB: '🇬🇧', JP: '🇯🇵', CA: '🇨🇦', ES: '🇪🇸', IE: '🇮🇪', FR: '🇫🇷' };
+    const flag = flagMap[r.country] || '🏳️';
+    const colorClass = r.allPkg >= 30 ? 'text-red-600' : r.allPkg >= 20 ? 'text-amber-600' : 'text-green-600';
+    return `<tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+      <td class="py-3 px-4 font-medium text-gray-800">${flag} ${r.country}</td>
+      <td class="py-3 px-4 text-right font-semibold ${colorClass}">${r.allPkg} days</td>
+      <td class="py-3 px-4 text-right text-gray-700">${r.handsOn} days</td>
+      <td class="py-3 px-4 text-right text-gray-700">${r.taskOnly} days</td>
+      <td class="py-3 px-4 text-right text-gray-700">${r.readyHandsOn} days <span class="text-xs text-gray-400">(${r.readyDSRs} DSRs)</span></td>
+    </tr>`;
+  }).join('');
+}
+renderGoLiveTable();
+document.getElementById('searchGoLiveTable').addEventListener('input', e => renderGoLiveTable(e.target.value));
 
-  window.navigateToUser = function(teamId, userId) {
-    currentTeam = teamId; currentUser = userId;
-    switchView('user');
-    setTimeout(() => renderUserView(teamId, userId), 50);
-  };
+// ══════════════════════════════════════════════════════════════
+// TAB 2 CHARTS: ASSIGNMENT & KICKOFF (lazy init)
+// ══════════════════════════════════════════════════════════════
+function initAKCharts() {
+  const d = GSO_DATA.assignmentKickoff;
 
-  window.goBack = function() {
-    if (currentView === 'user') { window.navigateToTeam(currentTeam); }
-    else if (currentView === 'team') { window.navigateToOverview(); }
-  };
-
-  // ---- Search Handlers -----------------------------------------------------
-  document.getElementById('search-teams').addEventListener('input', function() {
-    renderTeamTable(this.value);
+  // ── Assignment & Kickoff by Market (All) ─────────────────────
+  new Chart(document.getElementById('chartAKByMarketAll'), {
+    type: 'bar',
+    data: {
+      labels: d.byMarketAll.countries,
+      datasets: [
+        {
+          label: 'Avg Days Submitted → Assigned',
+          data: d.byMarketAll.avgSubmittedToAssigned,
+          backgroundColor: '#3b82f6',
+          borderRadius: 4,
+          barPercentage: 0.7,
+        },
+        {
+          label: 'Avg Days Assigned → Kickoff Call',
+          data: d.byMarketAll.avgAssignedToCC,
+          backgroundColor: '#8b5cf6',
+          borderRadius: 4,
+          barPercentage: 0.7,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          backgroundColor: '#1e293b', padding: 10, cornerRadius: 8,
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y} days` }
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: '#f1f5f9' }, title: { display: true, text: 'Days', font: { size: 11 } }, beginAtZero: true }
+      }
+    }
   });
-  document.getElementById('search-members').addEventListener('input', function() {
-    if (currentTeamObj) renderMemberTable(currentTeamObj, this.value);
+
+  // ── Ready Merchants Assignment & Kickoff by Market ───────────
+  new Chart(document.getElementById('chartAKByMarketReady'), {
+    type: 'bar',
+    data: {
+      labels: d.byMarketReady.countries,
+      datasets: [
+        {
+          label: 'Avg Days Submitted → Assigned',
+          data: d.byMarketReady.avgSubmittedToAssigned,
+          backgroundColor: '#10b981',
+          borderRadius: 4,
+          barPercentage: 0.7,
+        },
+        {
+          label: 'Avg Days Assigned → Kickoff (Median)',
+          data: d.byMarketReady.avgAssignedToCC,
+          backgroundColor: '#f59e0b',
+          borderRadius: 4,
+          barPercentage: 0.7,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          backgroundColor: '#1e293b', padding: 10, cornerRadius: 8,
+          callbacks: {
+            label: ctx => {
+              if (ctx.parsed.y === null || ctx.parsed.y === undefined) return `${ctx.dataset.label}: N/A`;
+              return `${ctx.dataset.label}: ${ctx.parsed.y} days`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: '#f1f5f9' }, title: { display: true, text: 'Days', font: { size: 11 } }, beginAtZero: true }
+      }
+    }
   });
-  document.getElementById('search-activity').addEventListener('input', function() {
-    if (currentUser) renderActivityTable(currentUser, this.value);
+
+  // ── Assignment & Kickoff Trends (All) ────────────────────────
+  new Chart(document.getElementById('chartAKTrendsAll'), {
+    type: 'line',
+    data: {
+      labels: d.trendsAll.weeks.map(formatWeekLabel),
+      datasets: [
+        {
+          label: 'Median Days to Assign',
+          data: d.trendsAll.medianAssign,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.08)',
+          fill: true,
+          borderWidth: 2,
+          pointBackgroundColor: '#3b82f6',
+        },
+        {
+          label: 'Median Days to Kickoff',
+          data: d.trendsAll.medianKickoff,
+          borderColor: '#8b5cf6',
+          backgroundColor: 'rgba(139,92,246,0.08)',
+          fill: true,
+          borderWidth: 2,
+          pointBackgroundColor: '#8b5cf6',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 8 }
+      },
+      scales: {
+        x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 }, maxRotation: 45 } },
+        y: { grid: { color: '#f1f5f9' }, title: { display: true, text: 'Days', font: { size: 11 } }, beginAtZero: true }
+      }
+    }
   });
 
-  // ---- Tab click (Overview only functional) --------------------------------
-  document.getElementById('tab-overview').addEventListener('click', () => {
-    window.navigateToOverview();
+  // ── Ready Merchants Trends ───────────────────────────────────
+  new Chart(document.getElementById('chartAKTrendsReady'), {
+    type: 'line',
+    data: {
+      labels: d.trendsReady.weeks.map(formatWeekLabel),
+      datasets: [
+        {
+          label: 'Median Days to Assign',
+          data: d.trendsReady.medianAssign,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,0.08)',
+          fill: true,
+          borderWidth: 2,
+          pointBackgroundColor: '#10b981',
+        },
+        {
+          label: 'Median Days to Kickoff',
+          data: d.trendsReady.medianKickoff,
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245,158,11,0.08)',
+          fill: true,
+          borderWidth: 2,
+          pointBackgroundColor: '#f59e0b',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 8 }
+      },
+      scales: {
+        x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 }, maxRotation: 45 } },
+        y: { grid: { color: '#f1f5f9' }, title: { display: true, text: 'Days', font: { size: 11 } }, beginAtZero: true }
+      }
+    }
   });
 
-  // ---- Last Refresh Timestamp ----------------------------------------------
-  document.getElementById('last-refresh').textContent = new Date().toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  // ── SLA by Week Chart ────────────────────────────────────────
+  new Chart(document.getElementById('chartSLAByWeek'), {
+    type: 'bar',
+    data: {
+      labels: d.slaByWeek.weeks.map(formatWeekLabel),
+      datasets: [{
+        label: 'SLA Met %',
+        data: d.slaByWeek.slaPct,
+        backgroundColor: d.slaByWeek.slaPct.map(v => v >= 30 ? 'rgba(16,185,129,0.7)' : v >= 20 ? 'rgba(245,158,11,0.7)' : 'rgba(239,68,68,0.7)'),
+        borderColor: d.slaByWeek.slaPct.map(v => v >= 30 ? '#10b981' : v >= 20 ? '#f59e0b' : '#ef4444'),
+        borderWidth: 1,
+        borderRadius: 6,
+        barThickness: 36,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e293b', padding: 10, cornerRadius: 8,
+          callbacks: { label: ctx => `SLA Met: ${ctx.parsed.y}%` }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: {
+          grid: { color: '#f1f5f9' },
+          title: { display: true, text: '% Met', font: { size: 11 } },
+          beginAtZero: true,
+          max: 50,
+          ticks: { callback: v => v + '%' }
+        }
+      }
+    },
+    plugins: [{
+      id: 'slaTarget',
+      beforeDraw(chart) {
+        const { ctx, chartArea: { left, right, top, bottom }, scales: { y } } = chart;
+        const yVal = y.getPixelForValue(25);
+        ctx.save();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(left, yVal);
+        ctx.lineTo(right, yVal);
+        ctx.stroke();
+        ctx.font = '500 10px Inter';
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText('Target: 25%', right - 65, yVal - 6);
+        ctx.restore();
+      }
+    }]
+  });
+}
 
-  // ---- Initial Render ------------------------------------------------------
-  renderOverview();
-  updateBreadcrumb();
+// ══════════════════════════════════════════════════════════════
+// TAB 3 CHARTS: DSR PIPELINE (lazy init)
+// ══════════════════════════════════════════════════════════════
+function initPipelineCharts() {
+  const d = GSO_DATA.dsrPipeline;
 
-})();
+  // ── MoM Average Go Live ──────────────────────────────────────
+  new Chart(document.getElementById('chartMoM'), {
+    type: 'bar',
+    data: {
+      labels: d.momByCountry.countries,
+      datasets: [
+        {
+          label: 'Feb 2026',
+          data: d.momByCountry.feb2026.avg,
+          backgroundColor: 'rgba(139,92,246,0.7)',
+          borderColor: '#8b5cf6',
+          borderWidth: 1,
+          borderRadius: 4,
+          barPercentage: 0.7,
+        },
+        {
+          label: 'Mar 2026',
+          data: d.momByCountry.mar2026.avg,
+          backgroundColor: 'rgba(37,99,235,0.7)',
+          borderColor: '#2563eb',
+          borderWidth: 1,
+          borderRadius: 4,
+          barPercentage: 0.7,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          backgroundColor: '#1e293b', padding: 12, cornerRadius: 8,
+          callbacks: {
+            afterLabel: ctx => {
+              const dsrs = ctx.datasetIndex === 0
+                ? d.momByCountry.feb2026.dsrs[ctx.dataIndex]
+                : d.momByCountry.mar2026.dsrs[ctx.dataIndex];
+              return `DSRs: ${dsrs}`;
+            },
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y} days`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 12, weight: '500' } } },
+        y: { grid: { color: '#f1f5f9' }, title: { display: true, text: 'Avg Days to Go Live', font: { size: 11 } }, beginAtZero: true }
+      }
+    }
+  });
+
+  // ── DSRs Created by Country (stacked) ────────────────────────
+  const countryColors = { US: '#2563eb', AU: '#8b5cf6', GB: '#10b981', CA: '#f59e0b', FR: '#ef4444', IE: '#ec4899', ES: '#06b6d4', JP: '#f97316' };
+  const countryKeys = ['US', 'AU', 'GB', 'CA', 'FR', 'IE', 'ES', 'JP'];
+  new Chart(document.getElementById('chartDSRsByCountry'), {
+    type: 'bar',
+    data: {
+      labels: d.dsrsByCountryMonthly.months,
+      datasets: countryKeys.map(c => ({
+        label: c,
+        data: d.dsrsByCountryMonthly[c],
+        backgroundColor: countryColors[c],
+        borderRadius: 2,
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10 } } },
+        tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 8, mode: 'index' }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, grid: { color: '#f1f5f9' }, title: { display: true, text: 'DSRs Created', font: { size: 11 } } }
+      }
+    }
+  });
+
+  // ── DSRs Created by Package (stacked) ────────────────────────
+  const pkgColors = ['#2563eb', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#94a3b8'];
+  const pkgKeys = Object.keys(d.dsrsByPackageMonthly).filter(k => k !== 'months');
+  new Chart(document.getElementById('chartDSRsByPackage'), {
+    type: 'bar',
+    data: {
+      labels: d.dsrsByPackageMonthly.months,
+      datasets: pkgKeys.map((p, i) => ({
+        label: p,
+        data: d.dsrsByPackageMonthly[p],
+        backgroundColor: pkgColors[i % pkgColors.length],
+        borderRadius: 2,
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10 } } },
+        tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 8, mode: 'index' }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, grid: { color: '#f1f5f9' }, title: { display: true, text: 'DSRs Created', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB 4: SELLERS LAUNCHED (lazy init)
+// ══════════════════════════════════════════════════════════════
+function initSellersTab() {
+  renderSellersTable();
+  // Calculate total GPV
+  const totalGPV = GSO_DATA.sellersLaunched.reduce((sum, s) => sum + s.gpv, 0);
+  document.getElementById('totalGPV').textContent = formatCurrency(totalGPV);
+}
+
+function renderSellersTable(searchTerm = '', countryFilter = '') {
+  const tbody = document.getElementById('sellersTableBody');
+  const filtered = GSO_DATA.sellersLaunched.filter(s => {
+    const matchSearch = !searchTerm ||
+      s.seller.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.specialist.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.country.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchCountry = !countryFilter || s.country === countryFilter;
+    return matchSearch && matchCountry;
+  });
+
+  const flagMap = { US: '🇺🇸', AU: '🇦🇺', GB: '🇬🇧', JP: '🇯🇵', CA: '🇨🇦', ES: '🇪🇸', IE: '🇮🇪', FR: '🇫🇷' };
+
+  tbody.innerHTML = filtered.map((s, i) => `
+    <tr class="border-b border-gray-50 hover:bg-blue-50/30 transition-colors">
+      <td class="py-2.5 px-4 text-xs text-gray-400 font-medium">${i + 1}</td>
+      <td class="py-2.5 px-4 font-medium text-gray-800 text-xs">${s.seller}</td>
+      <td class="py-2.5 px-4 text-right font-semibold text-gray-900 text-xs">${formatCurrency(s.gpv)}</td>
+      <td class="py-2.5 px-4 text-gray-600 text-xs">${s.specialist}</td>
+      <td class="py-2.5 px-4 text-center">
+        <span class="inline-flex items-center gap-1 text-xs font-medium bg-gray-100 px-2 py-0.5 rounded-full">
+          ${flagMap[s.country] || '🏳️'} ${s.country}
+        </span>
+      </td>
+    </tr>
+  `).join('');
+
+  document.getElementById('sellersCount').textContent = `Showing ${filtered.length} of ${GSO_DATA.sellersLaunched.length} sellers`;
+}
+
+// Sellers search & filter events
+document.getElementById('searchSellers').addEventListener('input', e => {
+  renderSellersTable(e.target.value, document.getElementById('filterCountry').value);
+});
+document.getElementById('filterCountry').addEventListener('change', e => {
+  renderSellersTable(document.getElementById('searchSellers').value, e.target.value);
+});
+
+// ── Initialize Sellers tab immediately (for total GPV calc) ────
+initSellersTab();
+window._sellersInit = true;
 </script>
+
 </body>
 </html>
