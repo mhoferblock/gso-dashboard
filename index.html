@@ -276,10 +276,45 @@
       <!-- Timeframe Filter -->
       <select id="filterTimeframe" class="border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none">
         <option value="all">All Time</option>
-        <option value="4">Last 4 Weeks</option>
-        <option value="8">Last 8 Weeks</option>
-        <option value="13" selected>Last 13 Weeks</option>
+        <option value="custom">Custom Range</option>
+        <option value="year">By Year</option>
+        <option value="quarter">By Quarter</option>
+        <option value="month">By Month</option>
+        <option value="this_week">This Week</option>
+        <option value="last_week">Last Week</option>
+        <option value="this_month">This Month</option>
+        <option value="last_month">Last Month</option>
+        <option value="30d" selected>Last 30 Days</option>
+        <option value="60d">Last 60 Days</option>
+        <option value="90d">Last 90 Days</option>
       </select>
+
+      <div id="timeframeAdvanced" class="hidden flex flex-wrap items-center gap-2">
+        <select id="filterYear" class="hidden border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none"></select>
+        <select id="filterQuarter" class="hidden border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none">
+          <option value="1">Q1</option>
+          <option value="2">Q2</option>
+          <option value="3">Q3</option>
+          <option value="4">Q4</option>
+        </select>
+        <select id="filterMonth" class="hidden border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none">
+          <option value="1">January</option>
+          <option value="2">February</option>
+          <option value="3">March</option>
+          <option value="4">April</option>
+          <option value="5">May</option>
+          <option value="6">June</option>
+          <option value="7">July</option>
+          <option value="8">August</option>
+          <option value="9">September</option>
+          <option value="10">October</option>
+          <option value="11">November</option>
+          <option value="12">December</option>
+        </select>
+        <input id="filterStartDate" type="date" class="hidden border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none" />
+        <span id="customDateSeparator" class="hidden text-sm text-gray-400">to</span>
+        <input id="filterEndDate" type="date" class="hidden border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none" />
+      </div>
 
       <!-- Active Filter Pills Container -->
       <div id="activePills" class="flex flex-wrap gap-1 ml-1"></div>
@@ -737,6 +772,98 @@ function monthLabel(d) {
   return months[parseInt(p[1]) - 1] + ' \'' + p[0].slice(2);
 }
 
+function parseISODate(dateStr) {
+  if (!dateStr) return null;
+  const parts = dateStr.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+  return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+}
+
+function toISODate(date) {
+  if (!date) return '';
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function addDaysUTC(date, days) {
+  const next = new Date(date.getTime());
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function startOfUTCWeek(date) {
+  const start = new Date(date.getTime());
+  const day = (start.getUTCDay() + 6) % 7;
+  start.setUTCDate(start.getUTCDate() - day);
+  return new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()));
+}
+
+function endOfUTCWeek(date) {
+  return addDaysUTC(startOfUTCWeek(date), 6);
+}
+
+function startOfUTCMonth(year, monthIndex) {
+  return new Date(Date.UTC(year, monthIndex, 1));
+}
+
+function endOfUTCMonth(year, monthIndex) {
+  return new Date(Date.UTC(year, monthIndex + 1, 0));
+}
+
+function startOfUTCYear(year) {
+  return new Date(Date.UTC(year, 0, 1));
+}
+
+function endOfUTCYear(year) {
+  return new Date(Date.UTC(year, 11, 31));
+}
+
+function getQuarterRange(year, quarter) {
+  const startMonth = (quarter - 1) * 3;
+  return {
+    start: startOfUTCMonth(year, startMonth),
+    end: endOfUTCMonth(year, startMonth + 2)
+  };
+}
+
+function isDateInRange(dateStr, start, end) {
+  const date = parseISODate(dateStr);
+  if (!date) return false;
+  return date >= start && date <= end;
+}
+
+function buildWeeklyCompletions(items) {
+  const grouped = {};
+
+  items.forEach(item => {
+    const completedDate = parseISODate(item.completedDate);
+    if (!completedDate) return;
+
+    const weekStart = toISODate(startOfUTCWeek(completedDate));
+    if (!grouped[weekStart]) {
+      grouped[weekStart] = { total: 0, medianDays: 0, reps: {}, durations: [] };
+    }
+
+    grouped[weekStart].total += 1;
+    grouped[weekStart].reps[item.rep] = (grouped[weekStart].reps[item.rep] || 0) + 1;
+    if (item.daysToComplete != null && item.daysToComplete >= 0) {
+      grouped[weekStart].durations.push(item.daysToComplete);
+    }
+  });
+
+  Object.values(grouped).forEach(week => {
+    week.durations.sort((a, b) => a - b);
+    week.medianDays = week.durations.length
+      ? week.durations[Math.floor(week.durations.length / 2)]
+      : 0;
+    delete week.durations;
+  });
+
+  return grouped;
+}
+
 // ================================================================
 // COLOR CONSTANTS
 // ================================================================
@@ -935,8 +1062,16 @@ const filterRep = document.getElementById('filterRep');
 const filterWorkType = document.getElementById('filterWorkType');
 const filterStatus = document.getElementById('filterStatus');
 const filterTimeframe = document.getElementById('filterTimeframe');
+const timeframeAdvanced = document.getElementById('timeframeAdvanced');
+const filterYear = document.getElementById('filterYear');
+const filterQuarter = document.getElementById('filterQuarter');
+const filterMonth = document.getElementById('filterMonth');
+const filterStartDate = document.getElementById('filterStartDate');
+const filterEndDate = document.getElementById('filterEndDate');
+const customDateSeparator = document.getElementById('customDateSeparator');
 const activePills = document.getElementById('activePills');
 const clearBtn = document.getElementById('clearFilters');
+const TODAY = parseISODate(new Date().toISOString().slice(0, 10));
 
 // --- Populate Team Filter ---
 Object.keys(GSO_DATA.teams).forEach(lead => {
@@ -976,6 +1111,159 @@ Object.keys(GSO_DATA.workTypeSummary).sort().forEach(wt => {
   filterWorkType.appendChild(opt);
 });
 
+// --- Populate Timeframe Detail Filters ---
+function getAvailableYears() {
+  const years = new Set();
+
+  GSO_DATA.completedSellers.forEach(s => {
+    const date = parseISODate(s.completedDate);
+    if (date) years.add(date.getUTCFullYear());
+  });
+
+  Object.values(GSO_DATA.activePipeline).forEach(items => {
+    items.forEach(item => {
+      const date = parseISODate(item.created || item.goLive);
+      if (date) years.add(date.getUTCFullYear());
+    });
+  });
+
+  if (!years.size) years.add(TODAY.getUTCFullYear());
+  return [...years].sort((a, b) => b - a);
+}
+
+function populateYearFilter() {
+  const years = getAvailableYears();
+  filterYear.innerHTML = years.map(year => `<option value="${year}">${year}</option>`).join('');
+  if (!filterYear.value && years.length) {
+    filterYear.value = String(years[0]);
+  }
+}
+
+function syncTimeframeDetailControls() {
+  const timeframe = filterTimeframe.value;
+  const showYear = timeframe === 'year' || timeframe === 'quarter' || timeframe === 'month';
+  const showQuarter = timeframe === 'quarter';
+  const showMonth = timeframe === 'month';
+  const showCustom = timeframe === 'custom';
+
+  timeframeAdvanced.classList.toggle('hidden', !(showYear || showCustom));
+  filterYear.classList.toggle('hidden', !showYear);
+  filterQuarter.classList.toggle('hidden', !showQuarter);
+  filterMonth.classList.toggle('hidden', !showMonth);
+  filterStartDate.classList.toggle('hidden', !showCustom);
+  filterEndDate.classList.toggle('hidden', !showCustom);
+  customDateSeparator.classList.toggle('hidden', !showCustom);
+
+  if (showYear && !filterYear.value) {
+    populateYearFilter();
+  }
+
+  if (showCustom) {
+    if (!filterEndDate.value) filterEndDate.value = toISODate(TODAY);
+    if (!filterStartDate.value) filterStartDate.value = toISODate(addDaysUTC(TODAY, -29));
+  }
+}
+
+function getTimeframeRange() {
+  const timeframe = filterTimeframe.value;
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+  switch (timeframe) {
+    case 'all':
+      return null;
+    case 'custom': {
+      const start = parseISODate(filterStartDate.value);
+      const end = parseISODate(filterEndDate.value);
+      if (!start || !end) return null;
+      const [rangeStart, rangeEnd] = start <= end ? [start, end] : [end, start];
+      return {
+        start: rangeStart,
+        end: rangeEnd,
+        label: `${shortDate(toISODate(rangeStart))} - ${shortDate(toISODate(rangeEnd))}`
+      };
+    }
+    case 'year': {
+      const year = Number(filterYear.value || TODAY.getUTCFullYear());
+      return {
+        start: startOfUTCYear(year),
+        end: endOfUTCYear(year),
+        label: String(year)
+      };
+    }
+    case 'quarter': {
+      const year = Number(filterYear.value || TODAY.getUTCFullYear());
+      const quarter = Number(filterQuarter.value || 1);
+      const range = getQuarterRange(year, quarter);
+      return {
+        ...range,
+        label: `Q${quarter} ${year}`
+      };
+    }
+    case 'month': {
+      const year = Number(filterYear.value || TODAY.getUTCFullYear());
+      const month = Number(filterMonth.value || (TODAY.getUTCMonth() + 1));
+      return {
+        start: startOfUTCMonth(year, month - 1),
+        end: endOfUTCMonth(year, month - 1),
+        label: `${monthNames[month - 1]} ${year}`
+      };
+    }
+    case 'this_week': {
+      return {
+        start: startOfUTCWeek(TODAY),
+        end: endOfUTCWeek(TODAY),
+        label: 'This Week'
+      };
+    }
+    case 'last_week': {
+      const lastWeekRef = addDaysUTC(TODAY, -7);
+      return {
+        start: startOfUTCWeek(lastWeekRef),
+        end: endOfUTCWeek(lastWeekRef),
+        label: 'Last Week'
+      };
+    }
+    case 'this_month': {
+      return {
+        start: startOfUTCMonth(TODAY.getUTCFullYear(), TODAY.getUTCMonth()),
+        end: endOfUTCMonth(TODAY.getUTCFullYear(), TODAY.getUTCMonth()),
+        label: 'This Month'
+      };
+    }
+    case 'last_month': {
+      const monthRef = new Date(Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth() - 1, 1));
+      return {
+        start: startOfUTCMonth(monthRef.getUTCFullYear(), monthRef.getUTCMonth()),
+        end: endOfUTCMonth(monthRef.getUTCFullYear(), monthRef.getUTCMonth()),
+        label: 'Last Month'
+      };
+    }
+    case '30d':
+    case '60d':
+    case '90d': {
+      const days = Number(timeframe.slice(0, -1));
+      return {
+        start: addDaysUTC(TODAY, -(days - 1)),
+        end: TODAY,
+        label: `Last ${days} Days`
+      };
+    }
+    default:
+      return null;
+  }
+}
+
+function filterByDateRange(items, getDateValue) {
+  const range = getTimeframeRange();
+  if (!range) return items;
+  return items.filter(item => isDateInRange(getDateValue(item), range.start, range.end));
+}
+
+populateYearFilter();
+filterMonth.value = String(TODAY.getUTCMonth() + 1);
+syncTimeframeDetailControls();
+
 // --- Filter Change Handlers ---
 filterTeam.addEventListener('change', () => {
   populateRepFilter();
@@ -985,7 +1273,15 @@ filterTeam.addEventListener('change', () => {
 filterRep.addEventListener('change', updateFilters);
 filterWorkType.addEventListener('change', updateFilters);
 filterStatus.addEventListener('change', updateFilters);
-filterTimeframe.addEventListener('change', updateFilters);
+filterTimeframe.addEventListener('change', () => {
+  syncTimeframeDetailControls();
+  updateFilters();
+});
+filterYear.addEventListener('change', updateFilters);
+filterQuarter.addEventListener('change', updateFilters);
+filterMonth.addEventListener('change', updateFilters);
+filterStartDate.addEventListener('change', updateFilters);
+filterEndDate.addEventListener('change', updateFilters);
 
 // --- Clear All Filters ---
 clearBtn.addEventListener('click', () => {
@@ -994,7 +1290,13 @@ clearBtn.addEventListener('click', () => {
   filterWorkType.value = '';
   filterStatus.value = '';
   filterTimeframe.value = 'all';
+  filterYear.value = String(getAvailableYears()[0] || TODAY.getUTCFullYear());
+  filterQuarter.value = '1';
+  filterMonth.value = String(TODAY.getUTCMonth() + 1);
+  filterStartDate.value = '';
+  filterEndDate.value = '';
   populateRepFilter();
+  syncTimeframeDetailControls();
   updateFilters();
 });
 
@@ -1042,9 +1344,11 @@ function updateFilters() {
     });
     hasFilter = true;
   }
-  if (filterTimeframe.value !== 'all') {
-    addPill(filterTimeframe.value + ' weeks', () => {
+  const timeframeRange = getTimeframeRange();
+  if (timeframeRange) {
+    addPill('Date: ' + timeframeRange.label, () => {
       filterTimeframe.value = 'all';
+      syncTimeframeDetailControls();
       updateFilters();
     });
     hasFilter = true;
@@ -1065,9 +1369,40 @@ function updateFilters() {
 // ================================================================
 function renderOverview() {
   const T = GSO_DATA.totals;
+  const selTeam = filterTeam.value;
+  const selRep = filterRep.value;
+  const selWT = filterWorkType.value;
+  const timeframeLabel = getTimeframeRange()?.label || 'All Time';
 
-  // Calculate median days to complete from completedSellers
-  const daysList = GSO_DATA.completedSellers
+  let completedFiltered = [...GSO_DATA.completedSellers];
+  let pipelineItems = [];
+  Object.entries(GSO_DATA.activePipeline).forEach(([stage, items]) => {
+    items.forEach(item => pipelineItems.push({ ...item, stage }));
+  });
+
+  if (selTeam) {
+    const teamReps = GSO_DATA.teams[selTeam] || [];
+    completedFiltered = completedFiltered.filter(s => teamReps.includes(s.rep));
+    pipelineItems = pipelineItems.filter(i => teamReps.includes(i.rep));
+  }
+  if (selRep) {
+    completedFiltered = completedFiltered.filter(s => s.rep === selRep);
+    pipelineItems = pipelineItems.filter(i => i.rep === selRep);
+  }
+  if (selWT) {
+    completedFiltered = completedFiltered.filter(s => s.workType === selWT);
+    pipelineItems = pipelineItems.filter(i => i.workType === selWT);
+  }
+
+  completedFiltered = filterByDateRange(completedFiltered, s => s.completedDate);
+  pipelineItems = filterByDateRange(pipelineItems, i => i.created || i.goLive);
+
+  const activePipelineCount = pipelineItems.length;
+  const activeCount = pipelineItems.filter(i => i.stage !== 'On Hold').length;
+  const onHoldCount = pipelineItems.filter(i => i.stage === 'On Hold').length;
+
+  // Calculate median days to complete from filtered completed sellers
+  const daysList = completedFiltered
     .map(s => s.daysToComplete)
     .filter(d => d != null && d >= 0)
     .sort((a, b) => a - b);
@@ -1077,15 +1412,15 @@ function renderOverview() {
 
   // --- KPI Cards ---
   document.getElementById('overviewKPIs').innerHTML =
-    kpiCard('Total DSRs', fmtNum(T.dsrs), 'indigo', '📋') +
+    kpiCard('Total DSRs', fmtNum(T.dsrs), 'indigo', '📋', 'lifetime total') +
     kpiCard('Completed', fmtNum(T.completed), 'green', '✅',
-      (T.completed / T.dsrs * 100).toFixed(1) + '% completion rate') +
-    kpiCard('Active Pipeline', fmtNum(T.activePipelineCount), 'blue', '🔄',
-      'incl. ' + T.active + ' active + ' + T.onHold + ' on hold') +
-    kpiCard('On Hold', fmtNum(T.onHold), 'yellow', '⏸️') +
+      (T.completed / T.dsrs * 100).toFixed(1) + '% lifetime completion rate') +
+    kpiCard('Active Pipeline', fmtNum(activePipelineCount), 'blue', '🔄',
+      `${activeCount} active + ${onHoldCount} on hold (${timeframeLabel})`) +
+    kpiCard('On Hold', fmtNum(onHoldCount), 'yellow', '⏸️', timeframeLabel) +
     kpiCard('Cancelled', fmtNum(T.cancelled), 'red', '❌',
-      (T.cancelled / T.dsrs * 100).toFixed(1) + '% cancel rate') +
-    kpiCard('Median Days', medianDays, 'purple', '⏱️', 'to complete');
+      (T.cancelled / T.dsrs * 100).toFixed(1) + '% lifetime cancel rate') +
+    kpiCard('Median Days', medianDays, 'purple', '⏱️', `${timeframeLabel} completions`);
 
   // --- Monthly Trend Line Chart ---
   const months = Object.keys(GSO_DATA.monthly);
@@ -1470,6 +1805,7 @@ function renderPipeline() {
   const selTeam = filterTeam.value;
   const selRep = filterRep.value;
   const selWT = filterWorkType.value;
+  const selStatus = filterStatus.value;
 
   if (selTeam) {
     const teamReps = GSO_DATA.teams[selTeam] || [];
@@ -1480,6 +1816,15 @@ function renderPipeline() {
   }
   if (selWT) {
     allItems = allItems.filter(i => i.workType === selWT);
+  }
+  allItems = filterByDateRange(allItems, i => i.created || i.goLive);
+
+  if (selStatus === 'active') {
+    allItems = allItems.filter(i => i.stage !== 'On Hold');
+  } else if (selStatus === 'onHold') {
+    allItems = allItems.filter(i => i.stage === 'On Hold');
+  } else if (selStatus === 'completed' || selStatus === 'cancelled') {
+    allItems = [];
   }
 
   // --- KPI Cards ---
@@ -1908,13 +2253,13 @@ function renderJourney() {
 // ================================================================
 function renderCompleted() {
   const sellers = GSO_DATA.completedSellers;
-  const WC = GSO_DATA.weeklyCompletions;
 
   // Apply global filters
   let filtered = [...sellers];
   const selTeam = filterTeam.value;
   const selRep = filterRep.value;
   const selWT = filterWorkType.value;
+  const selStatus = filterStatus.value;
 
   if (selTeam) {
     const teamReps = GSO_DATA.teams[selTeam] || [];
@@ -1926,6 +2271,14 @@ function renderCompleted() {
   if (selWT) {
     filtered = filtered.filter(s => s.workType === selWT);
   }
+  filtered = filterByDateRange(filtered, s => s.completedDate);
+
+  if (selStatus && selStatus !== 'completed') {
+    filtered = [];
+  }
+
+  const WC = buildWeeklyCompletions(filtered);
+  const timeframeLabel = getTimeframeRange()?.label || 'All Time';
 
   // --- KPI Calculations ---
   const totalCount = filtered.length;
@@ -1941,7 +2294,7 @@ function renderCompleted() {
 
   // --- KPI Cards ---
   document.getElementById('completedKPIs').innerHTML =
-    kpiCard('Completed (90d)', fmtNum(totalCount), 'green', '✅') +
+    kpiCard(`Completed (${timeframeLabel})`, fmtNum(totalCount), 'green', '✅') +
     kpiCard('Median Days', medianDays, 'blue', '⏱️', 'to complete') +
     kpiCard('Total GPV', fmtGPV(totalGPV), 'purple', '💰') +
     kpiCard('Avg GPV', fmtGPV(avgGPV), 'teal', '📊', 'per seller');
@@ -2084,6 +2437,7 @@ function renderSellers() {
   const selTeam = filterTeam.value;
   const selRep = filterRep.value;
   const selWT = filterWorkType.value;
+  const selStatus = filterStatus.value;
 
   if (selTeam) {
     const teamReps = GSO_DATA.teams[selTeam] || [];
@@ -2094,6 +2448,11 @@ function renderSellers() {
   }
   if (selWT) {
     filtered = filtered.filter(s => s.workType === selWT);
+  }
+  filtered = filterByDateRange(filtered, s => s.completedDate);
+
+  if (selStatus && selStatus !== 'completed') {
+    filtered = [];
   }
 
   // Sort by GPV descending
