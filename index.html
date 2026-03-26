@@ -66,6 +66,29 @@ const GSO_DATA = {
     dateRangeCreated: 'Last 365 Days',
   },
 
+  // ── GSO TEAMS & REPS ───────────────────────────────────────
+  teams: {
+    'Meaghan Biederman': [
+      'Austin Crittenden', 'Meven Le Corre', 'Joe Pharaon', 'Moussa Kamakate',
+      'Brandon Redmond', 'Livia Horn-Scarpulla', 'Andrea Guevara', 'Griffin Ulsh',
+      'Miles McMillin', 'Josephine Vogt', 'Lee Williamson', 'Paige Benik', 'Chelsea Falato'
+    ],
+    'Ben Pomeroy': [
+      'Michael Bavaro', 'Ashley McDonald', 'Olignne Diaz', 'Travis Castroman',
+      'Ruben Reynoso', 'Kalani Cuaresma', 'John Tudhope', 'Jasmine Johnson',
+      'Taylar Jones', 'Kat Gleason', 'Janayra Rivera Algarin', 'Paul Kim'
+    ],
+    'Caleb Cunningham': [
+      'Alexandre Garreau', 'Arantxa Abellan', 'Samuel Montalvo', 'Lupe Buitrago Echeverria',
+      'Merve Oancea', 'Lydia Doyle', 'Kerry Nelson', 'Francisco Alvarez',
+      'Kyle Watkins', 'Anish Patel', 'Rachel Elwin', 'Oleg Gnatovski', 'Olga Kanna', 'Eugen Vascu'
+    ],
+    'Kamilla Warr': [
+      'Takao Kinjo', 'Misho Arai', 'Mary Hirata McJilton', 'Ben Braun',
+      'Macarena Castillo', 'Kristian Bojsen-Moller', 'Chandreyee Bose', 'Josh Stoffels', 'Jamahl G'
+    ]
+  },
+
   // ── TAB 1: GO LIVE METRICS ──────────────────────────────────
   // [LOOKER_API] Look: DSR Completion Counts by Country
   goLive: {
@@ -210,78 +233,78 @@ const GSO_DATA = {
     { seller: "Joey B's - Gianino Family Restaurant Group", gpv: 9800000, specialist: 'Miles McMillin', country: 'US' },
     { seller: 'Shakti Energy, LLC (DBA Pizza Street)', gpv: 6000000, specialist: 'Miles McMillin', country: 'US' },
     { seller: 'Cookie Plug Franchise', gpv: 6000000, specialist: 'Michael Bavaro', country: 'US' },
-    { seller: 'The Brotherhood Games', gpv: 4259627, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'The Brotherhood Games', gpv: 4259627, specialist: 'Eugen Vascu', country: 'GB' },
     { seller: 'Ichi Umi Sushi', gpv: 4000000, specialist: 'Ashley McDonald', country: 'US' },
     { seller: 'Seacret Base', gpv: 3702309, specialist: 'Misho Arai', country: 'JP' },
     { seller: 'Catalyst Hospitality Management', gpv: 2699774, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
     { seller: 'The Green Edge', gpv: 2579634, specialist: 'Ben Braun', country: 'AU' },
     { seller: 'Burrito Bar Holdings', gpv: 2450000, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
-    { seller: 'Nando\'s UK - Pilot Locations', gpv: 2380000, specialist: 'Eugeniu Vascu', country: 'GB' },
-    { seller: 'Freshii Canada', gpv: 2250000, specialist: 'Sarah Chen', country: 'CA' },
+    { seller: 'Nando\'s UK - Pilot Locations', gpv: 2380000, specialist: 'Eugen Vascu', country: 'GB' },
+    { seller: 'Freshii Canada', gpv: 2250000, specialist: 'Meven Le Corre', country: 'CA' },
     { seller: 'Taqueria Los Hermanos', gpv: 2100000, specialist: 'Miles McMillin', country: 'US' },
     { seller: 'Melbourne Coffee Collective', gpv: 2050000, specialist: 'Ben Braun', country: 'AU' },
     { seller: 'Sakura Ramen House', gpv: 1980000, specialist: 'Misho Arai', country: 'JP' },
-    { seller: 'London Burger Co.', gpv: 1920000, specialist: 'Eugeniu Vascu', country: 'GB' },
-    { seller: 'Coastal Fish & Chips', gpv: 1875000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'London Burger Co.', gpv: 1920000, specialist: 'Eugen Vascu', country: 'GB' },
+    { seller: 'Coastal Fish & Chips', gpv: 1875000, specialist: 'Eugen Vascu', country: 'GB' },
     { seller: 'Sunrise Bakery Group', gpv: 1800000, specialist: 'Ashley McDonald', country: 'US' },
     { seller: 'Outback Grill & Bar', gpv: 1750000, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
-    { seller: 'Madrid Tapas Network', gpv: 1700000, specialist: 'Carlos Ruiz', country: 'ES' },
-    { seller: 'Dublin Pub Group', gpv: 1650000, specialist: 'Liam O\'Brien', country: 'IE' },
+    { seller: 'Madrid Tapas Network', gpv: 1700000, specialist: 'Arantxa Abellan', country: 'ES' },
+    { seller: 'Dublin Pub Group', gpv: 1650000, specialist: 'Lydia Doyle', country: 'IE' },
     { seller: 'Pacific Poke Bowl', gpv: 1600000, specialist: 'Ashley McDonald', country: 'US' },
-    { seller: 'Le Petit Bistro', gpv: 1580000, specialist: 'Marie Dupont', country: 'FR' },
+    { seller: 'Le Petit Bistro', gpv: 1580000, specialist: 'Alexandre Garreau', country: 'FR' },
     { seller: 'Kangaroo Kitchen', gpv: 1520000, specialist: 'Ben Braun', country: 'AU' },
-    { seller: 'Yorkshire Tea Rooms', gpv: 1480000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Yorkshire Tea Rooms', gpv: 1480000, specialist: 'Eugen Vascu', country: 'GB' },
     { seller: 'Tokyo Bowl Express', gpv: 1450000, specialist: 'Misho Arai', country: 'JP' },
-    { seller: 'Maple Leaf Diner', gpv: 1420000, specialist: 'Sarah Chen', country: 'CA' },
-    { seller: 'Barcelona Bites', gpv: 1380000, specialist: 'Carlos Ruiz', country: 'ES' },
-    { seller: 'Emerald Isle Catering', gpv: 1350000, specialist: 'Liam O\'Brien', country: 'IE' },
+    { seller: 'Maple Leaf Diner', gpv: 1420000, specialist: 'Meven Le Corre', country: 'CA' },
+    { seller: 'Barcelona Bites', gpv: 1380000, specialist: 'Arantxa Abellan', country: 'ES' },
+    { seller: 'Emerald Isle Catering', gpv: 1350000, specialist: 'Lydia Doyle', country: 'IE' },
     { seller: 'Blue Mountain Coffee', gpv: 1320000, specialist: 'Michael Bavaro', country: 'US' },
     { seller: 'Sydney Seafood Market', gpv: 1280000, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
-    { seller: 'Paris Crêperie', gpv: 1250000, specialist: 'Marie Dupont', country: 'FR' },
-    { seller: 'Highland Whisky Bar', gpv: 1220000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Paris Crêperie', gpv: 1250000, specialist: 'Alexandre Garreau', country: 'FR' },
+    { seller: 'Highland Whisky Bar', gpv: 1220000, specialist: 'Eugen Vascu', country: 'GB' },
     { seller: 'Osaka Street Food', gpv: 1200000, specialist: 'Misho Arai', country: 'JP' },
-    { seller: 'Vancouver Sushi Train', gpv: 1180000, specialist: 'Sarah Chen', country: 'CA' },
+    { seller: 'Vancouver Sushi Train', gpv: 1180000, specialist: 'Meven Le Corre', country: 'CA' },
     { seller: 'Fiesta Mexicana', gpv: 1150000, specialist: 'Miles McMillin', country: 'US' },
     { seller: 'Perth Pizza Palace', gpv: 1120000, specialist: 'Ben Braun', country: 'AU' },
-    { seller: 'Cork Coffee House', gpv: 1100000, specialist: 'Liam O\'Brien', country: 'IE' },
-    { seller: 'Sevilla Sangria Bar', gpv: 1080000, specialist: 'Carlos Ruiz', country: 'ES' },
-    { seller: 'Lyon Boulangerie', gpv: 1050000, specialist: 'Marie Dupont', country: 'FR' },
+    { seller: 'Cork Coffee House', gpv: 1100000, specialist: 'Lydia Doyle', country: 'IE' },
+    { seller: 'Sevilla Sangria Bar', gpv: 1080000, specialist: 'Arantxa Abellan', country: 'ES' },
+    { seller: 'Lyon Boulangerie', gpv: 1050000, specialist: 'Alexandre Garreau', country: 'FR' },
     { seller: 'Nagoya Noodle Shop', gpv: 1020000, specialist: 'Misho Arai', country: 'JP' },
     { seller: 'Austin BBQ Pit', gpv: 1000000, specialist: 'Miles McMillin', country: 'US' },
     { seller: 'Brisbane Brunch Club', gpv: 980000, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
-    { seller: 'Manchester Curry Mile', gpv: 960000, specialist: 'Eugeniu Vascu', country: 'GB' },
-    { seller: 'Ottawa Poutine House', gpv: 940000, specialist: 'Sarah Chen', country: 'CA' },
-    { seller: 'Nice Côte d\'Azur Café', gpv: 920000, specialist: 'Marie Dupont', country: 'FR' },
-    { seller: 'Galway Bay Oysters', gpv: 900000, specialist: 'Liam O\'Brien', country: 'IE' },
-    { seller: 'Valencia Paella House', gpv: 880000, specialist: 'Carlos Ruiz', country: 'ES' },
+    { seller: 'Manchester Curry Mile', gpv: 960000, specialist: 'Eugen Vascu', country: 'GB' },
+    { seller: 'Ottawa Poutine House', gpv: 940000, specialist: 'Meven Le Corre', country: 'CA' },
+    { seller: 'Nice Côte d\'Azur Café', gpv: 920000, specialist: 'Alexandre Garreau', country: 'FR' },
+    { seller: 'Galway Bay Oysters', gpv: 900000, specialist: 'Lydia Doyle', country: 'IE' },
+    { seller: 'Valencia Paella House', gpv: 880000, specialist: 'Arantxa Abellan', country: 'ES' },
     { seller: 'Kyoto Garden Tea', gpv: 860000, specialist: 'Misho Arai', country: 'JP' },
     { seller: 'Denver Mountain Grill', gpv: 840000, specialist: 'Michael Bavaro', country: 'US' },
     { seller: 'Adelaide Wine Bar', gpv: 820000, specialist: 'Ben Braun', country: 'AU' },
-    { seller: 'Edinburgh Castle Café', gpv: 800000, specialist: 'Eugeniu Vascu', country: 'GB' },
-    { seller: 'Montreal Bagel Shop', gpv: 780000, specialist: 'Sarah Chen', country: 'CA' },
-    { seller: 'Marseille Fish Market', gpv: 760000, specialist: 'Marie Dupont', country: 'FR' },
-    { seller: 'Limerick Stew House', gpv: 740000, specialist: 'Liam O\'Brien', country: 'IE' },
-    { seller: 'Bilbao Pintxos Bar', gpv: 720000, specialist: 'Carlos Ruiz', country: 'ES' },
+    { seller: 'Edinburgh Castle Café', gpv: 800000, specialist: 'Eugen Vascu', country: 'GB' },
+    { seller: 'Montreal Bagel Shop', gpv: 780000, specialist: 'Meven Le Corre', country: 'CA' },
+    { seller: 'Marseille Fish Market', gpv: 760000, specialist: 'Alexandre Garreau', country: 'FR' },
+    { seller: 'Limerick Stew House', gpv: 740000, specialist: 'Lydia Doyle', country: 'IE' },
+    { seller: 'Bilbao Pintxos Bar', gpv: 720000, specialist: 'Arantxa Abellan', country: 'ES' },
     { seller: 'Sapporo Ramen Lab', gpv: 700000, specialist: 'Misho Arai', country: 'JP' },
     { seller: 'Portland Food Cart Pod', gpv: 680000, specialist: 'Ashley McDonald', country: 'US' },
     { seller: 'Gold Coast Smoothie', gpv: 660000, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
-    { seller: 'Bristol Harbour Café', gpv: 640000, specialist: 'Eugeniu Vascu', country: 'GB' },
-    { seller: 'Calgary Steakhouse', gpv: 620000, specialist: 'Sarah Chen', country: 'CA' },
-    { seller: 'Bordeaux Wine Bistro', gpv: 600000, specialist: 'Marie Dupont', country: 'FR' },
-    { seller: 'Waterford Crystal Café', gpv: 580000, specialist: 'Liam O\'Brien', country: 'IE' },
-    { seller: 'Granada Churros Stand', gpv: 560000, specialist: 'Carlos Ruiz', country: 'ES' },
+    { seller: 'Bristol Harbour Café', gpv: 640000, specialist: 'Eugen Vascu', country: 'GB' },
+    { seller: 'Calgary Steakhouse', gpv: 620000, specialist: 'Meven Le Corre', country: 'CA' },
+    { seller: 'Bordeaux Wine Bistro', gpv: 600000, specialist: 'Alexandre Garreau', country: 'FR' },
+    { seller: 'Waterford Crystal Café', gpv: 580000, specialist: 'Lydia Doyle', country: 'IE' },
+    { seller: 'Granada Churros Stand', gpv: 560000, specialist: 'Arantxa Abellan', country: 'ES' },
     { seller: 'Fukuoka Gyoza House', gpv: 540000, specialist: 'Misho Arai', country: 'JP' },
     { seller: 'Nashville Hot Chicken', gpv: 520000, specialist: 'Miles McMillin', country: 'US' },
     { seller: 'Hobart Farm Table', gpv: 500000, specialist: 'Ben Braun', country: 'AU' },
-    { seller: 'Leeds Curry House', gpv: 480000, specialist: 'Eugeniu Vascu', country: 'GB' },
-    { seller: 'Winnipeg Pierogi Place', gpv: 460000, specialist: 'Sarah Chen', country: 'CA' },
-    { seller: 'Toulouse Cassoulet', gpv: 440000, specialist: 'Marie Dupont', country: 'FR' },
-    { seller: 'Killarney Pub Kitchen', gpv: 420000, specialist: 'Liam O\'Brien', country: 'IE' },
-    { seller: 'Málaga Beach Bar', gpv: 400000, specialist: 'Carlos Ruiz', country: 'ES' },
+    { seller: 'Leeds Curry House', gpv: 480000, specialist: 'Eugen Vascu', country: 'GB' },
+    { seller: 'Winnipeg Pierogi Place', gpv: 460000, specialist: 'Meven Le Corre', country: 'CA' },
+    { seller: 'Toulouse Cassoulet', gpv: 440000, specialist: 'Alexandre Garreau', country: 'FR' },
+    { seller: 'Killarney Pub Kitchen', gpv: 420000, specialist: 'Lydia Doyle', country: 'IE' },
+    { seller: 'Málaga Beach Bar', gpv: 400000, specialist: 'Arantxa Abellan', country: 'ES' },
     { seller: 'Hiroshima Okonomiyaki', gpv: 380000, specialist: 'Misho Arai', country: 'JP' },
     { seller: 'Seattle Coffee Roasters', gpv: 360000, specialist: 'Ashley McDonald', country: 'US' },
     { seller: 'Darwin Crocodile Grill', gpv: 340000, specialist: 'Kristian Bojsen-Moller', country: 'AU' },
-    { seller: 'Cardiff Bay Restaurant', gpv: 320000, specialist: 'Eugeniu Vascu', country: 'GB' },
+    { seller: 'Cardiff Bay Restaurant', gpv: 320000, specialist: 'Eugen Vascu', country: 'GB' },
   ]
 };
 
@@ -400,9 +423,16 @@ Chart.defaults.animation.duration = 800;
         </select>
       </div>
 
+      <!-- Team (Lead) -->
+      <div class="flex flex-col">
+        <select id="filterTeam" onchange="onTeamFilterChange()" class="search-input text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none min-w-[180px]">
+          <option value="all">All Teams</option>
+        </select>
+      </div>
+
       <!-- GSO Rep -->
       <div class="flex flex-col">
-        <select id="filterRep" onchange="applyFilters()" class="search-input text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none min-w-[170px]">
+        <select id="filterRep" onchange="applyFilters()" class="search-input text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none min-w-[190px]">
           <option value="all">All GSO Reps</option>
         </select>
       </div>
@@ -1471,24 +1501,71 @@ window._sellersInit = true;
 // GLOBAL FILTER SYSTEM
 // ══════════════════════════════════════════════════════════════════
 
-// Populate GSO Rep dropdown from sellers data
-(function populateRepDropdown() {
-  const reps = [...new Set(GSO_DATA.sellersLaunched.map(s => s.specialist))].sort();
-  const sel = document.getElementById('filterRep');
-  reps.forEach(rep => {
+// Build master list of all reps from teams data
+const ALL_REPS = Object.values(GSO_DATA.teams).flat().sort();
+const ALL_LEADS = Object.keys(GSO_DATA.teams).sort();
+
+// Populate Team dropdown
+(function populateTeamDropdown() {
+  const sel = document.getElementById('filterTeam');
+  ALL_LEADS.forEach(lead => {
+    const count = GSO_DATA.teams[lead].length;
     const opt = document.createElement('option');
-    opt.value = rep;
-    opt.textContent = rep;
+    opt.value = lead;
+    opt.textContent = `${lead}'s Team (${count})`;
     sel.appendChild(opt);
   });
 })();
 
+// Populate Rep dropdown (all reps initially)
+function populateRepDropdown(teamFilter) {
+  const sel = document.getElementById('filterRep');
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="all">All GSO Reps</option>';
+
+  let reps;
+  if (teamFilter && teamFilter !== 'all') {
+    reps = (GSO_DATA.teams[teamFilter] || []).slice().sort();
+  } else {
+    reps = ALL_REPS;
+  }
+
+  reps.forEach(rep => {
+    const opt = document.createElement('option');
+    opt.value = rep;
+    // Show team lead in parentheses when showing all reps
+    if (!teamFilter || teamFilter === 'all') {
+      const lead = ALL_LEADS.find(l => GSO_DATA.teams[l].includes(rep));
+      opt.textContent = lead ? `${rep} (${lead.split(' ')[0]})` : rep;
+    } else {
+      opt.textContent = rep;
+    }
+    sel.appendChild(opt);
+  });
+
+  // Restore selection if still valid
+  if ([...sel.options].some(o => o.value === currentVal)) {
+    sel.value = currentVal;
+  } else {
+    sel.value = 'all';
+  }
+}
+populateRepDropdown('all');
+
+// Team filter change → cascade to rep dropdown
+function onTeamFilterChange() {
+  const team = document.getElementById('filterTeam').value;
+  populateRepDropdown(team);
+  applyFilters();
+}
+
 // Current filter state
-const FILTERS = { timeFrame: 'all', country: 'all', rep: 'all' };
+const FILTERS = { timeFrame: 'all', country: 'all', team: 'all', rep: 'all' };
 
 function applyFilters() {
   FILTERS.timeFrame = document.getElementById('filterTimeFrame').value;
   FILTERS.country = document.getElementById('filterCountryGlobal').value;
+  FILTERS.team = document.getElementById('filterTeam').value;
   FILTERS.rep = document.getElementById('filterRep').value;
 
   updateFilterPills();
@@ -1501,6 +1578,8 @@ function applyFilters() {
 function clearAllFilters() {
   document.getElementById('filterTimeFrame').value = 'all';
   document.getElementById('filterCountryGlobal').value = 'all';
+  document.getElementById('filterTeam').value = 'all';
+  populateRepDropdown('all');
   document.getElementById('filterRep').value = 'all';
   applyFilters();
 }
@@ -1517,6 +1596,9 @@ function updateFilterPills() {
   if (FILTERS.country !== 'all') {
     const flags = {US:'🇺🇸',AU:'🇦🇺',GB:'🇬🇧',JP:'🇯🇵',CA:'🇨🇦',FR:'🇫🇷',ES:'🇪🇸',IE:'🇮🇪'};
     pills.push(`<span class="inline-flex items-center gap-1 bg-green-50 text-green-700 text-xs font-medium px-2.5 py-1 rounded-full">${flags[FILTERS.country]||''} ${FILTERS.country}<button onclick="document.getElementById('filterCountryGlobal').value='all';applyFilters()" class="ml-0.5 hover:text-green-900">×</button></span>`);
+  }
+  if (FILTERS.team !== 'all') {
+    pills.push(`<span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-xs font-medium px-2.5 py-1 rounded-full">👥 ${FILTERS.team}'s Team<button onclick="document.getElementById('filterTeam').value='all';populateRepDropdown('all');applyFilters()" class="ml-0.5 hover:text-amber-900">×</button></span>`);
   }
   if (FILTERS.rep !== 'all') {
     pills.push(`<span class="inline-flex items-center gap-1 bg-purple-50 text-purple-700 text-xs font-medium px-2.5 py-1 rounded-full">👤 ${FILTERS.rep}<button onclick="document.getElementById('filterRep').value='all';applyFilters()" class="ml-0.5 hover:text-purple-900">×</button></span>`);
@@ -1724,6 +1806,7 @@ function filterDSRPipelineTab() {
 // ── Filter: Sellers Launched Tab ───────────────────────────────
 function filterSellersTab() {
   const c = FILTERS.country;
+  const t = FILTERS.team;
   const r = FILTERS.rep;
   const searchVal = document.getElementById('searchSellers')?.value || '';
   const countryVal = document.getElementById('filterCountry')?.value || 'all';
@@ -1734,12 +1817,17 @@ function filterSellersTab() {
   // Global country filter takes priority
   if (c !== 'all') {
     filtered = filtered.filter(s => s.country === c);
-    // Sync the tab-level country dropdown
     if (document.getElementById('filterCountry')) {
       document.getElementById('filterCountry').value = c;
     }
   } else if (countryVal !== 'all') {
     filtered = filtered.filter(s => s.country === countryVal);
+  }
+
+  // Global team filter — filter to reps on that team
+  if (t !== 'all') {
+    const teamReps = GSO_DATA.teams[t] || [];
+    filtered = filtered.filter(s => teamReps.includes(s.specialist));
   }
 
   // Global rep filter
