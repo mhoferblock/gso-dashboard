@@ -26,6 +26,9 @@
     table th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
     .source-card { transition: transform 0.15s ease; }
     .source-card:hover { transform: translateY(-2px); }
+    .refresh-icon { transition: transform 0.3s ease; }
+    .refreshing .refresh-icon { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
   </style>
@@ -325,6 +328,10 @@ Chart.defaults.animation.duration = 800;
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
           <span>Last 90 Days (Completed) | Last 365 Days (Created)</span>
         </div>
+        <a id="refreshBtn" href="#" onclick="triggerRefresh(event)" class="flex items-center gap-1.5 text-xs text-white font-medium bg-primary hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow-sm">
+          <svg class="w-3.5 h-3.5 refresh-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span id="refreshLabel">Refresh Data</span>
+        </a>
         <a href="https://square.cloud.looker.com/dashboards/39532" target="_blank" class="flex items-center gap-1.5 text-xs text-primary hover:text-blue-700 font-medium bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
           Looker 39532
@@ -1396,6 +1403,31 @@ document.getElementById('filterCountry').addEventListener('change', e => {
 // ── Initialize Sellers tab immediately (for total GPV calc) ────
 initSellersTab();
 window._sellersInit = true;
+
+// ── Refresh Button ─────────────────────────────────────────────
+function triggerRefresh(e) {
+  e.preventDefault();
+  const btn = document.getElementById('refreshBtn');
+  const label = document.getElementById('refreshLabel');
+
+  // Animate the button
+  btn.classList.add('refreshing');
+  label.textContent = 'Opening Goose...';
+
+  // Build the Goose deeplink with refresh instructions
+  const instructions = encodeURIComponent(
+    'Refresh the GSO Dashboard. Pull fresh data from Looker dashboard 39532 (GSO Go Live Metrics) using Blockdata.runDashboard with filters: Completed Date=90 day, Created Date=365 day, Seller Country=US,CA,GB,JP,ES,FR,AU,IE. Execute ALL query_ids. Then update ONLY the GSO_DATA object in /Users/mhofer/gso-dashboard/index.html with the new numbers (keep all HTML/CSS/charts unchanged). Finally upload /Users/mhofer/gso-dashboard to Blockcell site gso-dashboard.'
+  );
+
+  // Open Goose with the refresh instructions
+  window.location.href = 'goose://sessions/new?text=' + instructions;
+
+  // Reset button after a delay
+  setTimeout(() => {
+    btn.classList.remove('refreshing');
+    label.textContent = 'Refresh Data';
+  }, 3000);
+}
 </script>
 
 </body>
