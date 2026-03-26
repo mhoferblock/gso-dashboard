@@ -1372,7 +1372,10 @@ function renderOverview() {
   const selTeam = filterTeam.value;
   const selRep = filterRep.value;
   const selWT = filterWorkType.value;
+  const selStatus = filterStatus.value;
   const timeframeLabel = getTimeframeRange()?.label || 'All Time';
+  const dynamicOverviewMode = Boolean(selTeam || selRep || selWT || selStatus || getTimeframeRange());
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   let completedFiltered = [...GSO_DATA.completedSellers];
   let pipelineItems = [];
@@ -1396,6 +1399,19 @@ function renderOverview() {
 
   completedFiltered = filterByDateRange(completedFiltered, s => s.completedDate);
   pipelineItems = filterByDateRange(pipelineItems, i => i.created || i.goLive);
+
+  if (selStatus === 'completed') {
+    pipelineItems = [];
+  } else if (selStatus === 'active') {
+    completedFiltered = [];
+    pipelineItems = pipelineItems.filter(i => i.stage !== 'On Hold');
+  } else if (selStatus === 'onHold') {
+    completedFiltered = [];
+    pipelineItems = pipelineItems.filter(i => i.stage === 'On Hold');
+  } else if (selStatus === 'cancelled') {
+    completedFiltered = [];
+    pipelineItems = [];
+  }
 
   const activePipelineCount = pipelineItems.length;
   const activeCount = pipelineItems.filter(i => i.stage !== 'On Hold').length;
@@ -1423,64 +1439,103 @@ function renderOverview() {
     kpiCard('Median Days', medianDays, 'purple', '⏱️', `${timeframeLabel} completions`);
 
   // --- Monthly Trend Line Chart ---
-  const months = Object.keys(GSO_DATA.monthly);
-  const mLabels = months.map(monthLabel);
-  const mCompleted = months.map(m => GSO_DATA.monthly[m].completed);
-  const mActive = months.map(m => GSO_DATA.monthly[m].active);
-  const mCancelled = months.map(m => GSO_DATA.monthly[m].cancelled);
-  const mOnHold = months.map(m => GSO_DATA.monthly[m].onHold);
+  let months = Object.keys(GSO_DATA.monthly);
+  let mLabels = months.map(monthLabel);
+  let mCompleted = months.map(m => GSO_DATA.monthly[m].completed);
+  let mActive = months.map(m => GSO_DATA.monthly[m].active);
+  let mCancelled = months.map(m => GSO_DATA.monthly[m].cancelled);
+  let mOnHold = months.map(m => GSO_DATA.monthly[m].onHold);
+
+  if (dynamicOverviewMode) {
+    const monthlyMap = {};
+    const addToMonth = (monthKey, status, count = 1) => {
+      if (!monthKey) return;
+      if (!monthlyMap[monthKey]) {
+        monthlyMap[monthKey] = { completed: 0, active: 0, onHold: 0 };
+      }
+      monthlyMap[monthKey][status] += count;
+    };
+
+    completedFiltered.forEach(s => addToMonth((s.completedDate || '').slice(0, 7), 'completed'));
+    pipelineItems.forEach(i => addToMonth((i.created || i.goLive || '').slice(0, 7), i.stage === 'On Hold' ? 'onHold' : 'active'));
+
+    months = Object.keys(monthlyMap).sort();
+    mLabels = months.map(m => {
+      const [year, month] = m.split('-');
+      return `${monthNames[Number(month) - 1]} '${year.slice(2)}`;
+    });
+    mCompleted = months.map(m => monthlyMap[m].completed);
+    mActive = months.map(m => monthlyMap[m].active);
+    mOnHold = months.map(m => monthlyMap[m].onHold);
+    mCancelled = [];
+  }
+
+  const monthlyDatasets = [];
+
+  if (!selStatus || selStatus === 'completed') {
+    monthlyDatasets.push({
+      label: 'Completed',
+      data: mCompleted,
+      borderColor: COLORS.completed,
+      backgroundColor: COLORS.completed + '20',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      borderWidth: 2.5
+    });
+  }
+
+  if (!selStatus || selStatus === 'active') {
+    monthlyDatasets.push({
+      label: 'Active',
+      data: mActive,
+      borderColor: COLORS.active,
+      backgroundColor: 'transparent',
+      fill: false,
+      tension: 0.3,
+      pointRadius: 3,
+      pointHoverRadius: 6,
+      borderWidth: 2
+    });
+  }
+
+  if (!selStatus || selStatus === 'cancelled') {
+    if (!dynamicOverviewMode) {
+      monthlyDatasets.push({
+        label: 'Cancelled',
+        data: mCancelled,
+        borderColor: COLORS.cancelled,
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.3,
+        pointRadius: 3,
+        borderWidth: 2,
+        borderDash: [5, 3]
+      });
+    }
+  }
+
+  if (!selStatus || selStatus === 'onHold') {
+    monthlyDatasets.push({
+      label: 'On Hold',
+      data: mOnHold,
+      borderColor: COLORS.onHold,
+      backgroundColor: 'transparent',
+      fill: false,
+      tension: 0.3,
+      pointRadius: 2,
+      borderWidth: 1.5,
+      borderDash: [3, 3]
+    });
+  }
 
   destroyChart('monthly');
   charts.monthly = new Chart(document.getElementById('chartMonthly'), {
     type: 'line',
     data: {
       labels: mLabels,
-      datasets: [
-        {
-          label: 'Completed',
-          data: mCompleted,
-          borderColor: COLORS.completed,
-          backgroundColor: COLORS.completed + '20',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 4,
-          pointHoverRadius: 7,
-          borderWidth: 2.5
-        },
-        {
-          label: 'Active',
-          data: mActive,
-          borderColor: COLORS.active,
-          backgroundColor: 'transparent',
-          fill: false,
-          tension: 0.3,
-          pointRadius: 3,
-          pointHoverRadius: 6,
-          borderWidth: 2
-        },
-        {
-          label: 'Cancelled',
-          data: mCancelled,
-          borderColor: COLORS.cancelled,
-          backgroundColor: 'transparent',
-          fill: false,
-          tension: 0.3,
-          pointRadius: 3,
-          borderWidth: 2,
-          borderDash: [5, 3]
-        },
-        {
-          label: 'On Hold',
-          data: mOnHold,
-          borderColor: COLORS.onHold,
-          backgroundColor: 'transparent',
-          fill: false,
-          tension: 0.3,
-          pointRadius: 2,
-          borderWidth: 1.5,
-          borderDash: [3, 3]
-        }
-      ]
+      datasets: monthlyDatasets
     },
     options: {
       responsive: true,
@@ -1514,14 +1569,25 @@ function renderOverview() {
   });
 
   // --- Status Donut Chart ---
+  const donutLabels = dynamicOverviewMode
+    ? ['Completed', 'Active', 'On Hold']
+    : ['Completed', 'Active', 'On Hold', 'Cancelled'];
+  const donutValues = dynamicOverviewMode
+    ? [completedFiltered.length, activeCount, onHoldCount]
+    : [T.completed, T.active, T.onHold, T.cancelled];
+  const donutColors = dynamicOverviewMode
+    ? [COLORS.completed, COLORS.active, COLORS.onHold]
+    : [COLORS.completed, COLORS.active, COLORS.onHold, COLORS.cancelled];
+  const donutTotal = donutValues.reduce((sum, value) => sum + value, 0);
+
   destroyChart('donut');
   charts.donut = new Chart(document.getElementById('chartDonut'), {
     type: 'doughnut',
     data: {
-      labels: ['Completed', 'Active', 'On Hold', 'Cancelled'],
+      labels: donutLabels,
       datasets: [{
-        data: [T.completed, T.active, T.onHold, T.cancelled],
-        backgroundColor: [COLORS.completed, COLORS.active, COLORS.onHold, COLORS.cancelled],
+        data: donutValues,
+        backgroundColor: donutColors,
         borderWidth: 0,
         hoverOffset: 8
       }]
@@ -1538,7 +1604,7 @@ function renderOverview() {
         tooltip: {
           callbacks: {
             label: ctx => {
-              const pct = (ctx.parsed / T.dsrs * 100).toFixed(1);
+              const pct = donutTotal ? (ctx.parsed / donutTotal * 100).toFixed(1) : '0.0';
               return ctx.label + ': ' + fmtNum(ctx.parsed) + ' (' + pct + '%)';
             }
           }
@@ -1548,25 +1614,51 @@ function renderOverview() {
   });
 
   // --- Work Type Horizontal Bar Chart ---
-  const wtEntries = Object.entries(GSO_DATA.workTypeSummary)
-    .sort((a, b) => b[1].total - a[1].total);
+  let wtEntries;
+  if (dynamicOverviewMode) {
+    const wtMap = {};
+    const ensureWT = wt => {
+      if (!wtMap[wt]) wtMap[wt] = { completed: 0, active: 0, onHold: 0, total: 0 };
+      return wtMap[wt];
+    };
+
+    completedFiltered.forEach(s => {
+      const row = ensureWT(s.workType);
+      row.completed += 1;
+      row.total += 1;
+    });
+    pipelineItems.forEach(i => {
+      const row = ensureWT(i.workType);
+      if (i.stage === 'On Hold') row.onHold += 1;
+      else row.active += 1;
+      row.total += 1;
+    });
+
+    wtEntries = Object.entries(wtMap).sort((a, b) => b[1].total - a[1].total);
+  } else {
+    wtEntries = Object.entries(GSO_DATA.workTypeSummary)
+      .sort((a, b) => b[1].total - a[1].total);
+  }
   const wtLabels = wtEntries.map(e => e[0]);
   const wtCompleted = wtEntries.map(e => e[1].completed);
   const wtActive = wtEntries.map(e => e[1].active);
   const wtOnHold = wtEntries.map(e => e[1].onHold);
-  const wtCancelled = wtEntries.map(e => e[1].cancelled);
+  const wtCancelled = wtEntries.map(e => e[1].cancelled || 0);
+  const workTypeDatasets = [
+    { label: 'Completed', data: wtCompleted, backgroundColor: COLORS.completed },
+    { label: 'Active', data: wtActive, backgroundColor: COLORS.active },
+    { label: 'On Hold', data: wtOnHold, backgroundColor: COLORS.onHold }
+  ];
+  if (!dynamicOverviewMode) {
+    workTypeDatasets.push({ label: 'Cancelled', data: wtCancelled, backgroundColor: COLORS.cancelled });
+  }
 
   destroyChart('workType');
   charts.workType = new Chart(document.getElementById('chartWorkType'), {
     type: 'bar',
     data: {
       labels: wtLabels,
-      datasets: [
-        { label: 'Completed', data: wtCompleted, backgroundColor: COLORS.completed },
-        { label: 'Active', data: wtActive, backgroundColor: COLORS.active },
-        { label: 'On Hold', data: wtOnHold, backgroundColor: COLORS.onHold },
-        { label: 'Cancelled', data: wtCancelled, backgroundColor: COLORS.cancelled }
-      ]
+      datasets: workTypeDatasets
     },
     options: {
       indexAxis: 'y',
@@ -1588,19 +1680,43 @@ function renderOverview() {
 
   // --- Team Comparison Stacked Bar Chart ---
   const teamLabels = Object.keys(GSO_DATA.teams);
-  const teamData = teamLabels.map(l => getTeamTotals(l));
+  let teamData;
+  if (dynamicOverviewMode) {
+    const teamMap = {};
+    teamLabels.forEach(label => {
+      teamMap[label] = { completed: 0, active: 0, onHold: 0, cancelled: 0 };
+    });
+
+    completedFiltered.forEach(s => {
+      const team = getTeamForRep(s.rep);
+      if (teamMap[team]) teamMap[team].completed += 1;
+    });
+    pipelineItems.forEach(i => {
+      const team = getTeamForRep(i.rep);
+      if (!teamMap[team]) return;
+      if (i.stage === 'On Hold') teamMap[team].onHold += 1;
+      else teamMap[team].active += 1;
+    });
+
+    teamData = teamLabels.map(label => teamMap[label]);
+  } else {
+    teamData = teamLabels.map(l => getTeamTotals(l));
+  }
+  const teamDatasets = [
+    { label: 'Completed', data: teamData.map(t => t.completed), backgroundColor: COLORS.completed },
+    { label: 'Active', data: teamData.map(t => t.active), backgroundColor: COLORS.active },
+    { label: 'On Hold', data: teamData.map(t => t.onHold), backgroundColor: COLORS.onHold }
+  ];
+  if (!dynamicOverviewMode) {
+    teamDatasets.push({ label: 'Cancelled', data: teamData.map(t => t.cancelled), backgroundColor: COLORS.cancelled });
+  }
 
   destroyChart('team');
   charts.team = new Chart(document.getElementById('chartTeam'), {
     type: 'bar',
     data: {
       labels: teamLabels.map(l => l.split(' ')[0]),
-      datasets: [
-        { label: 'Completed', data: teamData.map(t => t.completed), backgroundColor: COLORS.completed },
-        { label: 'Active', data: teamData.map(t => t.active), backgroundColor: COLORS.active },
-        { label: 'On Hold', data: teamData.map(t => t.onHold), backgroundColor: COLORS.onHold },
-        { label: 'Cancelled', data: teamData.map(t => t.cancelled), backgroundColor: COLORS.cancelled }
-      ]
+      datasets: teamDatasets
     },
     options: {
       responsive: true,
