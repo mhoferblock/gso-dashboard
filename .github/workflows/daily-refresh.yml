@@ -22,17 +22,21 @@ on:
 jobs:
   refresh-dashboard:
     runs-on: self-hosted
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Run Goose refresh
+        env:
+          TZ: America/Indiana/Indianapolis
         run: |
-          echo "🔄 Starting GSO Dashboard refresh at $(TZ='America/Indiana/Indianapolis' date)"
+          echo "🔄 Starting GSO Dashboard refresh at $(date)"
           
           /usr/local/bin/goose run \
+            --no-session \
+            --recipe "${{ github.workspace }}/.github/refresh-recipe.yaml" \
             --instructions "${{ github.workspace }}/.github/refresh-instructions.md"
           
           echo "✅ Goose refresh completed"

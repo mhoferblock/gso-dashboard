@@ -1,0 +1,9 @@
+title: GSO Dashboard Refresh
+description: Pull fresh data from Looker and update the GSO Dashboard on Blockcell
+extensions:
+  blockdata:
+    type: builtin
+  blockcell:
+    type: builtin
+  developer:
+    type: builtin
