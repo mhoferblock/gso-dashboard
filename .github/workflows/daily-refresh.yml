@@ -3,21 +3,10 @@ name: GSO Dashboard Daily Refresh
 on:
   schedule:
     # 10:00 UTC = 6:00 AM Eastern (EDT, UTC-4)
-    # Indiana observes EDT Mar-Nov, EST Nov-Mar
-    # 10:00 UTC = 6am EDT (summer) / 5am EST (winter)
-    # To always hit 6am ET year-round, we'd need two schedules:
-    # EDT (Mar-Nov): 10:00 UTC | EST (Nov-Mar): 11:00 UTC
-    # Using 10:00 UTC as primary — worst case it runs at 5am in winter
     - cron: '0 10 * * *'
 
   # Allow manual trigger from GitHub UI
   workflow_dispatch:
-    inputs:
-      force_refresh:
-        description: 'Force full data refresh'
-        required: false
-        default: 'true'
-        type: boolean
 
 jobs:
   refresh-dashboard:
@@ -31,11 +20,20 @@ jobs:
       - name: Run Goose refresh
         env:
           TZ: America/Indiana/Indianapolis
+          HOME: /Users/mhofer
+          PATH: /Applications/Goose.app/Contents/Resources/bin:/Users/mhofer/.config/goose/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
+        shell: bash
         run: |
           echo "🔄 Starting GSO Dashboard refresh at $(date)"
+          echo "Working directory: $(pwd)"
           
-          /usr/local/bin/goose run \
+          # Run goose with only the extensions we need
+          goose run \
             --no-session \
+            --with-extension "/Users/mhofer/.config/goose/bin/uvx-wrapper mcp_block_data@latest" \
+            --with-extension "/Users/mhofer/.config/goose/bin/uvx-wrapper mcp_blockcell@latest" \
+            --with-builtin developer \
+            --no-profile \
             --instructions "${{ github.workspace }}/.github/refresh-instructions.md"
           
           echo "✅ Goose refresh completed"
@@ -50,12 +48,14 @@ jobs:
           else
             REFRESH_DATE=$(TZ='America/Indiana/Indianapolis' date '+%Y-%m-%d %I:%M %p %Z')
             git add index.html
+            git add .github/latest-data.json || true
             git commit -m "🔄 Daily refresh: ${REFRESH_DATE}"
             git push
             echo "✅ Changes committed and pushed"
           fi
 
       - name: Summary
+        if: always()
         run: |
           echo "## 📊 GSO Dashboard Refresh" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
