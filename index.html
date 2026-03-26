@@ -173,16 +173,17 @@
 
     /* ===== Journey Flow ===== */
     .journey-stage {
-      min-width: 156px;
+      min-width: 164px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       position: relative;
+      padding: 0 4px;
     }
     .journey-octagon {
-      width: 122px;
-      height: 122px;
+      width: 118px;
+      height: 118px;
       clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
       display: flex;
       flex-direction: column;
@@ -191,11 +192,11 @@
       text-align: center;
       color: #0f172a;
       border: 1px solid rgba(148, 163, 184, 0.35);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 12px 30px rgba(15, 23, 42, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 10px 24px rgba(15, 23, 42, 0.08);
       padding: 12px;
     }
     .journey-octagon-value {
-      font-size: 1.7rem;
+      font-size: 1.9rem;
       font-weight: 800;
       line-height: 1;
       letter-spacing: -0.04em;
@@ -208,30 +209,35 @@
       margin-top: 4px;
     }
     .journey-stage-title {
-      font-size: 0.82rem;
+      font-size: 0.9rem;
       font-weight: 700;
-      color: #334155;
+      color: #1e293b;
       text-align: center;
-      max-width: 132px;
-      line-height: 1.25;
+      max-width: 156px;
+      line-height: 1.2;
     }
     .journey-stage-meta {
-      font-size: 0.7rem;
+      font-size: 0.74rem;
       color: #64748b;
       text-align: center;
-      line-height: 1.35;
+      line-height: 1.45;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 8px 10px;
+      min-width: 136px;
     }
     .journey-connector {
-      min-width: 124px;
+      min-width: 138px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
-      margin-top: -32px;
+      gap: 10px;
+      margin-top: 72px;
     }
     .journey-connector-line {
       width: 100%;
-      height: 4px;
+      height: 5px;
       border-radius: 9999px;
       background: linear-gradient(90deg, #bfdbfe 0%, #60a5fa 45%, #1d4ed8 100%);
       position: relative;
@@ -256,8 +262,9 @@
       background: #eff6ff;
       border: 1px solid #bfdbfe;
       border-radius: 9999px;
-      padding: 4px 10px;
+      padding: 4px 12px;
       white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
     }
     .journey-tone-fast {
       background: linear-gradient(145deg, #dcfce7, #86efac);
@@ -667,7 +674,7 @@
       <div class="flex items-center justify-between mb-3">
         <div>
           <h3 class="text-sm font-semibold text-gray-700">Onboarding Journey Flow</h3>
-          <p class="text-xs text-gray-400 mt-1">Time in stage appears inside each octagon. Time between milestones appears on the connecting line.</p>
+          <p class="text-xs text-gray-400 mt-1">Read left to right: each octagon shows median time in stage, and each connector shows median time needed to move to the next milestone.</p>
         </div>
         <div class="flex items-center gap-3 text-xs text-gray-400">
           <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#86efac"></span> &lt;3d</span>
@@ -2345,14 +2352,14 @@ function renderJourney() {
     const stageEl = document.createElement('div');
     stageEl.className = 'journey-stage';
     stageEl.innerHTML = `
+      <div class="journey-stage-title">${stage.label}</div>
       <div class="journey-octagon ${durationToneClass(stage.timeInStage, stage.summary)}">
         <div class="journey-octagon-value">${stage.timeInStage != null ? stage.timeInStage : '—'}</div>
         <div class="journey-octagon-unit">${stage.summary ? 'total days' : 'days in stage'}</div>
       </div>
-      <div class="journey-stage-title">${stage.label}</div>
       <div class="journey-stage-meta">
-        Reach: ${stage.cumulative != null ? stage.cumulative + 'd' : '—'}<br>
-        P75: ${stage.jt.p75 != null ? stage.jt.p75 + 'd' : '—'} · Count: ${stage.count != null ? fmtNum(stage.count) : '—'}
+        <strong class="text-slate-700">Reach:</strong> ${stage.cumulative != null ? stage.cumulative + 'd' : '—'}<br>
+        <strong class="text-slate-700">P75:</strong> ${stage.jt.p75 != null ? stage.jt.p75 + 'd' : '—'}<span class="text-slate-300"> • </span><strong class="text-slate-700">Count:</strong> ${stage.count != null ? fmtNum(stage.count) : '—'}
       </div>
     `;
     flow.appendChild(stageEl);
