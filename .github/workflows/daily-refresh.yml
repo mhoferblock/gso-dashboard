@@ -36,8 +36,6 @@ jobs:
           
           /usr/local/bin/goose run \
             --no-session \
-            --with-builtin blockdata,blockcell,developer \
-            --no-profile \
             --instructions "${{ github.workspace }}/.github/refresh-instructions.md"
           
           echo "✅ Goose refresh completed"
