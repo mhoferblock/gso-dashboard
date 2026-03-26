@@ -232,7 +232,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 0;
       margin-top: 72px;
     }
     .journey-connector-line {
@@ -254,17 +254,6 @@
       border-right: 4px solid #1d4ed8;
       transform: translateY(-50%) rotate(45deg);
       border-radius: 2px;
-    }
-    .journey-connector-label {
-      font-size: 0.76rem;
-      font-weight: 700;
-      color: #1d4ed8;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 9999px;
-      padding: 4px 12px;
-      white-space: nowrap;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
     }
     .journey-tone-fast {
       background: linear-gradient(145deg, #dcfce7, #86efac);
@@ -712,7 +701,6 @@
               <th class="px-3 py-2.5 text-left rounded-tl-lg">Stage</th>
               <th class="px-3 py-2.5 text-right">Time in Stage</th>
               <th class="px-3 py-2.5 text-right">Time to Reach</th>
-              <th class="px-3 py-2.5 text-right">Time Since Prior Stage</th>
               <th class="px-3 py-2.5 text-right">P75 Reach</th>
               <th class="px-3 py-2.5 text-right rounded-tr-lg">Count</th>
             </tr>
@@ -2319,10 +2307,6 @@ function renderJourney() {
       ? cumulative
       : (sd && sd.medianDays != null ? sd.medianDays : null);
     const count = jt.count != null ? jt.count : (sd && sd.transitions != null ? sd.transitions : null);
-    const previousCumulative = index > 0 ? (JT[journeyStages[index - 1].milestoneKey] || {}).medianDays : null;
-    const timeBetween = index > 0 && cumulative != null && previousCumulative != null
-      ? Math.max(0, cumulative - previousCumulative)
-      : null;
 
     return {
       ...stage,
@@ -2330,8 +2314,7 @@ function renderJourney() {
       sd,
       cumulative,
       timeInStage,
-      count,
-      timeBetween
+      count
     };
   });
 
@@ -2342,10 +2325,7 @@ function renderJourney() {
     if (index > 0) {
       const connector = document.createElement('div');
       connector.className = 'journey-connector';
-      connector.innerHTML = `
-        <div class="journey-connector-label">${stage.timeBetween != null ? stage.timeBetween + 'd between' : '—'}</div>
-        <div class="journey-connector-line"></div>
-      `;
+      connector.innerHTML = `<div class="journey-connector-line"></div>`;
       flow.appendChild(connector);
     }
 
@@ -2401,7 +2381,7 @@ function renderJourney() {
 
   document.getElementById('journeyNotes').innerHTML = [
     'Each octagon shows median time spent in that stage.',
-    'Each connector shows the incremental median days needed to move from the prior milestone to the next one.',
+    'The reach value under each milestone shows the median total days from submission to that point in the journey.',
     '“Time to Go Live” is mapped to the post-implementation milestone that currently sits between implementation complete and 1st Q&A in the source data.',
     '“Total Time in GSO” uses the median time from DSR creation to 2nd Q&A completion, which is the latest milestone available in the current dataset.'
   ].map(note => `
@@ -2429,7 +2409,6 @@ function renderJourney() {
         <td class="px-3 py-2.5 font-medium text-gray-900">${stage.label}</td>
         <td class="px-3 py-2.5 text-right font-semibold font-mono">${stage.timeInStage != null ? stage.timeInStage : '—'}</td>
         <td class="px-3 py-2.5 text-right font-mono">${stage.cumulative != null ? stage.cumulative : '—'}</td>
-        <td class="px-3 py-2.5 text-right font-mono">${stage.timeBetween != null ? stage.timeBetween : '—'}</td>
         <td class="px-3 py-2.5 text-right text-gray-500 font-mono">${stage.jt.p75 != null ? stage.jt.p75 : '—'}</td>
         <td class="px-3 py-2.5 text-right">${stage.count != null ? fmtNum(stage.count) : '—'}</td>
       </tr>`;
