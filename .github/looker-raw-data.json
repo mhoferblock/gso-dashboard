@@ -1,0 +1,1228 @@
+[
+  {
+    "batch": 1,
+    "query_ids": [
+      "C4XB6kxKzFR2vr4r824qrqFDSmty2S7W",
+      "JQcPSsYDmKjQCSCGnhKjNC4pXTMRFZMf",
+      "6Y2JcvPmjk3HgYzHgRh3hSSZTpkNGcZG",
+      "SJv5jCMNBtbDVFwchnRsDvcQdKRbv5gP",
+      "NCYb8bdsRXKBMh5fMtzJM8djYWzkQ62Z"
+    ],
+    "result": {
+      "dashboard_name": "GSO Go Live Metrics",
+      "dashboard_filters": [
+        {
+          "title": "Completed Date",
+          "dimension": "deal_support_request.completed_date",
+          "default_value": "90 day",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Implementation Services",
+          "dimension": "deal_support_request.implementation_services",
+          "default_value": "",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Ready Merchants",
+          "dimension": "deal_support_request.go_live_date_within_3_weeks_of_assigned_date",
+          "default_value": "",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Seller Country",
+          "dimension": "sfdc_accounts.country",
+          "default_value": "US,CA,GB,JP,ES,FR,AU,IE",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Created Date",
+          "dimension": "deal_support_request.created_date",
+          "default_value": "365 day",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        }
+      ],
+      "filters_applied": {
+        "Completed Date": "90 day",
+        "Seller Country": "US,CA,GB,JP,ES,FR,AU,IE",
+        "Created Date": "365 day"
+      },
+      "elements": [
+        {
+          "element_id": "537697",
+          "element_title": "Median Go Live - All Packages",
+          "query_id": "C4XB6kxKzFR2vr4r824qrqFDSmty2S7W",
+          "model_name": "Unknown",
+          "data": {
+            "snowflake_query_id": "01c3497d-0914-f4f8-0015-c1185c9e048f",
+            "columns": [
+              "SFDC_ACCOUNTS.COUNTRY",
+              "DEAL_SUPPORT_REQUEST.MEDIAN_DAYS_ASSIGNED_TO_COMPLETE_EXCLUDING_HOLD"
+            ],
+            "rows": [
+              [
+                "ES",
+                "49.000"
+              ],
+              [
+                "FR",
+                "31.000"
+              ],
+              [
+                "IE",
+                "22.500"
+              ],
+              [
+                "AU",
+                "22.000"
+              ],
+              [
+                "GB",
+                "20.000"
+              ],
+              [
+                "US",
+                "17.000"
+              ],
+              [
+                "CA",
+                "15.500"
+              ],
+              [
+                "JP",
+                "12.000"
+              ]
+            ],
+            "row_count": 8
+          }
+        },
+        {
+          "element_id": "537700",
+          "element_title": "Median Go Live - Ready Merchants | Hands On Packages",
+          "query_id": "JQcPSsYDmKjQCSCGnhKjNC4pXTMRFZMf",
+          "model_name": "Unknown",
+          "data": {
+            "snowflake_query_id": "01c3497d-0914-f86b-0015-c1185c9e13ff",
+            "columns": [
+              "SFDC_ACCOUNTS.COUNTRY",
+              "DEAL_SUPPORT_REQUEST.REQUEST_COUNT_1",
+              "DEAL_SUPPORT_REQUEST.MEDIAN_DAYS_ASSIGNED_TO_COMPLETE_EXCLUDING_HOLD"
+            ],
+            "rows": [
+              [
+                "JP",
+                5,
+                "10.000"
+              ],
+              [
+                "CA",
+                3,
+                "17.000"
+              ],
+              [
+                "GB",
+                35,
+                "22.000"
+              ],
+              [
+                "US",
+                50,
+                "23.500"
+              ],
+              [
+                "AU",
+                14,
+                "25.500"
+              ],
+              [
+                "IE",
+                18,
+                "26.500"
+              ],
+              [
+                "FR",
+                6,
+                "29.000"
+              ],
+              [
+                "ES",
+                1,
+                "29.000"
+              ]
+            ],
+            "row_count": 8
+          }
+        },
+        {
+          "element_id": "537756",
+          "element_title": "Median Go Live - Hands On Packages",
+          "query_id": "6Y2JcvPmjk3HgYzHgRh3hSSZTpkNGcZG",
+          "model_name": "Unknown",
+          "data": {
+            "snowflake_query_id": "01c3497d-0914-f261-0015-c1185c9e31d7",
+            "columns": [
+              "SFDC_ACCOUNTS.COUNTRY",
+              "DEAL_SUPPORT_REQUEST.MEDIAN_DAYS_ASSIGNED_TO_COMPLETE_EXCLUDING_HOLD"
+            ],
+            "rows": [
+              [
+                "JP",
+                "21.000"
+              ],
+              [
+                "CA",
+                "21.000"
+              ],
+              [
+                "US",
+                "25.000"
+              ],
+              [
+                "IE",
+                "26.500"
+              ],
+              [
+                "GB",
+                "28.000"
+              ],
+              [
+                "AU",
+                "38.000"
+              ],
+              [
+                "FR",
+                "42.000"
+              ],
+              [
+                "ES",
+                "56.000"
+              ]
+            ],
+            "row_count": 8
+          }
+        },
+        {
+          "element_id": "537757",
+          "element_title": "Median Go Live - Task Only & Opti Calls",
+          "query_id": "SJv5jCMNBtbDVFwchnRsDvcQdKRbv5gP",
+          "model_name": "Unknown",
+          "data": {
+            "snowflake_query_id": "01c3497d-0914-f0f1-0015-c1185c9dbdb7",
+            "columns": [
+              "SFDC_ACCOUNTS.COUNTRY",
+              "DEAL_SUPPORT_REQUEST.MEDIAN_DAYS_ASSIGNED_TO_COMPLETE_EXCLUDING_HOLD"
+            ],
+            "rows": [
+              [
+                "CA",
+                "4.000"
+              ],
+              [
+                "US",
+                "5.000"
+              ],
+              [
+                "IE",
+                "5.000"
+              ],
+              [
+                "ES",
+                "6.000"
+              ],
+              [
+                "JP",
+                "6.000"
+              ],
+              [
+                "GB",
+                "6.000"
+              ],
+              [
+                "AU",
+                "7.500"
+              ],
+              [
+                "FR",
+                "11.000"
+              ]
+            ],
+            "row_count": 8
+          }
+        },
+        {
+          "element_id": "537784",
+          "element_title": "MoM Average Go Live - All Packages",
+          "query_id": "NCYb8bdsRXKBMh5fMtzJM8djYWzkQ62Z",
+          "model_name": "Unknown",
+          "data": {
+            "snowflake_query_id": "01c3497d-0914-f68d-0015-c1185c9de853",
+            "columns": [
+              "DEAL_SUPPORT_REQUEST.COMPLETED_MONTH",
+              "SFDC_ACCOUNTS.COUNTRY",
+              "DEAL_SUPPORT_REQUEST.AVERAGE_DAYS_ASSIGNED_TO_COMPLETE_EXCLUDING_HOLD",
+              "DEAL_SUPPORT_REQUEST.REQUEST_COUNT_1"
+            ],
+            "rows": [
+              [
+                "2026-03",
+                "AU",
+                "31.242991",
+                107
+              ],
+              [
+                "2026-02",
+                "AU",
+                "37.908333",
+                120
+              ],
+              [
+                "2026-03",
+                "CA",
+                "20.512821",
+                39
+              ],
+              [
+                "2026-02",
+                "CA",
+                "19.527778",
+                36
+              ],
+              [
+                "2026-03",
+                "ES",
+                "35.727273",
+                11
+              ],
+              [
+                "2026-02",
+                "ES",
+                "38.833333",
+                12
+              ],
+              [
+                "2026-03",
+                "FR",
+                "29.538462",
+                13
+              ],
+              [
+                "2026-02",
+                "FR",
+                "31.475000",
+                40
+              ],
+              [
+                "2026-03",
+                "GB",
+                "26.596491",
+                57
+              ],
+              [
+                "2026-02",
+                "GB",
+                "26.680328",
+                122
+              ],
+              [
+                "2026-03",
+                "IE",
+                "22.684211",
+                19
+              ],
+              [
+                "2026-02",
+                "IE",
+                "26.210526",
+                38
+              ],
+              [
+                "2026-03",
+                "JP",
+                "9.727273",
+                11
+              ],
+              [
+                "2026-02",
+                "JP",
+                "18.300000",
+                10
+              ],
+              [
+                "2026-03",
+                "US",
+                "21.172161",
+                273
+              ],
+              [
+                "2026-02",
+                "US",
+                "22.607407",
+                270
+              ]
+            ],
+            "row_count": 16
+          }
+        }
+      ],
+      "error": null
+    }
+  },
+  {
+    "batch": 2,
+    "query_ids": [
+      "8fBFV3txsWtVGz3KKFYZyHSrgwBXkXFS",
+      "3kxQnJmMXnPWvJPbxPGBnFSJb6sQQJz6",
+      "DhKFxRPkqFfJhNdLVqp4kWwPPVNQfRKz",
+      "7wQxGWZzrpxvYZjhwRhsxqjfhxHtJnvF",
+      "7KZNnwcwqJXqYKfkgJGbKFKNXFfhJPpQ"
+    ],
+    "result": {
+      "dashboard_name": "GSO Go Live Metrics",
+      "dashboard_filters": [
+        {
+          "title": "Completed Date",
+          "dimension": "deal_support_request.completed_date",
+          "default_value": "90 day",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Implementation Services",
+          "dimension": "deal_support_request.implementation_services",
+          "default_value": "",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Ready Merchants",
+          "dimension": "deal_support_request.go_live_date_within_3_weeks_of_assigned_date",
+          "default_value": "",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Seller Country",
+          "dimension": "sfdc_accounts.country",
+          "default_value": "US,CA,GB,JP,ES,FR,AU,IE",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Created Date",
+          "dimension": "deal_support_request.created_date",
+          "default_value": "365 day",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        }
+      ],
+      "filters_applied": {
+        "Completed Date": "90 day",
+        "Seller Country": "US,CA,GB,JP,ES,FR,AU,IE",
+        "Created Date": "365 day"
+      },
+      "elements": [
+        {
+          "element_id": "538042",
+          "element_title": "Global Median Go Live - Ready Merchants | Hands On Packages",
+          "query_id": "8fBFV3txsWtVGz3KKFYZyHSrgwBXkXFS",
+          "model_name": "Unknown",
+          "data": {
+            "snowflake_query_id": "01c3497e-0914-f0f1-0015-c1185c9e8c07",
+            "columns": [
+              "DEAL_SUPPORT_REQUEST.COMPLETED_WEEK",
+              "DEAL_SUPPORT_REQUEST.REQUEST_COUNT_1",
+              "DEAL_SUPPORT_REQUEST.MEDIAN_DAYS_ASSIGNED_TO_COMPLETE_EXCLUDING_HOLD",
+              "DEAL_SUPPORT_REQUEST.AVERAGE_DAYS_ASSIGNED_TO_COMPLETE_EXCLUDING_HOLD"
+            ],
+            "rows": [
+              [
+                "2025-12-28",
+                2,
+                "36.500",
+                "36.500000"
+              ],
+              [
+                "2026-01-04",
+                5,
+                "21.000",
+                "18.800000"
+              ],
+              [
+                "2026-01-11",
+                6,
+                "31.000",
+                "31.833333"
+              ],
+              [
+                "2026-01-18",
+                6,
+                "21.000",
+                "24.333333"
+              ],
+              [
+                "2026-01-25",
+                7,
+                "22.000",
+                "22.571429"
+              ],
+              [
+                "2026-02-01",
+                14,
+                "26.500",
+                "27.928571"
+              ],
+              [
+                "2026-02-08",
+                15,
+                "27.000",
+                "25.533333"
+              ],
+              [
+                "2026-02-15",
+                12,
+                "33.500",
+                "38.833333"
+              ],
+              [
+                "2026-02-22",
+                11,
+                "21.000",
+                "22.818182"
+              ],
+              [
+                "2026-03-01",
+                17,
+                "21.000",
+                "25.058824"
+              ],
+              [
+                "2026-03-08",
+                11,
+                "24.000",
+                "26.272727"
+              ],
+              [
+                "2026-03-15",
+                22,
+                "24.500",
+                "26.772727"
+              ],
+              [
+                "2026-03-22",
+                4,
+                "15.500",
+                "12.750000"
+              ]
+            ],
+            "row_count": 13
+          }
+        }
+      ],
+      "error": null
+    }
+  },
+  {
+    "batch": 3,
+    "query_ids": [
+      "4RnGqNxvYZjhwRhsxqjfhxHtJnvFqQWz",
+      "WxvYZjhwRhsxqjfhxHtJnvFqQWz7KZN",
+      "JxJpRpShNb5Zt3wJ5b78yk88MCJr7Y43",
+      "nwcwqJXqYKfkgJGbKFKNXFfhJPpQ4RnG",
+      "xvYZjhwRhsxqjfhxHtJnvFqQWz7KZNn"
+    ],
+    "result": {
+      "dashboard_name": "GSO Go Live Metrics",
+      "dashboard_filters": [
+        {
+          "title": "Completed Date",
+          "dimension": "deal_support_request.completed_date",
+          "default_value": "90 day",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Implementation Services",
+          "dimension": "deal_support_request.implementation_services",
+          "default_value": "",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Ready Merchants",
+          "dimension": "deal_support_request.go_live_date_within_3_weeks_of_assigned_date",
+          "default_value": "",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Seller Country",
+          "dimension": "sfdc_accounts.country",
+          "default_value": "US,CA,GB,JP,ES,FR,AU,IE",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Created Date",
+          "dimension": "deal_support_request.created_date",
+          "default_value": "365 day",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        }
+      ],
+      "filters_applied": {
+        "Completed Date": "90 day",
+        "Seller Country": "US,CA,GB,JP,ES,FR,AU,IE",
+        "Created Date": "365 day"
+      },
+      "elements": [
+        {
+          "element_id": "546685",
+          "element_title": "Highest GPV Sellers Launched",
+          "query_id": "JxJpRpShNb5Zt3wJ5b78yk88MCJr7Y43",
+          "model_name": "Unknown",
+          "data": {
+            "snowflake_query_id": "01c3497f-0914-f261-0015-c1185c9fd61f",
+            "columns": [
+              "SFDC_ACCOUNTS.ACCOUNT_ID_FOR_LINKS",
+              "SFDC_ACCOUNTS.NAME",
+              "DEAL_SUPPORT_REQUEST.TOTAL_ANNUAL_OPPTY_GPV_USD",
+              "DEAL_SUPPORT_REQUEST.IMPLEMENTATION_SPECIALIST",
+              "SFDC_ACCOUNTS.COUNTRY"
+            ],
+            "rows": [
+              [
+                "001V400000dXNAkIAO",
+                "Joey B's - Gianino Family Restaurant Group",
+                9800000,
+                "Miles McMillin",
+                "US"
+              ],
+              [
+                "001Kb00001L83koIAB",
+                "Shakti Energy,LLC (DBA Pizza Street)",
+                6000000,
+                "Miles McMillin",
+                "US"
+              ],
+              [
+                "001V400000q2K39IAE",
+                "Cookie Plug Franchise",
+                6000000,
+                "Michael Bavaro",
+                "US"
+              ],
+              [
+                "0014W00003L2rPgQAJ",
+                "The Brotherhood Games",
+                4259627.483649998,
+                "Eugeniu Vascu",
+                "GB"
+              ],
+              [
+                "001Kb00001NuGd7IAF",
+                "Ichi Umi Sushi",
+                4000000,
+                "Ashley McDonald",
+                "US"
+              ],
+              [
+                "001V400000m0iOrIAI",
+                "Seacret Base",
+                3702309.4999999898,
+                "Misho Arai",
+                "JP"
+              ],
+              [
+                "001Kb00001MUDNgIAP",
+                "Catalyst Hospitality Management - Oliver's Restaurant",
+                2699774.4628000087,
+                "Kristian Bojsen-Moller",
+                "AU"
+              ],
+              [
+                "001V400000r2FhHIAU",
+                "The Green Edge",
+                2579634.499205408,
+                "Ben Braun",
+                "AU"
+              ],
+              [
+                "001Kb00001L8xhsIAB",
+                "The Britannia Richmond",
+                2555776.490189999,
+                "Kerry Nelson",
+                "GB"
+              ],
+              [
+                "001V400000b7tk1IAA",
+                "Riserva Wine",
+                2362302.6549500073,
+                "Kristian Bojsen-Moller",
+                "AU"
+              ],
+              [
+                "0014W00003Vw7ivQAB",
+                "Fresko Stadium Cafe",
+                2362302.6549500073,
+                "Meri Fakraufon",
+                "AU"
+              ],
+              [
+                "0014W00003ThpiGQAR",
+                "株式会社アントニオ",
+                2221385.6999999937,
+                "Misho Arai",
+                "JP"
+              ],
+              [
+                "001V400000tjNdXIAU",
+                "Alfresco Italian Restaurant",
+                2159819.570240007,
+                "Meri Fakraufon",
+                "AU"
+              ],
+              [
+                "001V400000pcIwEIAU",
+                "Seafood Town",
+                2024830.8471000064,
+                "Ben Braun",
+                "AU"
+              ],
+              [
+                "001V400000uGcArIAK",
+                "Toast & Tonique",
+                2000000,
+                "Megan Martchink",
+                "US"
+              ],
+              [
+                "0014W00003AJxZGQA1",
+                "Goldberg's Bagels",
+                2000000,
+                "Lee Williamson",
+                "US"
+              ],
+              [
+                "0014W000033Q8quQAC",
+                "Crimson Lane Vineyards",
+                2000000,
+                "Lee Williamson",
+                "US"
+              ],
+              [
+                "001V400000wqZTMIA2",
+                "The Grands at Mulligans",
+                1800000,
+                "Ashley McDonald",
+                "US"
+              ],
+              [
+                "001V400000nTvoHIAS",
+                "Butter & Cream",
+                1800000,
+                "Meven Le Corre",
+                "US"
+              ],
+              [
+                "001V400000cuUojIAE",
+                "Avy Spa",
+                1800000,
+                "Meven Le Corre",
+                "US"
+              ],
+              [
+                "0010L00001zFoQEQA0",
+                "The Old Bakery Beer Company",
+                1700000,
+                "Miles McMillin",
+                "US"
+              ],
+              [
+                "001V400000q7KTwIAM",
+                "The Winey Cow - Mornington",
+                1687359.0392500055,
+                "Ben Braun",
+                "AU"
+              ],
+              [
+                "001V400000dvxmTIAQ",
+                "CAMBRIDGE BAKERY LTD",
+                1582147.3510699992,
+                "Olga Kanna",
+                "GB"
+              ],
+              [
+                "001V400000dpQLNIA2",
+                "Lapps Greenhouse",
+                1500000,
+                "Miles McMillin",
+                "US"
+              ],
+              [
+                "001V400000vCAkPIAW",
+                "Lindfield Coffee Works",
+                1460443.7086799992,
+                "Igor Rusu",
+                "GB"
+              ],
+              [
+                "0014W00003QGIKAQA5",
+                "Grutogi Bistro",
+                1300000,
+                "Austin Crittenden",
+                "US"
+              ],
+              [
+                "001V400000ty5jXIAQ",
+                "The Fat Badger",
+                1217036.4238999994,
+                "Igor Rusu",
+                "GB"
+              ],
+              [
+                "001V400000tYE7MIAW",
+                "（株）茂隆　Mohlong Luxury",
+                1110692.8499999968,
+                "Misho Arai",
+                "JP"
+              ],
+              [
+                "001V400000ZFtPqIAL",
+                "The Feisty Pint",
+                1100000,
+                "Ruben Reynoso",
+                "US"
+              ],
+              [
+                "001V400000cgAtAIAU",
+                "DeMaria's Grocer (Dolce Gianni)",
+                1012415.4235500032,
+                "Kristian Bojsen-Moller",
+                "AU"
+              ],
+              [
+                "0014W00003NLQ7AQAX",
+                "Touchwood",
+                1012415.4235500032,
+                "Ben Braun",
+                "AU"
+              ],
+              [
+                "001V400000jqaWzIAI",
+                "Kingfood Roast House",
+                1012415.4235500032,
+                "Ben Braun",
+                "AU"
+              ],
+              [
+                "0014W00003Vy9jMQAR",
+                "Home Cafe Ashgrove",
+                1012415.4235500032,
+                "Meri Fakraufon",
+                "AU"
+              ],
+              [
+                "001V400000oioVlIAI",
+                "Restaurante Golosinas los Catrachos",
+                1000000,
+                "Ashley McDonald",
+                "US"
+              ],
+              [
+                "001V400000rSWZVIA4",
+                "Taqueria Burritos Locos",
+                1000000,
+                "Ashley McDonald",
+                "US"
+              ],
+              [
+                "001Kb00001NtscoIAB",
+                "Dvine Mediterranean Experience (Brea)",
+                1000000,
+                "Ashley McDonald",
+                "US"
+              ],
+              [
+                "001V400000oJDRNIA4",
+                "Billy J's Family Restaurant",
+                1000000,
+                "Megan Martchink",
+                "US"
+              ],
+              [
+                "001V400000h4l2pIAA",
+                "Dibs White city",
+                973629.1391199996,
+                "Kerry Nelson",
+                "GB"
+              ],
+              [
+                "0014W00003UK7cgQAD",
+                "The Boot Inn",
+                973629.1391199996,
+                "Eugeniu Vascu",
+                "GB"
+              ],
+              [
+                "001V400000eCcfBIAS",
+                "Grape and Grind",
+                937118.0464029995,
+                "Francisco Alvarez",
+                "GB"
+              ],
+              [
+                "001V400000uRajzIAC",
+                "Sankey’s Fishmongers Ltd",
+                851925.4967299995,
+                "Kerry Nelson",
+                "GB"
+              ],
+              [
+                "001V400000c02FFIAY",
+                "Badger Canyon RV",
+                800000,
+                "Travis Castroman",
+                "US"
+              ],
+              [
+                "001V400000t2weXIAQ",
+                "Mayberry's-Seneca",
+                800000,
+                "Lee Williamson",
+                "US"
+              ],
+              [
+                "001V400000qG0xNIAS",
+                "Stacked House",
+                800000,
+                "Livia Horn-Scarpulla",
+                "US"
+              ],
+              [
+                "001Kb00001NtwjXIAR",
+                "Sapori Cucina & Bar",
+                800000,
+                "Ashley McDonald",
+                "US"
+              ],
+              [
+                "001V400000qltcdIAA",
+                "Gin and brews",
+                778903.3112959997,
+                "Olga Kanna",
+                "GB"
+              ],
+              [
+                "001V400000qUt9CIAS",
+                "Chicken Code",
+                750000,
+                "Ashley McDonald",
+                "US"
+              ],
+              [
+                "0014W00003GAm6xQAD",
+                "Ben & Bean Bakery & Cafe",
+                750000,
+                "Livia Horn-Scarpulla",
+                "US"
+              ],
+              [
+                "001V400000kMXPRIA4",
+                "Outdoor Showplace",
+                750000,
+                "Austin Crittenden",
+                "US"
+              ],
+              [
+                "001V400000uBHoYIAW",
+                "SAFFRON Indian Restaurant & Bar",
+                750000,
+                "Ruben Reynoso",
+                "US"
+              ],
+              [
+                "001V400000v1nHEIAY",
+                "Olle Korean Cuisine",
+                750000,
+                "Megan Martchink",
+                "US"
+              ],
+              [
+                "001V400000rROpUIAW",
+                "The Cheese Press",
+                740803.6818700003,
+                "Igor Rusu",
+                "IE"
+              ],
+              [
+                "001Kb00001MTV8hIAH",
+                "トヨタアルバルク東京（株）",
+                740461.8999999979,
+                "Misho Arai",
+                "JP"
+              ],
+              [
+                "001V400000pPYxCIAW",
+                "Corryong Bakery",
+                708690.7964850023,
+                "Meri Fakraufon",
+                "AU"
+              ],
+              [
+                "001V400000p0c1YIAQ",
+                "Angelica",
+                674943.6157000022,
+                "Macarena Castillo",
+                "AU"
+              ],
+              [
+                "001V400000rOd9lIAC",
+                "Salty Mermaid",
+                674943.6157000022,
+                "Macarena Castillo",
+                "AU"
+              ],
+              [
+                "001V400000n5jd3IAA",
+                "Hidden Jem Cafe",
+                674943.6157000022,
+                "Kristian Bojsen-Moller",
+                "AU"
+              ],
+              [
+                "001V400000wWBzyIAG",
+                "Fibonacci Coffee",
+                526456.0202460017,
+                "Meri Fakraufon",
+                "AU"
+              ],
+              [
+                "001V400000wzWzNIAU",
+                "New York Pizza Department",
+                500000,
+                "Meven Le Corre",
+                "US"
+              ],
+              [
+                "001V400000oGoP5IAK",
+                "The Updraft Kitchen LLC",
+                500000,
+                "Ashley McDonald",
+                "US"
+              ],
+              [
+                "001V400000qfshhIAA",
+                "Locals 3561 Pty Ltd",
+                472460.5309900015,
+                "Jamahl G",
+                "AU"
+              ],
+              [
+                "001V400000lNDKrIAO",
+                "Poke-Men",
+                380000,
+                "Ashley McDonald",
+                "US"
+              ],
+              [
+                "001V400000tw37eIAA",
+                "激ロックエンタテインメント株式会社- 50000,000",
+                370230.94999999896,
+                "Misho Arai",
+                "JP"
+              ],
+              [
+                "001V400000mKNphIAG",
+                "株式会社おちあいろう",
+                370230.94999999896,
+                "Misho Arai",
+                "JP"
+              ],
+              [
+                "001V400000juuSHIAY",
+                "Kiswah Meat And Groceries",
+                367573.12569999904,
+                "Travis Castroman",
+                "CA"
+              ],
+              [
+                "001V400000iPbhNIAS",
+                "Cookeys Inc.",
+                367573.12569999904,
+                "Olga Kanna",
+                "CA"
+              ],
+              [
+                "0014W00002GwZqbQAF",
+                "The Cellar Wine Bistro",
+                350000,
+                "Griffin Ulsh",
+                "US"
+              ],
+              [
+                "001V400000wiZdcIAE",
+                "Pupu Desserts",
+                337471.8078500011,
+                "Ben Braun",
+                "AU"
+              ],
+              [
+                "0014W00003OI8IVQA1",
+                "The brook kebabs",
+                337471.8078500011,
+                "Kristian Bojsen-Moller",
+                "AU"
+              ],
+              [
+                "001V400000xzArlIAE",
+                "NATIONAL CAKES QUAIL ROOST",
+                300000,
+                "Austin Crittenden",
+                "US"
+              ],
+              [
+                "001V400000lIJdpIAG",
+                "MINT ESPRESSO",
+                269977.44628000085,
+                "Meri Fakraufon",
+                "AU"
+              ],
+              [
+                "001V400000lu1b4IAA",
+                "Dlulukaloo",
+                264572.7435250001,
+                "Igor Rusu",
+                "IE"
+              ],
+              [
+                "001V400000lFsMnIAK",
+                "Nacha Focaccia",
+                250000,
+                "Travis Castroman",
+                "US"
+              ],
+              [
+                "001V400000iDIiXIAW",
+                "Tech hub co",
+                202483.08471000064,
+                "Macarena Castillo",
+                "AU"
+              ],
+              [
+                "001V400000o6385IAA",
+                "Just Biryani",
+                200000,
+                "Ashley McDonald",
+                "US"
+              ]
+            ],
+            "row_count": 75
+          }
+        }
+      ],
+      "error": null
+    }
+  },
+  {
+    "batch": 4,
+    "query_ids": [
+      "vYZjhwRhsxqjfhxHtJnvFqQWz7KZNnw",
+      "YZjhwRhsxqjfhxHtJnvFqQWz7KZNnwc",
+      "ZjhwRhsxqjfhxHtJnvFqQWz7KZNnwcw",
+      "jhwRhsxqjfhxHtJnvFqQWz7KZNnwcwq",
+      "hwRhsxqjfhxHtJnvFqQWz7KZNnwcwqJ"
+    ],
+    "result": {
+      "dashboard_name": "GSO Go Live Metrics",
+      "dashboard_filters": [
+        {
+          "title": "Completed Date",
+          "dimension": "deal_support_request.completed_date",
+          "default_value": "90 day",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Implementation Services",
+          "dimension": "deal_support_request.implementation_services",
+          "default_value": "",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Ready Merchants",
+          "dimension": "deal_support_request.go_live_date_within_3_weeks_of_assigned_date",
+          "default_value": "",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Seller Country",
+          "dimension": "sfdc_accounts.country",
+          "default_value": "US,CA,GB,JP,ES,FR,AU,IE",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        },
+        {
+          "title": "Created Date",
+          "dimension": "deal_support_request.created_date",
+          "default_value": "365 day",
+          "allow_multiple_values": true,
+          "required": false,
+          "type": "field_filter",
+          "ui_config": {}
+        }
+      ],
+      "filters_applied": {
+        "Completed Date": "90 day",
+        "Seller Country": "US,CA,GB,JP,ES,FR,AU,IE",
+        "Created Date": "365 day"
+      },
+      "elements": [],
+      "error": "No dashboard elements found matching query_ids: ['vYZjhwRhsxqjfhxHtJnvFqQWz7KZNnw', 'YZjhwRhsxqjfhxHtJnvFqQWz7KZNnwc', 'ZjhwRhsxqjfhxHtJnvFqQWz7KZNnwcw', 'jhwRhsxqjfhxHtJnvFqQWz7KZNnwcwq', 'hwRhsxqjfhxHtJnvFqQWz7KZNnwcwqJ']"
+    }
+  }
+]
