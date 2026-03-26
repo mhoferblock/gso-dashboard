@@ -174,6 +174,102 @@ That would allow:
 
 Without status history, only current-state snapshot metrics are reliable.
 
+## Journey Flow Requirements
+
+The current Journey tab is built from:
+
+- `journeyTiming`
+- `stageDuration`
+
+Those are aggregate summaries, so they cannot be recalculated accurately for:
+
+- team filters
+- rep filters
+- work type filters
+- date filters
+
+To make the Journey Flow truly filterable, add a row-level journey event dataset.
+
+### Suggested file
+
+- `q0_dsr_journey_events.json`
+
+### Suggested embedded property
+
+- `GSO_DATA.journeyEvents`
+
+### Required row schema
+
+```json
+{
+  "dsrId": "SFDC_OR_INTERNAL_ID",
+  "rep": "Alexandre Garreau",
+  "teamLead": "Caleb Cunningham",
+  "seller": "Miami Cafe",
+  "workType": "Onsite",
+  "createdDate": "2026-02-23",
+  "stageName": "Assigned",
+  "enteredStageAt": "2026-02-24",
+  "exitedStageAt": "2026-02-26",
+  "daysInStage": 2,
+  "milestoneReachedAt": "2026-02-26",
+  "sequence": 2,
+  "goLiveDate": "2026-03-09",
+  "completedDate": null
+}
+```
+
+### Minimum fields needed
+
+- `dsrId`
+- `rep`
+- `teamLead`
+- `workType`
+- `createdDate`
+- `stageName`
+- `enteredStageAt`
+- `exitedStageAt`
+- `daysInStage`
+- `milestoneReachedAt`
+
+### Strongly recommended
+
+- `seller`
+- `sequence`
+- `goLiveDate`
+- `completedDate`
+
+### Metrics derived from `journeyEvents`
+
+With filtered journey events, the Journey tab can accurately compute:
+
+- median time in each stage
+- median time to reach each stage
+- median time between stages
+- median time from implementation complete to go live
+- median time from go live to 1st Q&A
+- median time from 1st Q&A to 2nd Q&A
+- median total time in GSO
+
+### Rendering rule
+
+The Journey Flow should be derived from filtered events using the same top-level filters:
+
+- team
+- rep
+- work type
+- date range
+
+Recommended date interpretation:
+
+- include DSRs whose `createdDate` falls in the selected range
+
+Alternative interpretation if needed later:
+
+- include DSRs whose milestone timestamp falls in the selected range
+
+The first option is simpler and easier to explain.
+
 ## Refresh Pipeline Changes
 
 ### New output
@@ -362,4 +458,3 @@ Later, they can also be refactored to derive from `GSO_DATA.dsrFacts`.
   - `Last Month`
   - `Quarter`
   - `Year`
-
