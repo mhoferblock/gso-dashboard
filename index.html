@@ -170,6 +170,110 @@
         font-size: 1.25rem;
       }
     }
+
+    /* ===== Journey Flow ===== */
+    .journey-stage {
+      min-width: 156px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+    }
+    .journey-octagon {
+      width: 122px;
+      height: 122px;
+      clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #0f172a;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 12px 30px rgba(15, 23, 42, 0.08);
+      padding: 12px;
+    }
+    .journey-octagon-value {
+      font-size: 1.7rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+    .journey-octagon-unit {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #475569;
+      margin-top: 4px;
+    }
+    .journey-stage-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #334155;
+      text-align: center;
+      max-width: 132px;
+      line-height: 1.25;
+    }
+    .journey-stage-meta {
+      font-size: 0.7rem;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.35;
+    }
+    .journey-connector {
+      min-width: 124px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-top: -32px;
+    }
+    .journey-connector-line {
+      width: 100%;
+      height: 4px;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #bfdbfe 0%, #60a5fa 45%, #1d4ed8 100%);
+      position: relative;
+      box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.2);
+    }
+    .journey-connector-line::after {
+      content: '';
+      position: absolute;
+      right: -2px;
+      top: 50%;
+      width: 14px;
+      height: 14px;
+      border-top: 4px solid #1d4ed8;
+      border-right: 4px solid #1d4ed8;
+      transform: translateY(-50%) rotate(45deg);
+      border-radius: 2px;
+    }
+    .journey-connector-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #1d4ed8;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 9999px;
+      padding: 4px 10px;
+      white-space: nowrap;
+    }
+    .journey-tone-fast {
+      background: linear-gradient(145deg, #dcfce7, #86efac);
+    }
+    .journey-tone-steady {
+      background: linear-gradient(145deg, #dbeafe, #93c5fd);
+    }
+    .journey-tone-slow {
+      background: linear-gradient(145deg, #ffedd5, #fdba74);
+    }
+    .journey-tone-critical {
+      background: linear-gradient(145deg, #fee2e2, #fca5a5);
+    }
+    .journey-tone-summary {
+      background: linear-gradient(145deg, #ede9fe, #c4b5fd);
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -517,51 +621,36 @@
   <!-- TAB 4: ONBOARDING JOURNEY                                     -->
   <!-- ============================================================ -->
   <div class="tab-content" id="tab-journey">
-
-    <!-- Journey Timeline Chart -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
       <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-semibold text-gray-700">Median Days to Reach Each Stage (from DSR creation)</h3>
+        <div>
+          <h3 class="text-sm font-semibold text-gray-700">Onboarding Journey Flow</h3>
+          <p class="text-xs text-gray-400 mt-1">Time in stage appears inside each octagon. Time between milestones appears on the connecting line.</p>
+        </div>
         <div class="flex items-center gap-3 text-xs text-gray-400">
-          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#22c55e"></span> ≤5d</span>
-          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#3b82f6"></span> 6-15d</span>
-          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#f97316"></span> 16-30d</span>
-          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#ef4444"></span> &gt;30d</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#86efac"></span> &lt;3d</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#93c5fd"></span> 3-7d</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#fdba74"></span> 7-14d</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#fca5a5"></span> &gt;14d</span>
         </div>
       </div>
-      <div class="chart-container" style="height: 340px;">
-        <canvas id="chartJourneyTimeline"></canvas>
+      <div class="overflow-x-auto pb-2">
+        <div id="journeyFlow" class="flex items-start min-w-max px-2 py-6"></div>
       </div>
     </div>
 
-    <!-- Charts Row: Stage Duration + Work Type Duration -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-      <!-- Stage Duration Heatmap -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold text-gray-700">Time Spent in Each Stage (Median Days)</h3>
-          <div class="flex items-center gap-2 text-xs text-gray-400">
-            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#22c55e"></span> &lt;3d</span>
-            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#eab308"></span> 3-7d</span>
-            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#f97316"></span> 7-14d</span>
-            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded" style="background:#ef4444"></span> &gt;14d</span>
-          </div>
-        </div>
-        <div class="chart-container" style="height: 420px;">
-          <canvas id="chartStageDuration"></canvas>
-        </div>
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">Journey Highlights</h3>
+        <div id="journeyHighlights" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
       </div>
 
-      <!-- Work Type Median Days to Complete -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 class="text-sm font-semibold text-gray-700 mb-3">Median Days to Complete by Work Type</h3>
-        <div class="chart-container" style="height: 420px;">
-          <canvas id="chartWorkTypeDuration"></canvas>
-        </div>
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">Journey Notes</h3>
+        <div id="journeyNotes" class="space-y-3 text-sm text-gray-600"></div>
       </div>
     </div>
 
-    <!-- Journey Details Table -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
       <h3 class="text-sm font-semibold text-gray-700 mb-3">Stage Timing Details</h3>
       <div class="overflow-x-auto">
@@ -569,10 +658,10 @@
           <thead class="bg-gray-50 text-gray-600 text-xs uppercase tracking-wide">
             <tr>
               <th class="px-3 py-2.5 text-left rounded-tl-lg">Stage</th>
-              <th class="px-3 py-2.5 text-right">Median Days from Start</th>
-              <th class="px-3 py-2.5 text-right">Median Time in Stage</th>
-              <th class="px-3 py-2.5 text-right">P75 (from Start)</th>
-              <th class="px-3 py-2.5 text-right">P75 (in Stage)</th>
+              <th class="px-3 py-2.5 text-right">Time in Stage</th>
+              <th class="px-3 py-2.5 text-right">Time to Reach</th>
+              <th class="px-3 py-2.5 text-right">Time Since Prior Stage</th>
+              <th class="px-3 py-2.5 text-right">P75 Reach</th>
               <th class="px-3 py-2.5 text-right rounded-tr-lg">Count</th>
             </tr>
           </thead>
@@ -2139,227 +2228,156 @@ function renderPipeline() {
 function renderJourney() {
   const JT = GSO_DATA.journeyTiming;
   const SD = GSO_DATA.stageDuration;
-
-  // --- Journey Stages (ordered) ---
   const journeyStages = [
-    'Submitted', 'Assigned', 'Seller Outreach Complete',
-    'Consultation Complete', 'First Call Complete',
-    'Dashboard Training Complete', 'App Training Complete',
-    'SO Training Complete', 'Implementation Complete',
-    'Trainings Complete - Post Implementation',
-    '1st Q&A Completed', '2nd Q&A Completed'
-  ];
-  const shortNames = [
-    'Submitted', 'Assigned', 'Outreach',
-    'Consultation', '1st Call', 'Dashboard',
-    'App Training', 'SO Training', 'Impl Complete',
-    'Training Complete', '1st Q&A', '2nd Q&A'
+    { label: 'Submitted', milestoneKey: 'Submitted', durationKey: 'Submitted' },
+    { label: 'Assigned', milestoneKey: 'Assigned', durationKey: 'Assigned' },
+    { label: 'Outreach', milestoneKey: 'Seller Outreach Complete', durationKey: 'Seller Outreach Complete' },
+    { label: 'Consultation', milestoneKey: 'Consultation Complete', durationKey: 'Consultation Complete' },
+    { label: '1st Call', milestoneKey: 'First Call Complete', durationKey: 'First Call Complete' },
+    { label: 'Dashboard', milestoneKey: 'Dashboard Training Complete', durationKey: 'Dashboard Training Complete' },
+    { label: 'App Training', milestoneKey: 'App Training Complete', durationKey: 'App Training Complete' },
+    { label: 'SO Training', milestoneKey: 'SO Training Complete', durationKey: 'SO Training Complete' },
+    { label: 'Implementation Complete', milestoneKey: 'Implementation Complete', durationKey: 'Implementation Complete' },
+    { label: 'Time to Go Live', milestoneKey: 'Trainings Complete - Post Implementation', durationKey: 'Trainings Complete - Post Implementation' },
+    { label: '1st Q&A', milestoneKey: '1st Q&A Completed', durationKey: '1st Q&A Completed' },
+    { label: '2nd Q&A', milestoneKey: '2nd Q&A Completed', durationKey: '2nd Q&A Completed' },
+    { label: 'Total Time in GSO', milestoneKey: '2nd Q&A Completed', summary: true }
   ];
 
-  const medianFromStart = journeyStages.map(s => JT[s] ? JT[s].medianDays : null);
-
-  // --- Journey Timeline Bar Chart ---
-  destroyChart('journeyTimeline');
-  charts.journeyTimeline = new Chart(document.getElementById('chartJourneyTimeline'), {
-    type: 'bar',
-    data: {
-      labels: shortNames,
-      datasets: [{
-        label: 'Median Days from Start',
-        data: medianFromStart,
-        backgroundColor: medianFromStart.map(d => {
-          if (d == null) return '#e5e7eb';
-          if (d <= 5) return '#22c55e';
-          if (d <= 15) return '#3b82f6';
-          if (d <= 30) return '#f97316';
-          return '#ef4444';
-        }),
-        borderRadius: 6,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#1e293b',
-          callbacks: {
-            title: items => journeyStages[items[0].dataIndex],
-            label: ctx => 'Median: ' + ctx.parsed.y + ' days',
-            afterLabel: ctx => {
-              const s = journeyStages[ctx.dataIndex];
-              if (!JT[s]) return '';
-              return 'P25: ' + JT[s].p25 + 'd  |  P75: ' + JT[s].p75 + 'd\nCount: ' + fmtNum(JT[s].count);
-            }
-          }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: { display: true, text: 'Days from DSR Creation', font: { size: 11 } },
-          grid: { color: '#f1f5f9' }
-        },
-        x: {
-          grid: { display: false },
-          ticks: { font: { size: 10 }, maxRotation: 45 }
-        }
-      }
-    }
-  });
-
-  // --- Stage Duration Chart (time SPENT in each stage) ---
-  const durationStages = [
-    'Submitted', 'Assigned', 'Seller Outreach Complete',
-    'Consultation Complete', 'First Call Complete',
-    'Dashboard Training Complete', 'App Training Complete',
-    'SO Training Complete', '3P Service In Progress',
-    'Trainings Complete - Post Implementation',
-    '1st Q&A Completed', '2nd Q&A Completed',
-    'On Hold', 'Task In Progress'
-  ];
-  const durationShort = [
-    'Submitted', 'Assigned', 'Outreach',
-    'Consultation', '1st Call', 'Dashboard',
-    'App Training', 'SO Training', '3P Service',
-    'Training Complete', '1st Q&A', '2nd Q&A',
-    'On Hold', 'Task In Prog'
-  ];
-  const durationData = durationStages.map(s => SD[s] ? SD[s].medianDays : 0);
-
-  function durationColor(d) {
-    if (d <= 3) return '#22c55e';   // Green: fast
-    if (d <= 7) return '#eab308';   // Yellow: moderate
-    if (d <= 14) return '#f97316';  // Orange: slow
-    return '#ef4444';                // Red: bottleneck
+  function durationToneClass(days, isSummary) {
+    if (isSummary) return 'journey-tone-summary';
+    if (days == null) return 'bg-slate-100';
+    if (days < 3) return 'journey-tone-fast';
+    if (days < 7) return 'journey-tone-steady';
+    if (days < 14) return 'journey-tone-slow';
+    return 'journey-tone-critical';
   }
 
-  destroyChart('stageDuration');
-  charts.stageDuration = new Chart(document.getElementById('chartStageDuration'), {
-    type: 'bar',
-    data: {
-      labels: durationShort,
-      datasets: [{
-        label: 'Median Days in Stage',
-        data: durationData,
-        backgroundColor: durationData.map(durationColor),
-        borderRadius: 4,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#1e293b',
-          callbacks: {
-            title: items => durationStages[items[0].dataIndex],
-            label: ctx => 'Median: ' + ctx.parsed.x + ' days',
-            afterLabel: ctx => {
-              const s = durationStages[ctx.dataIndex];
-              if (!SD[s]) return '';
-              return 'Avg: ' + SD[s].avgDays + 'd  |  P75: ' + SD[s].p75 + 'd\nTransitions: ' + fmtNum(SD[s].transitions);
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          beginAtZero: true,
-          title: { display: true, text: 'Days', font: { size: 11 } },
-          grid: { color: '#f1f5f9' }
-        },
-        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
-      }
+  const stageModels = journeyStages.map((stage, index) => {
+    const jt = JT[stage.milestoneKey] || {};
+    const sd = stage.summary ? null : (SD[stage.durationKey] || {});
+    const cumulative = jt.medianDays != null ? jt.medianDays : null;
+    const timeInStage = stage.summary
+      ? cumulative
+      : (sd && sd.medianDays != null ? sd.medianDays : null);
+    const count = jt.count != null ? jt.count : (sd && sd.transitions != null ? sd.transitions : null);
+    const previousCumulative = index > 0 ? (JT[journeyStages[index - 1].milestoneKey] || {}).medianDays : null;
+    const timeBetween = index > 0 && cumulative != null && previousCumulative != null
+      ? Math.max(0, cumulative - previousCumulative)
+      : null;
+
+    return {
+      ...stage,
+      jt,
+      sd,
+      cumulative,
+      timeInStage,
+      count,
+      timeBetween
+    };
+  });
+
+  const flow = document.getElementById('journeyFlow');
+  flow.innerHTML = '';
+
+  stageModels.forEach((stage, index) => {
+    if (index > 0) {
+      const connector = document.createElement('div');
+      connector.className = 'journey-connector';
+      connector.innerHTML = `
+        <div class="journey-connector-label">${stage.timeBetween != null ? stage.timeBetween + 'd between' : '—'}</div>
+        <div class="journey-connector-line"></div>
+      `;
+      flow.appendChild(connector);
     }
+
+    const stageEl = document.createElement('div');
+    stageEl.className = 'journey-stage';
+    stageEl.innerHTML = `
+      <div class="journey-octagon ${durationToneClass(stage.timeInStage, stage.summary)}">
+        <div class="journey-octagon-value">${stage.timeInStage != null ? stage.timeInStage : '—'}</div>
+        <div class="journey-octagon-unit">${stage.summary ? 'total days' : 'days in stage'}</div>
+      </div>
+      <div class="journey-stage-title">${stage.label}</div>
+      <div class="journey-stage-meta">
+        Reach: ${stage.cumulative != null ? stage.cumulative + 'd' : '—'}<br>
+        P75: ${stage.jt.p75 != null ? stage.jt.p75 + 'd' : '—'} · Count: ${stage.count != null ? fmtNum(stage.count) : '—'}
+      </div>
+    `;
+    flow.appendChild(stageEl);
   });
 
-  // --- Work Type Duration Chart ---
-  // Compute median days to complete per work type from completedSellers
-  const wtDays = {};
-  GSO_DATA.completedSellers.forEach(s => {
-    if (!wtDays[s.workType]) wtDays[s.workType] = [];
-    if (s.daysToComplete != null) wtDays[s.workType].push(s.daysToComplete);
-  });
+  const coreStages = stageModels.filter(stage => !stage.summary && stage.timeInStage != null);
+  const slowestStage = coreStages.reduce((best, stage) => {
+    if (!best || stage.timeInStage > best.timeInStage) return stage;
+    return best;
+  }, null);
+  const totalTime = stageModels[stageModels.length - 1]?.timeInStage ?? null;
+  const goLiveStage = stageModels.find(stage => stage.label === 'Time to Go Live');
+  const firstQAStage = stageModels.find(stage => stage.label === '1st Q&A');
 
-  const wtMedian = Object.entries(wtDays)
-    .map(([wt, days]) => {
-      days.sort((a, b) => a - b);
-      const med = days.length > 0 ? days[Math.floor(days.length / 2)] : 0;
-      return { wt, median: med, count: days.length };
-    })
-    .sort((a, b) => b.median - a.median);
-
-  destroyChart('workTypeDuration');
-  charts.workTypeDuration = new Chart(document.getElementById('chartWorkTypeDuration'), {
-    type: 'bar',
-    data: {
-      labels: wtMedian.map(w => w.wt),
-      datasets: [{
-        label: 'Median Days to Complete',
-        data: wtMedian.map(w => w.median),
-        backgroundColor: wtMedian.map(w => durationColor(w.median)),
-        borderRadius: 4,
-        borderSkipped: false
-      }]
+  document.getElementById('journeyHighlights').innerHTML = [
+    {
+      label: 'Longest Stage',
+      value: slowestStage ? slowestStage.label : '—',
+      sub: slowestStage && slowestStage.timeInStage != null ? `${slowestStage.timeInStage} median days in stage` : 'No data'
     },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            afterLabel: ctx => 'Sellers: ' + fmtNum(wtMedian[ctx.dataIndex].count)
-          }
-        }
-      },
-      scales: {
-        x: {
-          beginAtZero: true,
-          title: { display: true, text: 'Median Days', font: { size: 11 } },
-          grid: { color: '#f1f5f9' }
-        },
-        y: { grid: { display: false }, ticks: { font: { size: 10 } } }
-      }
+    {
+      label: 'Time to Go Live',
+      value: goLiveStage && goLiveStage.timeBetween != null ? `${goLiveStage.timeBetween}d` : '—',
+      sub: 'between implementation complete and go live'
+    },
+    {
+      label: 'Time to 1st Q&A',
+      value: firstQAStage && firstQAStage.timeBetween != null ? `${firstQAStage.timeBetween}d` : '—',
+      sub: 'between go live and 1st Q&A'
+    },
+    {
+      label: 'Total Time in GSO',
+      value: totalTime != null ? `${totalTime}d` : '—',
+      sub: 'median time from creation to final milestone'
     }
-  });
+  ].map(card => `
+    <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+      <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">${card.label}</div>
+      <div class="mt-2 text-2xl font-bold text-slate-900">${card.value}</div>
+      <div class="mt-1 text-xs text-slate-500">${card.sub}</div>
+    </div>
+  `).join('');
 
-  // --- Journey Details Table ---
+  document.getElementById('journeyNotes').innerHTML = [
+    'Each octagon shows median time spent in that stage.',
+    'Each connector shows the incremental median days needed to move from the prior milestone to the next one.',
+    '“Time to Go Live” is mapped to the post-implementation milestone that currently sits between implementation complete and 1st Q&A in the source data.',
+    '“Total Time in GSO” uses the median time from DSR creation to 2nd Q&A completion, which is the latest milestone available in the current dataset.'
+  ].map(note => `
+    <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      ${note}
+    </div>
+  `).join('');
+
   const tbody = document.getElementById('journeyTableBody');
-  tbody.innerHTML = journeyStages.map(s => {
-    const jt = JT[s] || {};
-    const sd = SD[s] || {};
-
-    const medFromStart = jt.medianDays != null ? jt.medianDays : '—';
-    const medInStage = sd.medianDays != null ? sd.medianDays : '—';
-    const p75Start = jt.p75 != null ? jt.p75 : '—';
-    const p75Stage = sd.p75 != null ? sd.p75 : '—';
-    const count = jt.count != null ? fmtNum(jt.count) : '—';
-
-    // Color-code row by time in stage
-    let bgColor = '';
-    if (typeof sd.medianDays === 'number') {
-      if (sd.medianDays <= 3) bgColor = 'bg-green-50';
-      else if (sd.medianDays <= 7) bgColor = 'bg-yellow-50';
-      else if (sd.medianDays <= 14) bgColor = 'bg-orange-50';
-      else bgColor = 'bg-red-50';
-    }
+  tbody.innerHTML = stageModels.map(stage => {
+    const bgColor = stage.summary
+      ? 'bg-violet-50'
+      : stage.timeInStage == null
+        ? ''
+        : stage.timeInStage < 3
+          ? 'bg-green-50'
+          : stage.timeInStage < 7
+            ? 'bg-blue-50'
+            : stage.timeInStage < 14
+              ? 'bg-orange-50'
+              : 'bg-red-50';
 
     return `
       <tr class="border-b border-gray-50 hover:bg-gray-100 ${bgColor}">
-        <td class="px-3 py-2.5 font-medium text-gray-900">${s}</td>
-        <td class="px-3 py-2.5 text-right font-mono">${medFromStart}</td>
-        <td class="px-3 py-2.5 text-right font-semibold font-mono">${medInStage}</td>
-        <td class="px-3 py-2.5 text-right text-gray-500 font-mono">${p75Start}</td>
-        <td class="px-3 py-2.5 text-right text-gray-500 font-mono">${p75Stage}</td>
-        <td class="px-3 py-2.5 text-right">${count}</td>
+        <td class="px-3 py-2.5 font-medium text-gray-900">${stage.label}</td>
+        <td class="px-3 py-2.5 text-right font-semibold font-mono">${stage.timeInStage != null ? stage.timeInStage : '—'}</td>
+        <td class="px-3 py-2.5 text-right font-mono">${stage.cumulative != null ? stage.cumulative : '—'}</td>
+        <td class="px-3 py-2.5 text-right font-mono">${stage.timeBetween != null ? stage.timeBetween : '—'}</td>
+        <td class="px-3 py-2.5 text-right text-gray-500 font-mono">${stage.jt.p75 != null ? stage.jt.p75 : '—'}</td>
+        <td class="px-3 py-2.5 text-right">${stage.count != null ? fmtNum(stage.count) : '—'}</td>
       </tr>`;
   }).join('');
 }
