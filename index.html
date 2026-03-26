@@ -2310,30 +2310,26 @@ function renderJourney() {
     flow.appendChild(stageEl);
   });
 
-  const coreStages = stageModels.filter(stage => !stage.summary && stage.timeInStage != null);
-  const slowestStage = coreStages.reduce((best, stage) => {
-    if (!best || stage.timeInStage > best.timeInStage) return stage;
-    return best;
-  }, null);
   const totalTime = stageModels[stageModels.length - 1]?.timeInStage ?? null;
+  const assignedStage = stageModels.find(stage => stage.label === 'Assigned');
+  const consultationStage = stageModels.find(stage => stage.label === 'Consultation');
   const goLiveStage = stageModels.find(stage => stage.label === 'Time to Go Live');
-  const firstQAStage = stageModels.find(stage => stage.label === '1st Q&A');
 
   document.getElementById('journeyHighlights').innerHTML = [
     {
-      label: 'Longest Stage',
-      value: slowestStage ? slowestStage.label : '—',
-      sub: slowestStage && slowestStage.timeInStage != null ? `${slowestStage.timeInStage} median days in stage` : 'No data'
+      label: 'Submitted To Assigned',
+      value: assignedStage && assignedStage.cumulative != null ? `${assignedStage.cumulative}d` : '—',
+      sub: 'median time from submission to assigned'
+    },
+    {
+      label: 'Time To Consultation Call',
+      value: consultationStage && consultationStage.cumulative != null ? `${consultationStage.cumulative}d` : '—',
+      sub: 'median time from submission to consultation complete'
     },
     {
       label: 'Time to Go Live',
-      value: goLiveStage && goLiveStage.timeBetween != null ? `${goLiveStage.timeBetween}d` : '—',
-      sub: 'between implementation complete and go live'
-    },
-    {
-      label: 'Time to 1st Q&A',
-      value: firstQAStage && firstQAStage.timeBetween != null ? `${firstQAStage.timeBetween}d` : '—',
-      sub: 'between go live and 1st Q&A'
+      value: goLiveStage && goLiveStage.cumulative != null ? `${goLiveStage.cumulative}d` : '—',
+      sub: 'median time from submission to go live'
     },
     {
       label: 'Total Time in GSO',
