@@ -32,17 +32,8 @@ jobs:
         run: |
           echo "🔄 Starting GSO Dashboard refresh at $(TZ='America/Indiana/Indianapolis' date)"
           
-          /usr/local/bin/goose run --instructions "
-          Pull fresh data from Looker dashboard 39532 (GSO Go Live Metrics) with filters:
-          - Completed Date: 90 day
-          - Created Date: 365 day
-          - Seller Country: US,CA,GB,JP,ES,FR,AU,IE
-
-          Execute ALL query_ids from the dashboard to get the latest data.
-          Then regenerate ${{ github.workspace }}/index.html with the updated data
-          (keep the same visual layout, tabs, charts, and design — only update the numbers).
-          Finally, upload ${{ github.workspace }} to Blockcell site 'gso-dashboard'.
-          "
+          /usr/local/bin/goose run \
+            --instructions "${{ github.workspace }}/.github/refresh-instructions.md"
           
           echo "✅ Goose refresh completed"
 
