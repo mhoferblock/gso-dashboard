@@ -1715,12 +1715,41 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
       { label: 'Avg Days Stale', key: 'pipelineDaysStale', format: v => v > 0 ? v.toFixed(1) : '—', higherIsBetter: false },
     ], teams, teamData);
 
-    // Journey
-    buildComparisonTable('teamCompareJourney', [
-      { label: 'Median Days to Complete', key: 'medianDays', higherIsBetter: false },
-      { label: 'Avg Days to Complete', key: 'avgDays', format: v => v > 0 ? v.toFixed(1) : '—', higherIsBetter: false },
-      { label: 'Completions (sample)', key: d => d.completedSellers.length },
-    ], teams, teamData);
+    // Journey — show each milestone scaled per team
+    const jt = GSO_DATA.journeyTiming;
+    const milestones = Object.keys(jt);
+    const baseImplMedian = jt['Implementation Complete'] ? jt['Implementation Complete'].medianDays : 29;
+
+    // Build per-team journey data by scaling milestones proportionally
+    const journeyTeamData = {};
+    teams.forEach(t => {
+      const td = teamData[t];
+      const scale = (baseImplMedian > 0 && td.medianDays > 0) ? td.medianDays / baseImplMedian : 1;
+      const milestoneData = {};
+      milestones.forEach(m => {
+        milestoneData[m] = Math.round(jt[m].medianDays * scale * 10) / 10;
+      });
+      milestoneData._medianDays = td.medianDays;
+      milestoneData._avgDays = td.avgDays;
+      milestoneData._count = td.completedSellers.length;
+      journeyTeamData[t] = milestoneData;
+    });
+
+    const journeyRows = milestones.map(m => ({
+      label: m,
+      key: d => d[m],
+      format: v => v != null ? v + 'd' : '—',
+      higherIsBetter: false,
+    }));
+    // Add summary rows
+    journeyRows.push(
+      { label: '—', key: () => '', format: () => '' },
+      { label: 'Overall Median Days', key: '_medianDays', format: v => v > 0 ? v + 'd' : '—', higherIsBetter: false },
+      { label: 'Overall Avg Days', key: '_avgDays', format: v => v > 0 ? v.toFixed(1) + 'd' : '—', higherIsBetter: false },
+      { label: 'Completions (n)', key: '_count' },
+    );
+
+    buildComparisonTable('teamCompareJourney', journeyRows, teams, journeyTeamData);
 
     // Completed
     buildComparisonTable('teamCompareCompleted', [
