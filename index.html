@@ -755,12 +755,12 @@
           <canvas id="chartMonthly"></canvas>
         </div>
       </div>
-      <!-- Work Type Distribution -->
+      <!-- DSRs Created by Work Type (stacked bar) -->
       <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <h3 class="text-sm font-semibold text-gray-800 mb-4 flex items-center">Work Type Distribution
-          <span class="info-tip">?<span class="info-popup"><span class="info-title">Work Type Distribution</span><span class="info-desc">Donut chart showing how DSRs are distributed across implementation service types (Onsite, Premium, Plus, etc.). Reflects all DSRs matching the current filters.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce PURCHASED_IMPLEMENTATION_SERVICES_C field, mapped to Work Type in Airtable.</span></span></span>
+        <h3 class="text-sm font-semibold text-gray-800 mb-4 flex items-center">DSRs Created by Work Type
+          <span class="info-tip">?<span class="info-popup"><span class="info-title">DSRs Created by Work Type</span><span class="info-desc">Monthly stacked bar chart showing how many DSRs were created each month, broken down by work type. Total label on top of each bar. Matches the Looker "DSRs created" view (excluding Strat PM). Responds to all filters.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce CREATED_DATE grouped by month, PURCHASED_IMPLEMENTATION_SERVICES_C for work type. GSO roster reps only.</span></span></span>
         </h3>
-        <div class="chart-container" style="height: 300px;">
+        <div class="chart-container" style="height: 360px;">
           <canvas id="chartWorkType"></canvas>
         </div>
       </div>
@@ -2408,46 +2408,96 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
       }
     });
 
-    // ── Work Type Donut (derived from dsrFacts) ──
+    // ── DSRs Created by Work Type (stacked bar, Looker-style) ──
     destroyChart('chartWorkType');
-    const wtFromFacts = {};
+
+    // Build monthly × work type matrix from created dates
+    const wtMonthly = {};
+    const wtSet = new Set();
     facts.forEach(f => {
+      if (!f.createdDate) return;
+      const m = f.createdDate.substring(0, 7);
       const wt = f.workType || 'Unknown';
-      wtFromFacts[wt] = (wtFromFacts[wt] || 0) + 1;
-    });
-    const wtNames = Object.keys(wtFromFacts).sort((a, b) => (wtFromFacts[b] || 0) - (wtFromFacts[a] || 0));
-    const hasWorkTypeFilter = !!filters.workTypes;
-    const wtColors = COLORS.slice(0, wtNames.length).map((color, i) => {
-      if (hasWorkTypeFilter && !filters.workTypes.includes(wtNames[i])) return color + '25';
-      return color;
+      wtSet.add(wt);
+      if (!wtMonthly[m]) wtMonthly[m] = {};
+      wtMonthly[m][wt] = (wtMonthly[m][wt] || 0) + 1;
     });
 
-    const wtTotal = wtNames.reduce((s, w) => s + (wtFromFacts[w] || 0), 0);
+    const wtMonths = Object.keys(wtMonthly).sort().slice(-14);
+    const wtMonthLabels = wtMonths.map(m => {
+      const [y, mo] = m.split('-');
+      return new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    });
+
+    // Sort work types by total volume (largest first for bottom of stack)
+    const wtTotals = {};
+    wtSet.forEach(wt => { wtTotals[wt] = wtMonths.reduce((s, m) => s + ((wtMonthly[m] || {})[wt] || 0), 0); });
+    const wtNames = [...wtSet].sort((a, b) => (wtTotals[b] || 0) - (wtTotals[a] || 0));
+
+    // Color palette matching Looker style
+    const WT_COLORS = {
+      'Premium': '#6c9eeb', 'Tasks Only': '#57bb8a', 'Optimization Call': '#f4a742',
+      'Onsite': '#e06666', 'Plus': '#8e7cc3', 'Payroll': '#76c5c5',
+      'Full-day 3rd Party Vendor Install': '#e69138', 'Half-day 3rd Party Vendor Install': '#c27ba0',
+      'In-Person Refresh': '#45b5aa', 'Appointments Migration + Training': '#674ea7',
+      'Not Applicable': '#cc4125', 'Strat PM': '#a61c00'
+    };
+    const hasWorkTypeFilter = !!filters.workTypes;
+
+    // Build datasets (one per work type)
+    const wtDatasets = wtNames.map((wt, i) => ({
+      label: wt,
+      data: wtMonths.map(m => (wtMonthly[m] || {})[wt] || 0),
+      backgroundColor: (hasWorkTypeFilter && !filters.workTypes.includes(wt))
+        ? (WT_COLORS[wt] || COLORS[i % COLORS.length]) + '25'
+        : (WT_COLORS[wt] || COLORS[i % COLORS.length]),
+      borderWidth: 0,
+      borderRadius: 2,
+    }));
+
+    // Monthly totals for top labels
+    const wtMonthTotals = wtMonths.map(m => wtNames.reduce((s, wt) => s + ((wtMonthly[m] || {})[wt] || 0), 0));
+
     charts.chartWorkType = new Chart(document.getElementById('chartWorkType'), {
-      type: 'doughnut',
-      data: { labels: wtNames, datasets: [{ data: wtNames.map(w => wtFromFacts[w] || 0), backgroundColor: wtColors, borderWidth: 1, borderColor: '#fff' }] },
+      type: 'bar',
+      data: { labels: wtMonthLabels, datasets: wtDatasets },
+      plugins: [{
+        id: 'wtStackedTotals',
+        afterDatasetsDraw(chart) {
+          const { ctx, scales: { x, y } } = chart;
+          ctx.save();
+          ctx.font = 'bold 11px Inter, sans-serif';
+          ctx.fillStyle = '#374151';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          wtMonthTotals.forEach((total, i) => {
+            if (total > 0) {
+              const xPos = x.getPixelForValue(i);
+              const yPos = y.getPixelForValue(total);
+              ctx.fillText(fmtNum(total), xPos, yPos - 4);
+            }
+          });
+          ctx.restore();
+        }
+      }],
       options: {
         responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 22 } },
         plugins: {
           legend: {
-            position: 'right',
-            labels: {
-              boxWidth: 10, font: { size: 10 }, padding: 6,
-              generateLabels: chart => chart.data.labels.map((label, i) => {
-                const value = chart.data.datasets[0].data[i];
-                const pct = wtTotal > 0 ? (value / wtTotal * 100).toFixed(1) : '0.0';
-                return {
-                  text: `${label}  (${fmtNum(value)} · ${pct}%)`,
-                  fillStyle: chart.data.datasets[0].backgroundColor[i],
-                  strokeStyle: '#fff',
-                  lineWidth: 1,
-                  hidden: false,
-                  index: i
-                };
-              })
-            }
+            position: 'bottom',
+            labels: { boxWidth: 10, font: { size: 10 }, padding: 8, usePointStyle: true, pointStyle: 'rectRounded' }
           },
-          tooltip: { callbacks: { label: ctx => { return `${ctx.label}: ${fmtNum(ctx.raw)} (${fmtPct(wtTotal > 0 ? ctx.raw / wtTotal * 100 : 0)})`; } } }
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.raw)}`,
+              footer: items => `Total: ${fmtNum(items.reduce((s, i) => s + i.raw, 0))}`
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { stacked: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } }, title: { display: true, text: '# of DSRs', font: { size: 10, weight: '600' }, color: '#64748b' } }
         }
       }
     });
