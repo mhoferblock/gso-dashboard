@@ -2291,6 +2291,33 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
       return new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
     });
 
+    // Compute monthly totals for top-of-bar labels
+    const monthlyTotals = months.map(m => {
+      const d = monthlyFromFacts[m] || {};
+      return (d.completed || 0) + (d.active || 0) + (d.onHold || 0) + (d.cancelled || 0);
+    });
+
+    // Inline plugin: render total label above each stacked bar
+    const stackedTotalPlugin = {
+      id: 'stackedTotalLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx, scales: { x, y } } = chart;
+        const meta = chart.getDatasetMeta(chart.data.datasets.length - 1); // top dataset
+        ctx.save();
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.fillStyle = '#374151';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        meta.data.forEach((bar, i) => {
+          const total = monthlyTotals[i];
+          if (total > 0) {
+            ctx.fillText(fmtNum(total), bar.x, y.getPixelForValue(total) - 4);
+          }
+        });
+        ctx.restore();
+      }
+    };
+
     charts.chartMonthly = new Chart(document.getElementById('chartMonthly'), {
       type: 'bar',
       data: {
@@ -2302,9 +2329,22 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
           { label: 'Cancelled', data: months.map(m => (monthlyFromFacts[m] || {}).cancelled || 0), backgroundColor: '#ef4444', borderRadius: 4 },
         ]
       },
+      plugins: [stackedTotalPlugin],
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.raw)}` } } },
+        layout: { padding: { top: 20 } },
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.raw)}`,
+              footer: items => {
+                const total = items.reduce((s, i) => s + i.raw, 0);
+                return `Total: ${fmtNum(total)}`;
+              }
+            }
+          }
+        },
         scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } }, y: { stacked: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } } }
       }
     });
