@@ -1393,46 +1393,80 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
   function renderOverview() {
     const filters = getActiveFilters();
     const reps = filterReps(filters);
-    const T = GSO_DATA.totals;
+    const range = filters.dateRange || null;
     const hasWorkTypeFilter = !!filters.workTypes;
     const hasStatusFilter = !!filters.status;
-    const hasAnyFilter = reps.length < Object.keys(GSO_DATA.repSummary).length || hasWorkTypeFilter || hasStatusFilter;
+    const hasDateFilter = !!range;
+    const hasAnyFilter = reps.length < Object.keys(GSO_DATA.repSummary).length || hasWorkTypeFilter || hasStatusFilter || hasDateFilter;
 
-    // Recalculate totals from repSummary, respecting work type + status filters
+    // -- Build filtered completed sellers + pipeline items --
+    let fCompleted = GSO_DATA.completedSellers.filter(s => reps.includes(s.rep));
+    if (hasWorkTypeFilter) fCompleted = fCompleted.filter(s => filters.workTypes.includes(s.workType));
+    if (hasDateFilter) fCompleted = fCompleted.filter(s => isDateInRange(s.completedDate, range));
+
+    let fPipeline = [];
+    for (const [stage, items] of Object.entries(GSO_DATA.activePipeline)) {
+      items.forEach(item => fPipeline.push({ ...item, stage }));
+    }
+    fPipeline = fPipeline.filter(i => reps.includes(i.rep));
+    if (hasWorkTypeFilter) fPipeline = fPipeline.filter(i => filters.workTypes.includes(i.workType));
+    if (hasDateFilter) fPipeline = fPipeline.filter(i => isDateInRange(i.created, range));
+
+    const activePipe = fPipeline.filter(i => i.stage !== 'On Hold');
+    const onHoldPipe = fPipeline.filter(i => i.stage === 'On Hold');
+
+    // -- KPI Cards --
     let dsrs = 0, completed = 0, active = 0, onHold = 0, cancelled = 0, gpv = 0;
-    const completedStatuses = ['Completed','Implementation Complete','Tasks Complete','Live'];
-    const cancelledStatuses = ['Rejected','Lost - No Seller Contact','Lost - Churn','Lost','No Action Required','Seller No Show'];
 
-    reps.forEach(rep => {
-      const r = GSO_DATA.repSummary[rep];
-      if (!r) return;
+    if (hasDateFilter) {
+      completed = fCompleted.length;
+      active = activePipe.length;
+      onHold = onHoldPipe.length;
+      reps.forEach(rep => {
+        const r = GSO_DATA.repSummary[rep];
+        if (!r) return;
+        if (hasWorkTypeFilter) {
+          const wts = r.workTypes || {};
+          Object.entries(wts).forEach(([wt, cnt]) => {
+            if (filters.workTypes.includes(wt)) {
+              const total = r.total || 1;
+              cancelled += Math.round(cnt * (r.cancelled || 0) / total);
+            }
+          });
+        } else {
+          cancelled += r.cancelled || 0;
+        }
+      });
+      dsrs = completed + active + onHold + cancelled;
+      gpv = dedupeGPV(fCompleted) + dedupeGPV(fPipeline);
+    } else {
+      reps.forEach(rep => {
+        const r = GSO_DATA.repSummary[rep];
+        if (!r) return;
+        if (hasWorkTypeFilter) {
+          const wts = r.workTypes || {};
+          Object.entries(wts).forEach(([wt, cnt]) => {
+            if (filters.workTypes.includes(wt)) {
+              dsrs += cnt;
+              const total = r.total || 1;
+              completed += Math.round(cnt * (r.completed || 0) / total);
+              active += Math.round(cnt * (r.active || 0) / total);
+              onHold += Math.round(cnt * (r.onHold || 0) / total);
+              cancelled += Math.round(cnt * (r.cancelled || 0) / total);
+            }
+          });
+          gpv += r.gpv || 0;
+        } else {
+          dsrs += r.total || 0;
+          completed += r.completed || 0;
+          active += r.active || 0;
+          onHold += r.onHold || 0;
+          cancelled += r.cancelled || 0;
+          gpv += r.gpv || 0;
+        }
+      });
+    }
 
-      if (hasWorkTypeFilter) {
-        // Filter by work type: iterate workTypes sub-object
-        const wts = r.workTypes || {};
-        Object.entries(wts).forEach(([wt, cnt]) => {
-          if (filters.workTypes.includes(wt)) {
-            dsrs += cnt;
-            // We don't have status×workType cross-tab, so add to completed proportionally
-            const total = r.total || 1;
-            completed += Math.round(cnt * (r.completed || 0) / total);
-            active += Math.round(cnt * (r.active || 0) / total);
-            onHold += Math.round(cnt * (r.onHold || 0) / total);
-            cancelled += Math.round(cnt * (r.cancelled || 0) / total);
-          }
-        });
-        gpv += r.gpv || 0; // GPV is per-rep, not per-worktype
-      } else {
-        dsrs += r.total || 0;
-        completed += r.completed || 0;
-        active += r.active || 0;
-        onHold += r.onHold || 0;
-        cancelled += r.cancelled || 0;
-        gpv += r.gpv || 0;
-      }
-    });
-
-    // Apply status filter to KPIs
     if (hasStatusFilter) {
       const s = filters.status;
       if (s === 'completed') { dsrs = completed; active = 0; onHold = 0; cancelled = 0; }
@@ -1441,18 +1475,26 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
       else if (s === 'cancelled') { dsrs = cancelled; completed = 0; active = 0; onHold = 0; }
     }
 
+    const T = GSO_DATA.totals;
     document.getElementById('kpiDsrs').textContent = fmtNum(hasAnyFilter ? dsrs : T.dsrs);
     document.getElementById('kpiCompleted').textContent = fmtNum(hasAnyFilter ? completed : T.completed);
     document.getElementById('kpiActive').textContent = fmtNum(hasAnyFilter ? active : T.active);
     document.getElementById('kpiOnHold').textContent = fmtNum(hasAnyFilter ? onHold : T.onHold);
     document.getElementById('kpiCancelled').textContent = fmtNum(hasAnyFilter ? cancelled : T.cancelled);
     document.getElementById('kpiGpv').textContent = fmtUSD(hasAnyFilter ? gpv : T.gpv);
-    document.getElementById('kpiPipeline').textContent = fmtNum(hasAnyFilter ? active : T.activePipelineCount);
+    document.getElementById('kpiPipeline').textContent = fmtNum(hasAnyFilter ? (active + onHold) : T.activePipelineCount);
 
-    // Monthly Trend Chart
+    // -- Monthly Trend Chart (filtered) --
     destroyChart('chartMonthly');
-    const monthlyData = GSO_DATA.monthly;
-    const months = Object.keys(monthlyData).sort();
+    const monthlyFiltered = {};
+    fCompleted.forEach(s => {
+      const m = (s.completedDate || '').substring(0, 7);
+      if (!m) return;
+      if (!monthlyFiltered[m]) monthlyFiltered[m] = { completed: 0, cancelled: 0 };
+      monthlyFiltered[m].completed++;
+    });
+    const monthlyData = hasAnyFilter ? monthlyFiltered : GSO_DATA.monthly;
+    const months = Object.keys(monthlyData).sort().slice(-13);
     const monthLabels = months.map(m => {
       const [y, mo] = m.split('-');
       return new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
@@ -1463,54 +1505,26 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
       data: {
         labels: monthLabels,
         datasets: [
-          {
-            label: 'Completed',
-            data: months.map(m => monthlyData[m].completed),
-            backgroundColor: '#10b981',
-            borderRadius: 4,
-          },
-          {
-            label: 'Active',
-            data: months.map(m => monthlyData[m].active),
-            backgroundColor: '#3b82f6',
-            borderRadius: 4,
-          },
-          {
-            label: 'Cancelled',
-            data: months.map(m => monthlyData[m].cancelled),
-            backgroundColor: '#ef4444',
-            borderRadius: 4,
-          },
-          {
-            label: 'On Hold',
-            data: months.map(m => monthlyData[m].onHold),
-            backgroundColor: '#f59e0b',
-            borderRadius: 4,
-          },
+          { label: 'Completed', data: months.map(m => (monthlyData[m] || {}).completed || 0), backgroundColor: '#10b981', borderRadius: 4 },
+          { label: 'Cancelled', data: months.map(m => (monthlyData[m] || {}).cancelled || 0), backgroundColor: '#ef4444', borderRadius: 4 },
         ]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
-          tooltip: {
-            callbacks: {
-              label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.raw)}`
-            }
-          }
-        },
-        scales: {
-          x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
-          y: { stacked: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
-        }
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.raw)}` } } },
+        scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } }, y: { stacked: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } } }
       }
     });
 
-    // Work Type Chart (respects work type filter)
+    // -- Work Type Donut (filtered) --
     destroyChart('chartWorkType');
-    const wtData = GSO_DATA.workTypeSummary;
-    const wtNames = Object.keys(wtData).sort((a, b) => wtData[b].total - wtData[a].total);
+    const wtFiltered = {};
+    if (hasAnyFilter) {
+      fCompleted.forEach(s => { const wt = s.workType || 'Unknown'; wtFiltered[wt] = (wtFiltered[wt] || 0) + 1; });
+      fPipeline.forEach(i => { const wt = i.workType || 'Unknown'; wtFiltered[wt] = (wtFiltered[wt] || 0) + 1; });
+    }
+    const wtSource = hasAnyFilter ? wtFiltered : (() => { const o = {}; Object.entries(GSO_DATA.workTypeSummary).forEach(([k,v]) => o[k] = v.total); return o; })();
+    const wtNames = Object.keys(wtSource).sort((a, b) => (wtSource[b] || 0) - (wtSource[a] || 0));
     const wtColors = COLORS.slice(0, wtNames.length).map((color, i) => {
       if (hasWorkTypeFilter && !filters.workTypes.includes(wtNames[i])) return color + '25';
       return color;
@@ -1518,90 +1532,66 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
 
     charts.chartWorkType = new Chart(document.getElementById('chartWorkType'), {
       type: 'doughnut',
-      data: {
-        labels: wtNames,
-        datasets: [{
-          data: wtNames.map(w => wtData[w].total),
-          backgroundColor: wtColors,
-          borderWidth: 1,
-          borderColor: '#fff',
-        }]
-      },
+      data: { labels: wtNames, datasets: [{ data: wtNames.map(w => wtSource[w] || 0), backgroundColor: wtColors, borderWidth: 1, borderColor: '#fff' }] },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 }, padding: 8 } },
-          tooltip: {
-            callbacks: {
-              label: ctx => `${ctx.label}: ${fmtNum(ctx.raw)} (${fmtPct(ctx.raw / wtNames.reduce((s, w) => s + wtData[w].total, 0) * 100)})`
-            }
-          }
+          tooltip: { callbacks: { label: ctx => { const total = wtNames.reduce((s, w) => s + (wtSource[w] || 0), 0); return `${ctx.label}: ${fmtNum(ctx.raw)} (${fmtPct(total > 0 ? ctx.raw / total * 100 : 0)})`; } } }
         }
       }
     });
 
-    // Weekly Completions Chart
+    // -- Weekly Completions Chart (filtered) --
     destroyChart('chartWeekly');
-    const weeklyData = GSO_DATA.weeklyCompletions;
-    const weeks = Object.keys(weeklyData).sort();
-    const weekLabels = weeks.map(w => {
-      const d = new Date(w);
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const weeklyFiltered = {};
+    fCompleted.forEach(s => {
+      const cd = s.completedDate;
+      if (!cd) return;
+      const dt = new Date(cd);
+      const mon = new Date(dt); mon.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
+      const wk = mon.toISOString().split('T')[0];
+      if (!weeklyFiltered[wk]) weeklyFiltered[wk] = { total: 0, days: [] };
+      weeklyFiltered[wk].total++;
+      if (s.daysToComplete != null && s.daysToComplete >= 0) weeklyFiltered[wk].days.push(s.daysToComplete);
     });
+    Object.values(weeklyFiltered).forEach(w => { w.days.sort((a,b) => a - b); w.medianDays = w.days.length ? w.days[Math.floor(w.days.length / 2)] : 0; });
+    const weeklyData = hasAnyFilter ? weeklyFiltered : GSO_DATA.weeklyCompletions;
+    const weeks = Object.keys(weeklyData).sort().slice(-14);
+    const weekLabels = weeks.map(w => new Date(w).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
 
     charts.chartWeekly = new Chart(document.getElementById('chartWeekly'), {
       type: 'bar',
       data: {
         labels: weekLabels,
         datasets: [
-          {
-            label: 'Completions',
-            data: weeks.map(w => weeklyData[w].total),
-            backgroundColor: '#3b82f6',
-            borderRadius: 3,
-            yAxisID: 'y',
-          },
-          {
-            label: 'Median Days',
-            data: weeks.map(w => weeklyData[w].medianDays),
-            type: 'line',
-            borderColor: '#f59e0b',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            pointRadius: 2,
-            borderWidth: 2,
-            tension: 0.3,
-            yAxisID: 'y1',
-          }
+          { label: 'Completions', data: weeks.map(w => (weeklyData[w] || {}).total || 0), backgroundColor: '#3b82f6', borderRadius: 3, yAxisID: 'y' },
+          { label: 'Median Days', data: weeks.map(w => (weeklyData[w] || {}).medianDays || 0), type: 'line', borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', pointRadius: 2, borderWidth: 2, tension: 0.3, yAxisID: 'y1' }
         ]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
-          tooltip: {
-            callbacks: {
-              label: ctx => {
-                if (ctx.dataset.label === 'Median Days') return `Median: ${ctx.raw} days`;
-                return `Completions: ${fmtNum(ctx.raw)}`;
-              }
-            }
-          }
-        },
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: ctx => ctx.dataset.label === 'Median Days' ? `Median: ${ctx.raw} days` : `Completions: ${fmtNum(ctx.raw)}` } } },
         scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } },
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
           y: { position: 'left', grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } }, title: { display: true, text: 'Completions', font: { size: 11 } } },
           y1: { position: 'right', grid: { display: false }, ticks: { font: { size: 10 } }, title: { display: true, text: 'Median Days', font: { size: 11 } } }
         }
       }
     });
 
-    // Work Type Table
+    // -- Work Type Table (filtered) --
     const tbody = document.getElementById('tbodyWorkType');
     tbody.innerHTML = '';
-    wtNames.forEach(wt => {
-      const d = wtData[wt];
+    const wtTable = {};
+    if (hasAnyFilter) {
+      fCompleted.forEach(s => { const wt = s.workType || 'Unknown'; if (!wtTable[wt]) wtTable[wt] = { total: 0, completed: 0, active: 0, onHold: 0, cancelled: 0 }; wtTable[wt].total++; wtTable[wt].completed++; });
+      fPipeline.forEach(i => { const wt = i.workType || 'Unknown'; if (!wtTable[wt]) wtTable[wt] = { total: 0, completed: 0, active: 0, onHold: 0, cancelled: 0 }; wtTable[wt].total++; if (i.stage === 'On Hold') wtTable[wt].onHold++; else wtTable[wt].active++; });
+    }
+    const wtTableData = hasAnyFilter ? wtTable : GSO_DATA.workTypeSummary;
+    const wtTableNames = Object.keys(wtTableData).sort((a, b) => (wtTableData[b].total || 0) - (wtTableData[a].total || 0));
+    wtTableNames.forEach(wt => {
+      const d = wtTableData[wt];
       const pct = d.total > 0 ? (d.completed / d.total * 100) : 0;
       const barW = Math.min(pct, 100);
       tbody.innerHTML += `
