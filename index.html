@@ -606,13 +606,13 @@
         <option value="today">Today</option>
         <option value="yesterday">Yesterday</option>
         <option value="this_week">This Week</option>
-        <option value="this_month">This Month</option>
+        <option value="this_month" selected>This Month</option>
         <option value="last_month">Last Month</option>
         <option value="this_quarter">This Quarter</option>
         <option value="last_quarter">Last Quarter</option>
         <option value="30">Last 30 Days</option>
         <option value="60">Last 60 Days</option>
-        <option value="90" selected>Last 90 Days</option>
+        <option value="90">Last 90 Days</option>
         <option value="custom">Custom Range...</option>
       </select>
       <!-- Custom date range (hidden by default) -->
@@ -1426,7 +1426,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
     document.querySelectorAll('.wt-checkbox').forEach(cb => cb.checked = true);
     document.getElementById('workTypeLabel').textContent = 'All Work Types';
     filterStatus.value = '';
-    filterTimeFrame.value = '90';
+    filterTimeFrame.value = 'this_month';
     document.getElementById('customDateRange').classList.add('hidden');
     document.getElementById('customDateFrom').value = '';
     document.getElementById('customDateTo').value = '';
@@ -1530,7 +1530,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
       hasFilter = true;
       filterPills.innerHTML += `<span class="filter-pill">Status: ${esc(filters.status)}<button onclick="document.getElementById('filterStatus').value='';document.getElementById('filterStatus').dispatchEvent(new Event('change'));">&times;</button></span>`;
     }
-    if (filters.timeFrame && filters.timeFrame !== '90') {
+    if (filters.timeFrame && filters.timeFrame !== 'this_month') {
       hasFilter = true;
       const sel = filterTimeFrame.options[filterTimeFrame.selectedIndex];
       const label = filters.timeFrame === 'custom'
@@ -2862,7 +2862,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
     // If no date filter is active, default to 90 days for this tab
     const completedFilters = { ...filters };
     if (!completedFilters.dateRange) {
-      completedFilters.dateRange = resolveTimeRange('90');
+      completedFilters.dateRange = resolveTimeRange('this_month');
     }
     const sellers = filterCompletedSellers(completedFilters);
 
@@ -2882,7 +2882,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
   function renderCompletedTable(sellers) {
     const search = (document.getElementById('searchCompleted').value || '').toLowerCase();
     const fallbackFilters = { ...getActiveFilters() };
-    if (!fallbackFilters.dateRange) fallbackFilters.dateRange = resolveTimeRange('90');
+    if (!fallbackFilters.dateRange) fallbackFilters.dateRange = resolveTimeRange('this_month');
     let data = sellers || filterCompletedSellers(fallbackFilters);
     if (search) {
       data = data.filter(s =>
