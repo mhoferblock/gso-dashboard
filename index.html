@@ -3173,9 +3173,15 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
   let sellersSortCol = 'gpv';
   let sellersSortDir = -1;
 
+  // Work types that count as "seller launches" (implementation-based, not advisory)
+  const LAUNCH_WORK_TYPES = new Set([
+    'Onsite', 'Premium', 'Plus',
+    'Full-day 3rd Party Vendor Install', 'Half-day 3rd Party Vendor Install'
+  ]);
+
   function renderSellers() {
     const filters = getActiveFilters();
-    const sellers = filterCompletedSellers(filters);
+    const sellers = filterCompletedSellers(filters).filter(s => LAUNCH_WORK_TYPES.has(s.workType));
 
     // KPIs
     const totalGpv = dedupeGPV(sellers);
@@ -3244,7 +3250,7 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
 
   function renderSellersTable(sellers) {
     const search = (document.getElementById('searchSellers').value || '').toLowerCase();
-    let data = sellers || filterCompletedSellers(getActiveFilters());
+    let data = sellers || filterCompletedSellers(getActiveFilters()).filter(s => LAUNCH_WORK_TYPES.has(s.workType));
     if (search) {
       data = data.filter(s =>
         s.rep.toLowerCase().includes(search) ||
