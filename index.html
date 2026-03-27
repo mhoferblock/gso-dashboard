@@ -483,11 +483,25 @@
       <!-- Time Frame Filter -->
       <select id="filterTimeFrame" class="border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none">
         <option value="">All Time</option>
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="this_week">This Week</option>
+        <option value="this_month">This Month</option>
+        <option value="last_month">Last Month</option>
+        <option value="this_quarter">This Quarter</option>
+        <option value="last_quarter">Last Quarter</option>
         <option value="30">Last 30 Days</option>
         <option value="60">Last 60 Days</option>
         <option value="90" selected>Last 90 Days</option>
-        <option value="180">Last 180 Days</option>
+        <option value="custom">Custom Range...</option>
       </select>
+      <!-- Custom date range (hidden by default) -->
+      <div id="customDateRange" class="hidden flex items-center gap-1.5">
+        <input type="date" id="customDateFrom" class="border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none">
+        <span class="text-gray-400 text-xs">to</span>
+        <input type="date" id="customDateTo" class="border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none">
+        <button id="applyCustomDate" class="px-2 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Apply</button>
+      </div>
 
       <!-- Active Filter Pills -->
       <div id="filterPills" class="flex flex-wrap gap-1 ml-1"></div>
@@ -1157,7 +1171,24 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
 
   filterRep.addEventListener('change', applyFilters);
   filterStatus.addEventListener('change', applyFilters);
-  filterTimeFrame.addEventListener('change', applyFilters);
+  filterTimeFrame.addEventListener('change', () => {
+    const v = filterTimeFrame.value;
+    const customWrap = document.getElementById('customDateRange');
+    if (v === 'custom') {
+      customWrap.classList.remove('hidden');
+      // Don't apply filters yet — wait for Apply button
+      return;
+    }
+    customWrap.classList.add('hidden');
+    applyFilters();
+  });
+  document.getElementById('applyCustomDate').addEventListener('click', applyFilters);
+  document.getElementById('customDateFrom').addEventListener('change', () => {
+    if (filterTimeFrame.value === 'custom') applyFilters();
+  });
+  document.getElementById('customDateTo').addEventListener('change', () => {
+    if (filterTimeFrame.value === 'custom') applyFilters();
+  });
 
   clearFiltersBtn.addEventListener('click', () => {
     filterTeam.value = '';
@@ -1168,9 +1199,72 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
     document.getElementById('workTypeLabel').textContent = 'All Work Types';
     filterStatus.value = '';
     filterTimeFrame.value = '90';
+    document.getElementById('customDateRange').classList.add('hidden');
+    document.getElementById('customDateFrom').value = '';
+    document.getElementById('customDateTo').value = '';
     populateRepFilter('');
     applyFilters();
   });
+
+  /** Resolve a timeframe value to {start, end} date strings (YYYY-MM-DD) */
+  function resolveTimeRange(value) {
+    if (!value) return null;
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = today.getMonth();
+    const dd = today.getDate();
+    const fmt = d => d.toISOString().split('T')[0];
+
+    switch (value) {
+      case 'today':
+        return { start: fmt(today), end: fmt(today) };
+      case 'yesterday': {
+        const y = new Date(yyyy, mm, dd - 1);
+        return { start: fmt(y), end: fmt(y) };
+      }
+      case 'this_week': {
+        const dow = today.getDay();
+        const mon = new Date(yyyy, mm, dd - (dow === 0 ? 6 : dow - 1));
+        return { start: fmt(mon), end: fmt(today) };
+      }
+      case 'this_month':
+        return { start: `${yyyy}-${String(mm + 1).padStart(2, '0')}-01`, end: fmt(today) };
+      case 'last_month': {
+        const lm = new Date(yyyy, mm - 1, 1);
+        const lmEnd = new Date(yyyy, mm, 0);
+        return { start: fmt(lm), end: fmt(lmEnd) };
+      }
+      case 'this_quarter': {
+        const qm = Math.floor(mm / 3) * 3;
+        return { start: fmt(new Date(yyyy, qm, 1)), end: fmt(today) };
+      }
+      case 'last_quarter': {
+        const qm = Math.floor(mm / 3) * 3;
+        return { start: fmt(new Date(yyyy, qm - 3, 1)), end: fmt(new Date(yyyy, qm, 0)) };
+      }
+      case 'custom': {
+        const from = document.getElementById('customDateFrom').value;
+        const to = document.getElementById('customDateTo').value;
+        if (from || to) return { start: from || '2000-01-01', end: to || fmt(today) };
+        return null;
+      }
+      default: {
+        // Numeric days (30, 60, 90)
+        const days = parseInt(value);
+        if (!isNaN(days)) {
+          const cutoff = new Date(yyyy, mm, dd - days);
+          return { start: fmt(cutoff), end: fmt(today) };
+        }
+        return null;
+      }
+    }
+  }
+
+  /** Check if a date string falls within a range */
+  function isDateInRange(dateStr, range) {
+    if (!range || !dateStr) return !range;
+    return dateStr >= range.start && dateStr <= range.end;
+  }
 
   function getActiveFilters() {
     const filters = {};
@@ -1179,7 +1273,10 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
     const selectedWTs = [...document.querySelectorAll('.wt-checkbox:checked')].map(cb => cb.value);
     if (selectedWTs.length < allWorkTypes.length) filters.workTypes = selectedWTs;
     if (filterStatus.value) filters.status = filterStatus.value;
-    if (filterTimeFrame.value) filters.timeFrame = parseInt(filterTimeFrame.value);
+    if (filterTimeFrame.value) {
+      filters.timeFrame = filterTimeFrame.value;
+      filters.dateRange = resolveTimeRange(filterTimeFrame.value);
+    }
     return filters;
   }
 
@@ -1204,6 +1301,14 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
     if (filters.status) {
       hasFilter = true;
       filterPills.innerHTML += `<span class="filter-pill">Status: ${esc(filters.status)}<button onclick="document.getElementById('filterStatus').value='';document.getElementById('filterStatus').dispatchEvent(new Event('change'));">&times;</button></span>`;
+    }
+    if (filters.timeFrame && filters.timeFrame !== '90') {
+      hasFilter = true;
+      const sel = filterTimeFrame.options[filterTimeFrame.selectedIndex];
+      const label = filters.timeFrame === 'custom'
+        ? `${document.getElementById('customDateFrom').value || '...'} → ${document.getElementById('customDateTo').value || '...'}`
+        : sel.textContent;
+      filterPills.innerHTML += `<span class="filter-pill">Time: ${esc(label)}<button onclick="document.getElementById('filterTimeFrame').value='90';document.getElementById('customDateRange').classList.add('hidden');document.getElementById('filterTimeFrame').dispatchEvent(new Event('change'));">&times;</button></span>`;
     }
 
     clearFiltersBtn.classList.toggle('hidden', !hasFilter);
@@ -1250,10 +1355,8 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
     if (filters.workTypes) {
       sellers = sellers.filter(s => filters.workTypes.includes(s.workType));
     }
-    if (filters.timeFrame) {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - filters.timeFrame);
-      sellers = sellers.filter(s => s.completedDate && new Date(s.completedDate) >= cutoff);
+    if (filters.dateRange) {
+      sellers = sellers.filter(s => isDateInRange(s.completedDate, filters.dateRange));
     }
     return sellers;
   }
@@ -1878,7 +1981,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
   function renderJourney() {
     const filters = getActiveFilters();
     const reps = filterReps(filters);
-    const hasFilter = reps.length < Object.keys(GSO_DATA.repSummary).length || !!filters.workTypes || !!filters.timeFrame;
+    const hasFilter = reps.length < Object.keys(GSO_DATA.repSummary).length || !!filters.workTypes || !!filters.dateRange;
 
     // Deep clone the journey timing so we can modify it
     let jt = JSON.parse(JSON.stringify(GSO_DATA.journeyTiming));
@@ -1887,11 +1990,8 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
       // Get filtered completed sellers
       let sellers = GSO_DATA.completedSellers.filter(s => reps.includes(s.rep));
       if (filters.workTypes) sellers = sellers.filter(s => filters.workTypes.includes(s.workType));
-      if (filters.timeFrame) {
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - filters.timeFrame);
-        const cutoffStr = cutoff.toISOString().split('T')[0];
-        sellers = sellers.filter(s => s.completedDate >= cutoffStr);
+      if (filters.dateRange) {
+        sellers = sellers.filter(s => isDateInRange(s.completedDate, filters.dateRange));
       }
 
       // Compute filtered median days to complete
@@ -2028,7 +2128,12 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
 
   function renderCompleted() {
     const filters = getActiveFilters();
-    const sellers = filterCompletedSellers({ ...filters, timeFrame: 90 });
+    // If no date filter is active, default to 90 days for this tab
+    const completedFilters = { ...filters };
+    if (!completedFilters.dateRange) {
+      completedFilters.dateRange = resolveTimeRange('90');
+    }
+    const sellers = filterCompletedSellers(completedFilters);
 
     // KPIs
     const totalGpv = dedupeGPV(sellers);
@@ -2045,7 +2150,9 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
 
   function renderCompletedTable(sellers) {
     const search = (document.getElementById('searchCompleted').value || '').toLowerCase();
-    let data = sellers || filterCompletedSellers({ ...getActiveFilters(), timeFrame: 90 });
+    const fallbackFilters = { ...getActiveFilters() };
+    if (!fallbackFilters.dateRange) fallbackFilters.dateRange = resolveTimeRange('90');
+    let data = sellers || filterCompletedSellers(fallbackFilters);
     if (search) {
       data = data.filter(s =>
         s.rep.toLowerCase().includes(search) ||
