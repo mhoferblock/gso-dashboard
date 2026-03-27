@@ -544,16 +544,21 @@
       </span>
     </div>
 
-    <!-- Right: Date & Refresh -->
-    <div class="flex items-center gap-3">
-      <span class="text-xs text-gray-400 hidden md:block" id="navDate">Data as of Mar 26, 2026</span>
-      <a href="goose://sessions/new?text=Run%20the%20GSO%20dashboard%20refresh%20script%20at%20%2FUsers%2Fmhofer%2Fgso-dashboard%2F.github%2Fscripts%2Frefresh.sh%20to%20pull%20latest%20Salesforce%20data%20from%20Snowflake%20and%20rebuild%20the%20dashboard."
-         class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition shadow-sm">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-        </svg>
-        Refresh Data
-      </a>
+    <!-- Right: Data freshness -->
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-gray-400 hidden md:block" id="navDate"></span>
+      <span class="info-tip" style="margin-left: 0;">?<span class="info-popup tip-right" style="width: 280px;">
+        <span class="info-title">How to Refresh Data</span>
+        <span class="info-desc">This dashboard uses a static data snapshot. To update with the latest Salesforce data:</span>
+        <span class="info-source">
+          <span class="info-source-label">🔄 Refresh Steps</span><br>
+          1. Open a Goose session<br>
+          2. Say: "Refresh the GSO Dashboard"<br>
+          3. Goose will pull from Airtable + Snowflake, rebuild, and deploy<br><br>
+          <span class="info-source-label">📂 Data Pipeline</span><br>
+          Snowflake → Airtable → dsr_facts.json → index.html → Blockcell
+        </span>
+      </span></span>
     </div>
   </div>
 </nav>
@@ -3825,18 +3830,26 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
   renderAllRepComparisons();
 
   // ================================================================
-  // GOOSE REFRESH INSTRUCTIONS
+  // DATA FRESHNESS INDICATOR
   // ================================================================
-  // To refresh this dashboard:
-  // 1. Click the "Refresh Data" button in the top-right corner
-  // 2. This opens a new Goose session with the refresh command
-  // 3. Goose will run: /Users/mhofer/gso-dashboard/.github/scripts/refresh.sh
-  // 4. The script pulls latest Salesforce data from Snowflake
-  // 5. Processes it into processed_data.json
-  // 6. Rebuilds this index.html with the new data
-  //
-  // Alternatively, run manually:
-  //   goose://sessions/new?text=Run%20the%20GSO%20dashboard%20refresh%20script%20at%20%2FUsers%2Fmhofer%2Fgso-dashboard%2F.github%2Fscripts%2Frefresh.sh
+  // Compute the most recent created date in the data as a proxy for freshness
+  (function() {
+    let maxDate = '';
+    for (const f of DSR_FACTS) {
+      if (f.createdDate && f.createdDate > maxDate) maxDate = f.createdDate;
+      if (f.completedDate && f.completedDate > maxDate) maxDate = f.completedDate;
+    }
+    const goalingDate = (GSO_DATA.goalingMeta || {}).updated || '';
+    if (goalingDate > maxDate) maxDate = goalingDate;
+
+    if (maxDate) {
+      const d = new Date(maxDate + 'T00:00:00');
+      const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      document.getElementById('navDate').textContent = `Data through ${formatted}`;
+    } else {
+      document.getElementById('navDate').textContent = 'Data date unknown';
+    }
+  })();
 
 })();
 </script>
