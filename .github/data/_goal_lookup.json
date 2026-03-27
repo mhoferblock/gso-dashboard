@@ -1,0 +1,86 @@
+{
+  "3_US": {
+    "dsr_goal": 40,
+    "pts_goal": 150,
+    "days_goal": 35
+  },
+  "4_US": {
+    "dsr_goal": 40,
+    "pts_goal": 175,
+    "days_goal": 35
+  },
+  "3_JP": {
+    "dsr_goal": 40,
+    "pts_goal": 150,
+    "days_goal": 20
+  },
+  "4_JP": {
+    "dsr_goal": 40,
+    "pts_goal": 150,
+    "days_goal": 20
+  },
+  "3_CA": {
+    "dsr_goal": 40,
+    "pts_goal": 150,
+    "days_goal": 35
+  },
+  "4_CA": {
+    "dsr_goal": 40,
+    "pts_goal": 175,
+    "days_goal": 35
+  },
+  "3_GB": {
+    "dsr_goal": 40,
+    "pts_goal": 150,
+    "days_goal": 35
+  },
+  "4_GB": {
+    "dsr_goal": 40,
+    "pts_goal": 175,
+    "days_goal": 35
+  },
+  "3_AU": {
+    "dsr_goal": 40,
+    "pts_goal": 150,
+    "days_goal": 35
+  },
+  "4_AU": {
+    "dsr_goal": 40,
+    "pts_goal": 175,
+    "days_goal": 35
+  },
+  "3_IE": {
+    "dsr_goal": 40,
+    "pts_goal": 150,
+    "days_goal": 35
+  },
+  "4_IE": {
+    "dsr_goal": 35,
+    "pts_goal": 150,
+    "days_goal": 35
+  },
+  "2_MD": {
+    "dsr_goal": 40,
+    "pts_goal": 125,
+    "days_goal": 35
+  },
+  "3_MD": {
+    "dsr_goal": 40,
+    "pts_goal": 150,
+    "days_goal": 35
+  },
+  "4_MD": {
+    "dsr_goal": 40,
+    "pts_goal": 175,
+    "days_goal": 35
+  },
+  "2_AU": {
+    "days_goal": 35
+  },
+  "5_AU": {
+    "days_goal": 35
+  },
+  "2_GB": {
+    "days_goal": 35
+  }
+}
