@@ -35,7 +35,9 @@ for f in facts:
     if f.get("subStatus"): r["ss"] = f["subStatus"]
     if f.get("requestReason"): r["rr"] = f["requestReason"]
     if f.get("country"): r["co"] = f["country"]
-    if f.get("gpvUsd"): r["g"] = f["gpvUsd"]
+    # Use gpv (TOTAL_ANNUAL_GPV_C) which has better fill than gpvUsd (LIFETIME_GPV_C)
+    gpv_val = f.get("gpv") or f.get("gpvUsd") or 0
+    if gpv_val: r["g"] = gpv_val
     if f.get("createdDate"): r["cd"] = f["createdDate"]
     if f.get("completedDate"): r["cpd"] = f["completedDate"]
     if f.get("goLiveDate"): r["gl"] = f["goLiveDate"]
