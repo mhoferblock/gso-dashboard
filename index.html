@@ -174,19 +174,57 @@
       }
     }
 
-    /* ===== Journey Flow ===== */
+    /* ===== Journey Flow (Snake Layout) ===== */
+    .journey-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      justify-content: flex-start;
+    }
+    .journey-row.reverse {
+      flex-direction: row-reverse;
+    }
+    .journey-turn {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 40px;
+    }
+    .journey-turn.reverse {
+      justify-content: flex-start;
+    }
+    .journey-turn-arrow {
+      width: 5px;
+      height: 40px;
+      border-radius: 9999px;
+      background: linear-gradient(180deg, #bfdbfe 0%, #60a5fa 50%, #1d4ed8 100%);
+      position: relative;
+    }
+    .journey-turn-arrow::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 50%;
+      width: 14px;
+      height: 14px;
+      border-bottom: 4px solid #1d4ed8;
+      border-right: 4px solid #1d4ed8;
+      transform: translateX(-50%) rotate(45deg);
+      border-radius: 2px;
+    }
     .journey-stage {
-      min-width: 164px;
+      min-width: 148px;
+      max-width: 170px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       position: relative;
-      padding: 0 4px;
+      padding: 0 2px;
+      flex-shrink: 0;
     }
     .journey-octagon {
-      width: 118px;
-      height: 118px;
+      width: 108px;
+      height: 108px;
       clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
       display: flex;
       flex-direction: column;
@@ -196,47 +234,49 @@
       color: #0f172a;
       border: 1px solid rgba(148, 163, 184, 0.35);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 10px 24px rgba(15, 23, 42, 0.08);
-      padding: 12px;
+      padding: 10px;
     }
     .journey-octagon-value {
-      font-size: 1.9rem;
+      font-size: 1.7rem;
       font-weight: 800;
       line-height: 1;
       letter-spacing: -0.04em;
     }
     .journey-octagon-unit {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: #475569;
-      margin-top: 4px;
+      margin-top: 3px;
     }
     .journey-stage-title {
-      font-size: 0.9rem;
+      font-size: 0.82rem;
       font-weight: 700;
       color: #1e293b;
       text-align: center;
-      max-width: 156px;
+      max-width: 150px;
       line-height: 1.2;
     }
     .journey-stage-meta {
-      font-size: 0.74rem;
+      font-size: 0.7rem;
       color: #64748b;
       text-align: center;
-      line-height: 1.45;
+      line-height: 1.4;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 14px;
-      padding: 8px 10px;
-      min-width: 136px;
+      border-radius: 12px;
+      padding: 6px 8px;
+      min-width: 126px;
     }
     .journey-connector {
-      min-width: 138px;
+      min-width: 50px;
+      flex: 1;
+      max-width: 80px;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 0;
-      margin-top: 72px;
+      margin-top: 64px;
     }
     .journey-connector-line {
       width: 100%;
@@ -246,17 +286,28 @@
       position: relative;
       box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.2);
     }
+    .journey-row.reverse .journey-connector-line {
+      background: linear-gradient(270deg, #bfdbfe 0%, #60a5fa 45%, #1d4ed8 100%);
+    }
     .journey-connector-line::after {
       content: '';
       position: absolute;
       right: -2px;
       top: 50%;
-      width: 14px;
-      height: 14px;
-      border-top: 4px solid #1d4ed8;
-      border-right: 4px solid #1d4ed8;
+      width: 12px;
+      height: 12px;
+      border-top: 3.5px solid #1d4ed8;
+      border-right: 3.5px solid #1d4ed8;
       transform: translateY(-50%) rotate(45deg);
       border-radius: 2px;
+    }
+    .journey-row.reverse .journey-connector-line::after {
+      right: auto;
+      left: -2px;
+      border-top: none;
+      border-right: none;
+      border-bottom: 3.5px solid #1d4ed8;
+      border-left: 3.5px solid #1d4ed8;
     }
     .journey-tone-fast {
       background: linear-gradient(145deg, #dcfce7, #86efac);
@@ -741,9 +792,7 @@
       <h3 class="text-sm font-semibold text-gray-800 mb-2">Onboarding Journey — Median Days to Reach Stage</h3>
       <p class="text-xs text-gray-500 mb-2">From DSR creation to each milestone. Octagon color indicates pace: <span class="text-emerald-600 font-medium">green</span> = fast, <span class="text-blue-600 font-medium">blue</span> = steady, <span class="text-amber-600 font-medium">orange</span> = slow, <span class="text-red-500 font-medium">red</span> = critical.</p>
       <p class="text-xs font-medium text-blue-600 mb-4" id="journeyFilterContext" style="display:none;"></p>
-      <div class="overflow-x-auto pb-4">
-        <div class="flex items-start gap-0 min-w-max" id="journeyFlow"></div>
-      </div>
+      <div id="journeyFlow"></div>
     </div>
 
     <!-- Stage Duration Table -->
@@ -2067,28 +2116,53 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
     const flow = document.getElementById('journeyFlow');
     flow.innerHTML = '';
 
-    stages.forEach((stage, idx) => {
-      const d = jt[stage];
-      const tone = journeyTone(d.medianDays);
+    // Snake layout: split stages into rows of COLS_PER_ROW
+    const COLS_PER_ROW = 6;
+    const rows = [];
+    for (let i = 0; i < stages.length; i += COLS_PER_ROW) {
+      rows.push(stages.slice(i, i + COLS_PER_ROW));
+    }
 
-      flow.innerHTML += `
-        <div class="journey-stage">
-          <div class="journey-octagon ${tone}">
-            <div class="journey-octagon-value">${d.medianDays}</div>
-            <div class="journey-octagon-unit">median days</div>
-          </div>
-          <div class="journey-stage-title">${esc(stage)}</div>
-          <div class="journey-stage-meta">
-            Avg: ${d.avgDays.toFixed(1)}d<br>
-            P25: ${d.p25}d · P75: ${d.p75}d<br>
-            n = ${fmtNum(d.count)}
-          </div>
-        </div>`;
+    rows.forEach((rowStages, rowIdx) => {
+      const isReverse = rowIdx % 2 === 1;
+      // For reverse rows, render stages in reverse order so the snake reads correctly
+      const displayStages = isReverse ? [...rowStages].reverse() : rowStages;
 
-      if (idx < stages.length - 1) {
+      let rowHtml = `<div class="journey-row${isReverse ? ' reverse' : ''}">`;
+      displayStages.forEach((stage, colIdx) => {
+        const d = jt[stage];
+        const tone = journeyTone(d.medianDays);
+
+        rowHtml += `
+          <div class="journey-stage">
+            <div class="journey-octagon ${tone}">
+              <div class="journey-octagon-value">${d.medianDays}</div>
+              <div class="journey-octagon-unit">median days</div>
+            </div>
+            <div class="journey-stage-title">${esc(stage)}</div>
+            <div class="journey-stage-meta">
+              Avg: ${d.avgDays.toFixed(1)}d<br>
+              P25: ${d.p25}d &middot; P75: ${d.p75}d<br>
+              n = ${fmtNum(d.count)}
+            </div>
+          </div>`;
+
+        if (colIdx < displayStages.length - 1) {
+          rowHtml += `
+            <div class="journey-connector">
+              <div class="journey-connector-line"></div>
+            </div>`;
+        }
+      });
+      rowHtml += `</div>`;
+      flow.innerHTML += rowHtml;
+
+      // Add turn arrow between rows
+      if (rowIdx < rows.length - 1) {
+        const turnAlign = isReverse ? 'reverse' : '';
         flow.innerHTML += `
-          <div class="journey-connector">
-            <div class="journey-connector-line"></div>
+          <div class="journey-turn${turnAlign ? ' ' + turnAlign : ''}">
+            <div class="journey-turn-arrow"></div>
           </div>`;
       }
     });
