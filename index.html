@@ -185,30 +185,58 @@
       flex-direction: row-reverse;
     }
     .journey-turn {
-      display: flex;
-      justify-content: flex-end;
-      padding: 8px 40px;
-    }
-    .journey-turn.reverse {
-      justify-content: flex-start;
-    }
-    .journey-turn-arrow {
-      width: 5px;
-      height: 40px;
-      border-radius: 9999px;
-      background: linear-gradient(180deg, #bfdbfe 0%, #60a5fa 50%, #1d4ed8 100%);
       position: relative;
+      height: 48px;
+      margin: 0 74px;
     }
-    .journey-turn-arrow::after {
+    /* Right-side U-turn: row 1 (L→R) connects to row 2 (R→L) via right edge */
+    .journey-turn-right {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 48px;
+      height: 100%;
+      border-right: 5px solid #60a5fa;
+      border-top: 5px solid #60a5fa;
+      border-bottom: 5px solid #60a5fa;
+      border-radius: 0 20px 20px 0;
+      border-left: none;
+    }
+    .journey-turn-right::after {
       content: '';
       position: absolute;
-      bottom: -2px;
-      left: 50%;
-      width: 14px;
-      height: 14px;
-      border-bottom: 4px solid #1d4ed8;
-      border-right: 4px solid #1d4ed8;
-      transform: translateX(-50%) rotate(45deg);
+      bottom: -3px;
+      left: -9px;
+      width: 12px;
+      height: 12px;
+      border-bottom: 3.5px solid #1d4ed8;
+      border-left: 3.5px solid #1d4ed8;
+      transform: rotate(-45deg);
+      border-radius: 2px;
+    }
+    /* Left-side U-turn: row 2 (R→L) connects to row 3 (L→R) via left edge */
+    .journey-turn-left {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 48px;
+      height: 100%;
+      border-left: 5px solid #60a5fa;
+      border-top: 5px solid #60a5fa;
+      border-bottom: 5px solid #60a5fa;
+      border-radius: 20px 0 0 20px;
+      border-right: none;
+    }
+    .journey-turn-left::after {
+      content: '';
+      position: absolute;
+      bottom: -3px;
+      right: -9px;
+      width: 12px;
+      height: 12px;
+      border-bottom: 3.5px solid #1d4ed8;
+      border-right: 3.5px solid #1d4ed8;
+      transform: rotate(-45deg);
       border-radius: 2px;
     }
     .journey-stage {
@@ -2157,12 +2185,13 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
       rowHtml += `</div>`;
       flow.innerHTML += rowHtml;
 
-      // Add turn arrow between rows
+      // Add U-turn connector between rows
       if (rowIdx < rows.length - 1) {
-        const turnAlign = isReverse ? 'reverse' : '';
+        // After a L→R row, turn on the right side; after a R→L row, turn on the left side
+        const turnSide = isReverse ? 'left' : 'right';
         flow.innerHTML += `
-          <div class="journey-turn${turnAlign ? ' ' + turnAlign : ''}">
-            <div class="journey-turn-arrow"></div>
+          <div class="journey-turn">
+            <div class="journey-turn-${turnSide}"></div>
           </div>`;
       }
     });
