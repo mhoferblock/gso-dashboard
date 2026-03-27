@@ -2182,11 +2182,21 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
     // -- Monthly Trend Chart (filtered) --
     destroyChart('chartMonthly');
     const monthlyFiltered = {};
+    const initMonth = (m) => { if (!monthlyFiltered[m]) monthlyFiltered[m] = { completed: 0, active: 0, onHold: 0, cancelled: 0 }; };
+    // Completed by completion date
     fCompleted.forEach(s => {
       const m = (s.completedDate || '').substring(0, 7);
-      if (!m) return;
-      if (!monthlyFiltered[m]) monthlyFiltered[m] = { completed: 0, cancelled: 0 };
-      monthlyFiltered[m].completed++;
+      if (m) { initMonth(m); monthlyFiltered[m].completed++; }
+    });
+    // Active pipeline by created date
+    activePipe.forEach(i => {
+      const m = (i.created || '').substring(0, 7);
+      if (m) { initMonth(m); monthlyFiltered[m].active++; }
+    });
+    // On Hold by created date
+    onHoldPipe.forEach(i => {
+      const m = (i.created || '').substring(0, 7);
+      if (m) { initMonth(m); monthlyFiltered[m].onHold++; }
     });
     const monthlyData = hasAnyFilter ? monthlyFiltered : GSO_DATA.monthly;
     const months = Object.keys(monthlyData).sort().slice(-13);
@@ -2201,6 +2211,8 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
         labels: monthLabels,
         datasets: [
           { label: 'Completed', data: months.map(m => (monthlyData[m] || {}).completed || 0), backgroundColor: '#10b981', borderRadius: 4 },
+          { label: 'Active', data: months.map(m => (monthlyData[m] || {}).active || 0), backgroundColor: '#3b82f6', borderRadius: 4 },
+          { label: 'On Hold', data: months.map(m => (monthlyData[m] || {}).onHold || 0), backgroundColor: '#f59e0b', borderRadius: 4 },
           { label: 'Cancelled', data: months.map(m => (monthlyData[m] || {}).cancelled || 0), backgroundColor: '#ef4444', borderRadius: 4 },
         ]
       },
