@@ -3233,36 +3233,69 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
   // ================================================================
   function renderCancelled() {
     const cd = GSO_DATA.cancelledData;
-    if (!cd) return;
+    if (!cd || !cd.list) return;
+
+    // Apply global date filter to cancelled list
+    const filters = getActiveFilters();
+    const range = filters.dateRange || null;
+    let list = cd.list;
+    if (range) list = list.filter(d => isDateInRange(d.createdDate, range));
+
+    // Recompute aggregates from filtered list
+    const total = list.length;
+    const byStatus = {};
+    const byReason = {};
+    const byAE = {};
+    const byAELeader = {};
+    const byRep = {};
+    list.forEach(d => {
+      byStatus[d.status] = (byStatus[d.status] || 0) + 1;
+      byReason[d.reason || 'No Reason Given'] = (byReason[d.reason || 'No Reason Given'] || 0) + 1;
+      const ae = d.aeName || 'Unknown';
+      if (!byAE[ae]) byAE[ae] = { count: 0, leader: d.aeLeader || 'Unknown' };
+      byAE[ae].count++;
+      byAELeader[d.aeLeader || 'Unknown'] = (byAELeader[d.aeLeader || 'Unknown'] || 0) + 1;
+      byRep[d.rep] = (byRep[d.rep] || 0) + 1;
+    });
+
+    // Sort byAE and byAELeader by count desc
+    const sortedByAE = Object.fromEntries(Object.entries(byAE).sort((a,b) => b[1].count - a[1].count));
+    const sortedByAELeader = Object.fromEntries(Object.entries(byAELeader).sort((a,b) => b[1] - a[1]));
+
+    // Store filtered data for table rendering
+    cd._filteredList = list;
+    cd._filtered = { total, byStatus, byReason, byAE: sortedByAE, byAELeader: sortedByAELeader, byRep };
 
     // KPIs
-    document.getElementById('kpiCancelledTotal').textContent = fmtNum(cd.total);
-    document.getElementById('kpiRejected').textContent = fmtNum(cd.byStatus['Rejected'] || 0);
-    document.getElementById('kpiLostNoContact').textContent = fmtNum(cd.byStatus['Lost - No Seller Contact'] || 0);
-    document.getElementById('kpiLostChurn').textContent = fmtNum(cd.byStatus['Lost - Churn'] || 0);
+    document.getElementById('kpiCancelledTotal').textContent = fmtNum(total);
+    document.getElementById('kpiRejected').textContent = fmtNum(byStatus['Rejected'] || 0);
+    document.getElementById('kpiLostNoContact').textContent = fmtNum(byStatus['Lost - No Seller Contact'] || 0);
+    document.getElementById('kpiLostChurn').textContent = fmtNum(byStatus['Lost - Churn'] || 0);
+
+    const f = cd._filtered;
 
     // By Status donut
     destroyChart('chartCancelledStatus');
-    const statusLabels = Object.keys(cd.byStatus);
+    const statusLabels = Object.keys(f.byStatus);
     const statusColors = ['#f97316', '#f59e0b', '#ef4444', '#dc2626'];
     charts.chartCancelledStatus = new Chart(document.getElementById('chartCancelledStatus'), {
       type: 'doughnut',
       data: {
         labels: statusLabels,
-        datasets: [{ data: statusLabels.map(s => cd.byStatus[s]), backgroundColor: statusColors.slice(0, statusLabels.length), borderWidth: 1, borderColor: '#fff' }]
+        datasets: [{ data: statusLabels.map(s => f.byStatus[s]), backgroundColor: statusColors.slice(0, statusLabels.length), borderWidth: 1, borderColor: '#fff' }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 }, padding: 8 } },
-          tooltip: { callbacks: { label: ctx => `${ctx.label}: ${fmtNum(ctx.raw)} (${fmtPct(ctx.raw / cd.total * 100)})` } }
+          tooltip: { callbacks: { label: ctx => `${ctx.label}: ${fmtNum(ctx.raw)} (${fmtPct(f.total > 0 ? ctx.raw / f.total * 100 : 0)})` } }
         }
       }
     });
 
     // By Reason horizontal bar
     destroyChart('chartCancelledReason');
-    const reasons = Object.entries(cd.byReason).sort((a,b) => b[1] - a[1]);
+    const reasons = Object.entries(f.byReason).sort((a,b) => b[1] - a[1]);
     charts.chartCancelledReason = new Chart(document.getElementById('chartCancelledReason'), {
       type: 'bar',
       data: {
@@ -3278,7 +3311,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
 
     // Top AEs bar chart
     destroyChart('chartCancelledAE');
-    const aeEntries = Object.entries(cd.byAE).slice(0, 15);
+    const aeEntries = Object.entries(f.byAE).slice(0, 15);
     charts.chartCancelledAE = new Chart(document.getElementById('chartCancelledAE'), {
       type: 'bar',
       data: {
@@ -3294,7 +3327,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
 
     // Top AE Leaders bar chart
     destroyChart('chartCancelledAELeader');
-    const aelEntries = Object.entries(cd.byAELeader).slice(0, 15);
+    const aelEntries = Object.entries(f.byAELeader).slice(0, 15);
     charts.chartCancelledAELeader = new Chart(document.getElementById('chartCancelledAELeader'), {
       type: 'bar',
       data: {
@@ -3310,7 +3343,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
 
     // By Rep bar chart
     destroyChart('chartCancelledRep');
-    const repEntries = Object.entries(cd.byRep).sort((a,b) => b[1] - a[1]);
+    const repEntries = Object.entries(f.byRep).sort((a,b) => b[1] - a[1]);
     charts.chartCancelledRep = new Chart(document.getElementById('chartCancelledRep'), {
       type: 'bar',
       data: {
@@ -3350,7 +3383,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
     const aeFilter = document.getElementById('cancelledFilterAE').value;
     const aelFilter = document.getElementById('cancelledFilterAELeader').value;
 
-    let list = cd.list || [];
+    let list = cd._filteredList || cd.list || [];
     if (repFilter) list = list.filter(d => d.rep === repFilter);
     if (aeFilter) list = list.filter(d => d.aeName === aeFilter);
     if (aelFilter) list = list.filter(d => d.aeLeader === aelFilter);
