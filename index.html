@@ -956,6 +956,12 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
   // UTILITY FUNCTIONS
   // ================================================================
 
+  /** Format number with commas */
+  function fmtNum(n) {
+    if (n == null) return '—';
+    return n.toLocaleString('en-US');
+  }
+
   /** Format USD currency - compact */
   function fmtUSD(n) {
     if (n == null || isNaN(n)) return '—';
