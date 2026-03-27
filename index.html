@@ -1181,7 +1181,20 @@
 
     <!-- Cancelled DSR Table -->
     <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-6">
-      <h3 class="text-sm font-semibold text-gray-800 mb-4">Cancelled DSR Details</h3>
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <h3 class="text-sm font-semibold text-gray-800">Cancelled DSR Details <span class="text-blue-600 font-normal text-xs" id="cancelledTableCount"></span></h3>
+        <div class="flex flex-wrap gap-2">
+          <select id="cancelledFilterRep" class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none">
+            <option value="">All GSO Reps</option>
+          </select>
+          <select id="cancelledFilterAE" class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none">
+            <option value="">All AEs</option>
+          </select>
+          <select id="cancelledFilterAELeader" class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none">
+            <option value="">All AE Leaders</option>
+          </select>
+        </div>
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
@@ -3311,10 +3324,50 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
       }
     });
 
-    // Table
+    // Populate filter dropdowns (once)
+    const repSel = document.getElementById('cancelledFilterRep');
+    const aeSel = document.getElementById('cancelledFilterAE');
+    const aelSel = document.getElementById('cancelledFilterAELeader');
+    if (repSel.options.length <= 1) {
+      const reps = [...new Set((cd.list || []).map(d => d.rep))].sort();
+      reps.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; repSel.appendChild(o); });
+      const aes = [...new Set((cd.list || []).map(d => d.aeName).filter(Boolean))].sort();
+      aes.forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = a; aeSel.appendChild(o); });
+      const aels = [...new Set((cd.list || []).map(d => d.aeLeader).filter(Boolean))].sort();
+      aels.forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = a; aelSel.appendChild(o); });
+      // Add change listeners
+      repSel.addEventListener('change', renderCancelledTable);
+      aeSel.addEventListener('change', renderCancelledTable);
+      aelSel.addEventListener('change', renderCancelledTable);
+    }
+    renderCancelledTable();
+  }
+
+  function renderCancelledTable() {
+    const cd = GSO_DATA.cancelledData;
+    if (!cd) return;
+    const repFilter = document.getElementById('cancelledFilterRep').value;
+    const aeFilter = document.getElementById('cancelledFilterAE').value;
+    const aelFilter = document.getElementById('cancelledFilterAELeader').value;
+
+    let list = cd.list || [];
+    if (repFilter) list = list.filter(d => d.rep === repFilter);
+    if (aeFilter) list = list.filter(d => d.aeName === aeFilter);
+    if (aelFilter) list = list.filter(d => d.aeLeader === aelFilter);
+
+    // Show count next to title
+    const countEl = document.getElementById('cancelledTableCount');
+    const parts = [];
+    if (repFilter) parts.push(repFilter);
+    if (aeFilter) parts.push('AE: ' + aeFilter);
+    if (aelFilter) parts.push('AE Lead: ' + aelFilter);
+    countEl.textContent = parts.length > 0
+      ? `— ${parts.join(' · ')} · ${fmtNum(list.length)} DSRs`
+      : `— ${fmtNum(list.length)} DSRs`;
+
     const tbody = document.getElementById('tbodyCancelled');
     tbody.innerHTML = '';
-    (cd.list || []).slice(0, 200).forEach(d => {
+    list.slice(0, 200).forEach(d => {
       tbody.innerHTML += `
         <tr class="border-b border-gray-50 hover:bg-gray-50">
           <td class="py-2 px-3 text-gray-800">${esc(d.rep)}</td>
