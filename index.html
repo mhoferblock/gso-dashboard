@@ -1289,29 +1289,60 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
     const filters = getActiveFilters();
     const reps = filterReps(filters);
     const T = GSO_DATA.totals;
+    const hasWorkTypeFilter = !!filters.workTypes;
+    const hasStatusFilter = !!filters.status;
+    const hasAnyFilter = reps.length < Object.keys(GSO_DATA.repSummary).length || hasWorkTypeFilter || hasStatusFilter;
 
-    // If filtered, recalculate totals
+    // Recalculate totals from repSummary, respecting work type + status filters
     let dsrs = 0, completed = 0, active = 0, onHold = 0, cancelled = 0, gpv = 0;
+    const completedStatuses = ['Completed','Implementation Complete','Tasks Complete','Live'];
+    const cancelledStatuses = ['Rejected','Lost - No Seller Contact','Lost - Churn','Lost','No Action Required','Seller No Show'];
+
     reps.forEach(rep => {
       const r = GSO_DATA.repSummary[rep];
       if (!r) return;
-      dsrs += r.total || 0;
-      completed += r.completed || 0;
-      active += r.active || 0;
-      onHold += r.onHold || 0;
-      cancelled += r.cancelled || 0;
-      gpv += r.gpv || 0;
+
+      if (hasWorkTypeFilter) {
+        // Filter by work type: iterate workTypes sub-object
+        const wts = r.workTypes || {};
+        Object.entries(wts).forEach(([wt, cnt]) => {
+          if (filters.workTypes.includes(wt)) {
+            dsrs += cnt;
+            // We don't have status×workType cross-tab, so add to completed proportionally
+            const total = r.total || 1;
+            completed += Math.round(cnt * (r.completed || 0) / total);
+            active += Math.round(cnt * (r.active || 0) / total);
+            onHold += Math.round(cnt * (r.onHold || 0) / total);
+            cancelled += Math.round(cnt * (r.cancelled || 0) / total);
+          }
+        });
+        gpv += r.gpv || 0; // GPV is per-rep, not per-worktype
+      } else {
+        dsrs += r.total || 0;
+        completed += r.completed || 0;
+        active += r.active || 0;
+        onHold += r.onHold || 0;
+        cancelled += r.cancelled || 0;
+        gpv += r.gpv || 0;
+      }
     });
 
-    const isFiltered = reps.length < Object.keys(GSO_DATA.repSummary).length;
+    // Apply status filter to KPIs
+    if (hasStatusFilter) {
+      const s = filters.status;
+      if (s === 'completed') { dsrs = completed; active = 0; onHold = 0; cancelled = 0; }
+      else if (s === 'active') { dsrs = active; completed = 0; onHold = 0; cancelled = 0; }
+      else if (s === 'onHold') { dsrs = onHold; completed = 0; active = 0; cancelled = 0; }
+      else if (s === 'cancelled') { dsrs = cancelled; completed = 0; active = 0; onHold = 0; }
+    }
 
-    document.getElementById('kpiDsrs').textContent = fmtNum(isFiltered ? dsrs : T.dsrs);
-    document.getElementById('kpiCompleted').textContent = fmtNum(isFiltered ? completed : T.completed);
-    document.getElementById('kpiActive').textContent = fmtNum(isFiltered ? active : T.active);
-    document.getElementById('kpiOnHold').textContent = fmtNum(isFiltered ? onHold : T.onHold);
-    document.getElementById('kpiCancelled').textContent = fmtNum(isFiltered ? cancelled : T.cancelled);
-    document.getElementById('kpiGpv').textContent = fmtUSD(isFiltered ? gpv : T.gpv);
-    document.getElementById('kpiPipeline').textContent = fmtNum(isFiltered ? active : T.activePipelineCount);
+    document.getElementById('kpiDsrs').textContent = fmtNum(hasAnyFilter ? dsrs : T.dsrs);
+    document.getElementById('kpiCompleted').textContent = fmtNum(hasAnyFilter ? completed : T.completed);
+    document.getElementById('kpiActive').textContent = fmtNum(hasAnyFilter ? active : T.active);
+    document.getElementById('kpiOnHold').textContent = fmtNum(hasAnyFilter ? onHold : T.onHold);
+    document.getElementById('kpiCancelled').textContent = fmtNum(hasAnyFilter ? cancelled : T.cancelled);
+    document.getElementById('kpiGpv').textContent = fmtUSD(hasAnyFilter ? gpv : T.gpv);
+    document.getElementById('kpiPipeline').textContent = fmtNum(hasAnyFilter ? active : T.activePipelineCount);
 
     // Monthly Trend Chart
     destroyChart('chartMonthly');
@@ -1371,10 +1402,14 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
       }
     });
 
-    // Work Type Chart
+    // Work Type Chart (respects work type filter)
     destroyChart('chartWorkType');
     const wtData = GSO_DATA.workTypeSummary;
     const wtNames = Object.keys(wtData).sort((a, b) => wtData[b].total - wtData[a].total);
+    const wtColors = COLORS.slice(0, wtNames.length).map((color, i) => {
+      if (hasWorkTypeFilter && !filters.workTypes.includes(wtNames[i])) return color + '25';
+      return color;
+    });
 
     charts.chartWorkType = new Chart(document.getElementById('chartWorkType'), {
       type: 'doughnut',
@@ -1382,7 +1417,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
         labels: wtNames,
         datasets: [{
           data: wtNames.map(w => wtData[w].total),
-          backgroundColor: COLORS.slice(0, wtNames.length),
+          backgroundColor: wtColors,
           borderWidth: 1,
           borderColor: '#fff',
         }]
