@@ -544,21 +544,17 @@
       </span>
     </div>
 
-    <!-- Right: Data freshness -->
-    <div class="flex items-center gap-2">
+    <!-- Right: Data freshness & Refresh -->
+    <div class="flex items-center gap-3">
       <span class="text-xs text-gray-400 hidden md:block" id="navDate"></span>
-      <span class="info-tip" style="margin-left: 0;">?<span class="info-popup tip-right" style="width: 280px;">
-        <span class="info-title">How to Refresh Data</span>
-        <span class="info-desc">This dashboard uses a static data snapshot. To update with the latest Salesforce data:</span>
-        <span class="info-source">
-          <span class="info-source-label">🔄 Refresh Steps</span><br>
-          1. Open a Goose session<br>
-          2. Say: "Refresh the GSO Dashboard"<br>
-          3. Goose will pull from Airtable + Snowflake, rebuild, and deploy<br><br>
-          <span class="info-source-label">📂 Data Pipeline</span><br>
-          Snowflake → Airtable → dsr_facts.json → index.html → Blockcell
-        </span>
-      </span></span>
+      <a href="goose://recipe?config=eyJ2ZXJzaW9uIjoiMS4wLjAiLCJ0aXRsZSI6IlJlZnJlc2ggR1NPIERhc2hib2FyZCIsImRlc2NyaXB0aW9uIjoiUHVsbCBsYXRlc3QgRFNSIGRhdGEgZnJvbSBBaXJ0YWJsZSBhbmQgU25vd2ZsYWtlLCByZWJ1aWxkIHRoZSBkYXNoYm9hcmQsIGFuZCBkZXBsb3kgdG8gQmxvY2tjZWxsLiBUaGlzIHVwZGF0ZXMgYWxsIEtQSXMsIGNoYXJ0cywgYW5kIHRhYmxlcyB3aXRoIHRoZSBtb3N0IGN1cnJlbnQgU2FsZXNmb3JjZSBkYXRhLiIsImluc3RydWN0aW9ucyI6IllvdSBhcmUgcmVmcmVzaGluZyB0aGUgR1NPIERhc2hib2FyZCBhdCAvVXNlcnMvbWhvZmVyL2dzby1kYXNoYm9hcmQuXG5cbkZvbGxvdyB0aGVzZSBzdGVwcyBpbiBvcmRlcjpcblxuIyMgU3RlcCAxOiBQdWxsIERTUiBGYWN0cyBmcm9tIEFpcnRhYmxlXG5QdWxsIEFMTCByZWNvcmRzIGZyb20gQWlydGFibGUgYmFzZSBhcHBzbmZXV3pwdE45Y3dEMCwgdGFibGUgdGJscWZxS012bWR1ZnZSakQgKERTUiBGYWN0cykuXG5GaWVsZHMgdG8gZXh0cmFjdCBmb3IgZWFjaCByZWNvcmQ6IFNGREMgSUQsIERTUiBOYW1lLCBSZXAsIFRlYW0gTGVhZCwgU2VsbGVyLCBXb3JrIFR5cGUsIFN0YXR1cywgU3ViIFN0YXR1cywgUmVxdWVzdCBSZWFzb24sIFByb2R1Y3QgVmVyc2lvbiwgQ291bnRyeSwgQ3VycmVuY3ksIEdQViwgR1BWIFVTRCwgQ3JlYXRlZCBEYXRlLCBDb21wbGV0ZWQgRGF0ZSwgR28gTGl2ZSBEYXRlLCBEYXlzIHRvIENvbXBsZXRlLCBEYXlzIE9wZW4sIERheXMgU3RhbGUsIE9wcCBPd25lciwgT3BwIE93bmVyIFJvbGUsIE51bSBMb2NhdGlvbnMsIElzIE9uc2l0ZS5cblBhZ2UgdGhyb3VnaCBhbGwgcmVjb3JkcyAoMTAwIHBlciBwYWdlKSBhbmQgc2F2ZSB0byAvVXNlcnMvbWhvZmVyL2dzby1kYXNoYm9hcmQvZHNyX2ZhY3RzLmpzb24gYXMgYW4gYXJyYXkgb2Ygb2JqZWN0cyB3aXRoIGNhbWVsQ2FzZSBrZXlzIChpZCwgcmVwLCB0ZWFtTGVhZCwgc2VsbGVyLCB3b3JrVHlwZSwgc3RhdHVzLCBzdWJTdGF0dXMsIHJlcXVlc3RSZWFzb24sIGNvdW50cnksIGN1cnJlbmN5LCBncHYsIGdwdlVzZCwgY3JlYXRlZERhdGUsIGNvbXBsZXRlZERhdGUsIGdvTGl2ZURhdGUsIGRheXNUb0NvbXBsZXRlLCBkYXlzT3BlbiwgZGF5c1N0YWxlLCBvcHBPd25lciwgb3BwT3duZXJSb2xlLCBudW1Mb2NhdGlvbnMsIGlzT25zaXRlKS5cblxuIyMgU3RlcCAyOiBFbnJpY2ggd2l0aCBPcHAgT3duZXIgZnJvbSBTbm93Zmxha2VcblF1ZXJ5IFNub3dmbGFrZSB0byBnZXQgT3Bwb3J0dW5pdHkgT3duZXIgZGF0YTpcbmBgYHNxbFxuU0VMRUNUIElEIEFTIFNGRENfSUQsIE9QUE9SVFVOSVRZX09XTkVSX0MgQVMgT1BQX09XTkVSLCBPUFBPUlRVTklUWV9PV05FUl9ST0xFX0MgQVMgT1BQX09XTkVSX1JPTEVcbkZST00gRklWRVRSQU4uQVBQX1NBTEVTX1NGREMuREVBTF9TVVBQT1JUX1JFUVVFU1RfQ1xuV0hFUkUgUkVDT1JEX1RZUEVfTkFNRV9DID0gJ0dTTyBHbG9iYWwgU2VsbGVyIE9uYm9hcmRpbmcnXG4gIEFORCBPUFBPUlRVTklUWV9PV05FUl9DIElTIE5PVCBOVUxMXG5gYGBcbk1lcmdlIHRoZSBPcHAgT3duZXIgYW5kIE9wcCBPd25lciBSb2xlIGludG8gdGhlIGRzcl9mYWN0cy5qc29uIHJlY29yZHMgYnkgbWF0Y2hpbmcgb24gU0ZEQyBJRC5cblNhdmUgdGhlIHVwZGF0ZWQgZHNyX2ZhY3RzLmpzb24uXG5cbiMjIFN0ZXAgMzogUmVidWlsZCBhbmQgZW1iZWRcblJ1bjogcHl0aG9uMyAvVXNlcnMvbWhvZmVyL2dzby1kYXNoYm9hcmQvcmVidWlsZF9lbWJlZC5weVxuVGhpcyBidWlsZHMgdGhlIHNsaW0gSlNPTiBhbmQgZW1iZWRzIGl0IGludG8gaW5kZXguaHRtbC5cblxuIyMgU3RlcCA0OiBEZXBsb3kgdG8gQmxvY2tjZWxsXG5VcGxvYWQgL1VzZXJzL21ob2Zlci9nc28tZGFzaGJvYXJkIHRvIEJsb2NrY2VsbCBzaXRlIFwiZ3NvLWRhc2hib2FyZFwiLlxuXG4jIyBTdGVwIDU6IENvbW1pdCBhbmQgcHVzaFxuYGBgYmFzaFxuY2QgL1VzZXJzL21ob2Zlci9nc28tZGFzaGJvYXJkXG5naXQgYWRkIGluZGV4Lmh0bWwgZHNyX2ZhY3RzLmpzb24gZHNyX2ZhY3RzX3NsaW0uanNvblxuZ2l0IGNvbW1pdCAtbSBcIlJlZnJlc2ggZGFzaGJvYXJkIGRhdGEg4oCUICQoZGF0ZSArJVktJW0tJWQpXCJcbmdpdCBwdXNoXG5gYGBcblxuIyMgU3RlcCA2OiBSZXBvcnQgcmVzdWx0c1xuQWZ0ZXIgY29tcGxldGluZyBhbGwgc3RlcHMsIHJlcG9ydDpcbi0gVG90YWwgRFNSIHJlY29yZHMgcHVsbGVkXG4tIE9wcCBPd25lciBmaWxsIHJhdGVcbi0gTmV3IGluZGV4Lmh0bWwgc2l6ZVxuLSBCbG9ja2NlbGwgZGVwbG95IHN0YXR1c1xuLSBHaXQgcHVzaCBzdGF0dXNcbiIsInByb21wdCI6IlJlZnJlc2ggdGhlIEdTTyBEYXNoYm9hcmQgd2l0aCB0aGUgbGF0ZXN0IGRhdGEgZnJvbSBBaXJ0YWJsZSBhbmQgU25vd2ZsYWtlLiIsImV4dGVuc2lvbnMiOlt7InR5cGUiOiJidWlsdGluIiwibmFtZSI6ImRldmVsb3BlciIsImRlc2NyaXB0aW9uIjoiRmlsZSBvcGVyYXRpb25zIGFuZCBzaGVsbCBjb21tYW5kcyIsImRpc3BsYXlfbmFtZSI6bnVsbCwidGltZW91dCI6MzAwLCJidW5kbGVkIjp0cnVlLCJhdmFpbGFibGVfdG9vbHMiOltdfSx7InR5cGUiOiJzdGRpbyIsIm5hbWUiOiJhaXJ0YWJsZSIsImRlc2NyaXB0aW9uIjoiUmVhZCBhbmQgd3JpdGUgQWlydGFibGUgcmVjb3JkcyIsImNtZCI6InV2eCIsImFyZ3MiOlsibWNwX2FpcnRhYmxlQGxhdGVzdCJdLCJlbnZzIjp7fSwiZW52X2tleXMiOltdLCJ0aW1lb3V0IjozMDAsImJ1bmRsZWQiOnRydWUsImF2YWlsYWJsZV90b29scyI6W119LHsidHlwZSI6InN0ZGlvIiwibmFtZSI6InNub3dmbGFrZSIsImRlc2NyaXB0aW9uIjoiUXVlcnkgU25vd2ZsYWtlIGRhdGEgd2FyZWhvdXNlIiwiY21kIjoidXZ4IiwiYXJncyI6WyJtY3Atc25vd2ZsYWtlQGxhdGVzdCJdLCJlbnZzIjp7fSwiZW52X2tleXMiOltdLCJ0aW1lb3V0IjozMDAsImJ1bmRsZWQiOnRydWUsImF2YWlsYWJsZV90b29scyI6W119LHsidHlwZSI6InN0ZGlvIiwibmFtZSI6ImJsb2NrY2VsbCIsImRlc2NyaXB0aW9uIjoiRGVwbG95IHRvIEJsb2NrY2VsbCBzdGF0aWMgaG9zdGluZyIsImNtZCI6InV2eCIsImFyZ3MiOlsibWNwX2Jsb2NrY2VsbEBsYXRlc3QiXSwiZW52cyI6e30sImVudl9rZXlzIjpbXSwidGltZW91dCI6MzAwLCJidW5kbGVkIjp0cnVlLCJhdmFpbGFibGVfdG9vbHMiOltdfSx7InR5cGUiOiJwbGF0Zm9ybSIsIm5hbWUiOiJhbmFseXplIiwiZGVzY3JpcHRpb24iOiIiLCJkaXNwbGF5X25hbWUiOm51bGwsImJ1bmRsZWQiOm51bGwsImF2YWlsYWJsZV90b29scyI6W119XX0"
+         class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition shadow-sm"
+         title="Opens a Goose session that pulls latest data from Airtable + Snowflake, rebuilds, and deploys">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Refresh Data
+      </a>
     </div>
   </div>
 </nav>
