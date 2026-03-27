@@ -186,7 +186,7 @@
     }
     .journey-turn {
       position: relative;
-      height: 48px;
+      height: 64px;
       margin: 0 74px;
     }
     /* Right-side U-turn: row 1 (L→R) connects to row 2 (R→L) via right edge */
@@ -314,9 +314,6 @@
       position: relative;
       box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.2);
     }
-    .journey-row.reverse .journey-connector-line {
-      background: linear-gradient(270deg, #bfdbfe 0%, #60a5fa 45%, #1d4ed8 100%);
-    }
     .journey-connector-line::after {
       content: '';
       position: absolute;
@@ -328,6 +325,9 @@
       border-right: 3.5px solid #1d4ed8;
       transform: translateY(-50%) rotate(45deg);
       border-radius: 2px;
+    }
+    .journey-row.reverse .journey-connector-line {
+      background: linear-gradient(270deg, #1d4ed8 0%, #60a5fa 55%, #bfdbfe 100%);
     }
     .journey-row.reverse .journey-connector-line::after {
       right: auto;
@@ -2153,8 +2153,8 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
 
     rows.forEach((rowStages, rowIdx) => {
       const isReverse = rowIdx % 2 === 1;
-      // For reverse rows, render stages in reverse order so the snake reads correctly
-      const displayStages = isReverse ? [...rowStages].reverse() : rowStages;
+      // Reverse rows: CSS flex-direction handles visual order, arrows point left
+      const displayStages = rowStages;
 
       let rowHtml = `<div class="journey-row${isReverse ? ' reverse' : ''}">`;
       displayStages.forEach((stage, colIdx) => {
