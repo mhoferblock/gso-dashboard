@@ -1162,6 +1162,15 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
     renderPipeline();
     renderCompleted();
     renderSellers();
+    // Sync global team filter to goaling tab
+    const globalTeam = document.getElementById('filterTeam').value;
+    const goalingFilter = document.getElementById('goalingTeamFilter');
+    if (goalingFilter && globalTeam) {
+      goalingFilter.value = globalTeam;
+    } else if (goalingFilter && !globalTeam) {
+      goalingFilter.value = '';
+    }
+    renderGoaling();
   }
 
   // ================================================================
