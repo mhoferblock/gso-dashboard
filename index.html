@@ -913,13 +913,7 @@
       </div>
     </div>
 
-    <!-- Journey Timing Chart -->
-    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-      <h3 class="text-sm font-semibold text-gray-800 mb-4">Journey Timing — Median vs P75 Days</h3>
-      <div class="chart-container" style="height: 350px;">
-        <canvas id="chartJourneyTiming"></canvas>
-      </div>
-    </div>
+
   
     <!-- Team Comparison -->
     <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare">
@@ -2599,44 +2593,6 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
         </tr>`;
     });
 
-    // Journey Timing Chart
-    destroyChart('chartJourneyTiming');
-    charts.chartJourneyTiming = new Chart(document.getElementById('chartJourneyTiming'), {
-      type: 'bar',
-      data: {
-        labels: stages,
-        datasets: [
-          {
-            label: 'Median Days',
-            data: stages.map(s => jt[s].medianDays),
-            backgroundColor: '#3b82f6',
-            borderRadius: 4,
-          },
-          {
-            label: 'P75 Days',
-            data: stages.map(s => jt[s].p75),
-            backgroundColor: '#93c5fd',
-            borderRadius: 4,
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
-          tooltip: {
-            callbacks: {
-              label: ctx => `${ctx.dataset.label}: ${ctx.raw} days`
-            }
-          }
-        },
-        scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } },
-          y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } }, title: { display: true, text: 'Days', font: { size: 11 } } }
-        }
-      }
-    });
   }
 
   // ================================================================
