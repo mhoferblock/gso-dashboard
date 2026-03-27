@@ -2523,83 +2523,42 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
   // ================================================================
   function renderTeamPerformance() {
     const filters = getActiveFilters();
-    const reps = filterReps(filters);
-    const hasWorkTypeFilter = !!filters.workTypes;
-    const hasStatusFilter = !!filters.status;
-    const hasDateFilter = !!filters.dateRange;
+    const facts = getFilteredFacts(filters);
+    const range = filters.dateRange || null;
 
-    // Build filtered row-level data for date-aware calculations
-    let fCompleted = GSO_DATA.completedSellers.filter(s => reps.includes(s.rep));
-    let fPipeline = [];
-    for (const [stage, items] of Object.entries(GSO_DATA.activePipeline)) {
-      items.forEach(item => fPipeline.push({ ...item, stage }));
-    }
-    fPipeline = fPipeline.filter(i => reps.includes(i.rep));
-    if (hasWorkTypeFilter) {
-      fCompleted = fCompleted.filter(s => filters.workTypes.includes(s.workType));
-      fPipeline = fPipeline.filter(i => filters.workTypes.includes(i.workType));
-    }
-    if (hasDateFilter) {
-      fCompleted = fCompleted.filter(s => isDateInRange(s.completedDate, filters.dateRange));
-      fPipeline = fPipeline.filter(i => isDateInRange(i.created, filters.dateRange));
-    }
+    // Build rep data from dsrFacts
+    const repMap = {};
+    facts.forEach(f => {
+      if (!f.rep) return;
+      if (!repMap[f.rep]) repMap[f.rep] = { rep: f.rep, team: getTeam(f.rep), total: 0, completed: 0, active: 0, onHold: 0, cancelled: 0, gpv: 0, _sellers: {} };
+      const r = repMap[f.rep];
 
-    // Build rep data array
-    const repData = reps.map(rep => {
-      if (hasDateFilter) {
-        // Date-filtered: compute from row-level data
-        const rc = fCompleted.filter(s => s.rep === rep);
-        const rp = fPipeline.filter(i => i.rep === rep);
-        const completed = rc.length;
-        const active = rp.filter(i => i.stage !== 'On Hold').length;
-        const onHold = rp.filter(i => i.stage === 'On Hold').length;
-        let total = completed + active + onHold;
-        const gpv = dedupeGPV(rc) + dedupeGPV(rp);
-
-        if (hasStatusFilter) {
-          const s = filters.status;
-          if (s === 'completed') total = completed;
-          else if (s === 'active') total = active;
-          else if (s === 'onHold') total = onHold;
-        }
-
-        return { rep, team: getTeam(rep), total, completed, active, onHold, cancelled: 0, gpv, workTypes: {} };
+      // For date-filtered: count created-in-range for total, completed-in-range for completed
+      if (range) {
+        if (isDateInRange(f.createdDate, range)) r.total++;
+        if (f.category === 'completed' && isDateInRange(f.completedDate, range)) r.completed++;
+        if (f.category === 'cancelled' && isDateInRange(f.createdDate, range)) r.cancelled++;
       } else {
-        // No date filter: use pre-aggregated repSummary
-        const r = GSO_DATA.repSummary[rep];
-        if (!r) return null;
-        let total = r.total || 0;
-        let completed = r.completed || 0;
-        let active = r.active || 0;
-        let onHold = r.onHold || 0;
-        let cancelled = r.cancelled || 0;
-        let gpv = r.gpv || 0;
-
-        if (hasWorkTypeFilter) {
-          const wts = r.workTypes || {};
-          let filteredTotal = 0;
-          Object.entries(wts).forEach(([wt, cnt]) => {
-            if (filters.workTypes.includes(wt)) filteredTotal += cnt;
-          });
-          const ratio = total > 0 ? filteredTotal / total : 0;
-          total = filteredTotal;
-          completed = Math.round(completed * ratio);
-          active = Math.round(active * ratio);
-          onHold = Math.round(onHold * ratio);
-          cancelled = Math.round(cancelled * ratio);
-        }
-
-        if (hasStatusFilter) {
-          const s = filters.status;
-          if (s === 'completed') total = completed;
-          else if (s === 'active') total = active;
-          else if (s === 'onHold') total = onHold;
-          else if (s === 'cancelled') total = cancelled;
-        }
-
-        return { rep, team: getTeam(rep), total, completed, active, onHold, cancelled, gpv, workTypes: r.workTypes };
+        r.total++;
+        if (f.category === 'completed') r.completed++;
+        if (f.category === 'cancelled') r.cancelled++;
       }
-    }).filter(r => r && r.total > 0);
+      if (f.category === 'active') r.active++;
+      if (f.category === 'onHold') r.onHold++;
+
+      // GPV dedup by seller
+      const seller = f.seller || '';
+      if (!r._sellers[seller] || f.gpvUsd > r._sellers[seller]) r._sellers[seller] = f.gpvUsd;
+    });
+
+    const repData = Object.values(repMap).map(r => {
+      r.gpv = Object.values(r._sellers).reduce((s, v) => s + v, 0);
+      delete r._sellers;
+      return r;
+    }).filter(r => r.total > 0);
+
+    // Store for sort/search re-renders
+    lastRepData = repData;
 
     // Rep GPV Chart - Top 20
     destroyChart('chartRepGpv');
@@ -2680,6 +2639,7 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
 
   let repSortCol = 'completed';
   let repSortDir = -1;
+  let lastRepData = [];
 
   function renderRepTable(repData) {
     const search = (document.getElementById('searchRep').value || '').toLowerCase();
@@ -2724,17 +2684,11 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
     th.querySelector('.sort-arrow').classList.add('active');
     th.querySelector('.sort-arrow').textContent = repSortDir === 1 ? '▲' : '▼';
 
-    const filters = getActiveFilters();
-    const reps = filterReps(filters);
-    const repData = reps.map(rep => ({ rep, team: getTeam(rep), ...GSO_DATA.repSummary[rep] })).filter(r => r.total > 0);
-    renderRepTable(repData);
+    renderRepTable(lastRepData);
   });
 
   document.getElementById('searchRep').addEventListener('input', () => {
-    const filters = getActiveFilters();
-    const reps = filterReps(filters);
-    const repData = reps.map(rep => ({ rep, team: getTeam(rep), ...GSO_DATA.repSummary[rep] })).filter(r => r.total > 0);
-    renderRepTable(repData);
+    renderRepTable(lastRepData);
   });
 
   // ================================================================
