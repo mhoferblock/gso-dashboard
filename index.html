@@ -340,8 +340,8 @@
       background: linear-gradient(145deg, #ede9fe, #c4b5fd);
     }
 
-    /* ===== KPI Help Tooltip ===== */
-    .kpi-help {
+    /* ===== Info Tooltip System ===== */
+    .info-tip {
       position: relative;
       display: inline-flex;
       align-items: center;
@@ -355,32 +355,70 @@
       font-weight: 700;
       cursor: help;
       margin-left: 6px;
+      flex-shrink: 0;
+      vertical-align: middle;
     }
-    .kpi-help::after {
-      content: attr(data-tip);
+    .info-tip:hover { background: rgba(99, 102, 241, 0.15); color: #6366f1; }
+
+    .info-tip .info-popup {
+      display: none;
       position: absolute;
-      left: 50%;
       bottom: calc(100% + 10px);
+      left: 50%;
       transform: translateX(-50%);
-      width: 220px;
-      padding: 8px 10px;
-      border-radius: 10px;
+      width: 300px;
+      padding: 12px 14px;
+      border-radius: 12px;
       background: #0f172a;
       color: white;
-      font-size: 11px;
-      line-height: 1.4;
+      font-size: 12px;
+      line-height: 1.5;
       text-transform: none;
       letter-spacing: normal;
-      font-weight: 500;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s ease;
-      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24);
-      z-index: 20;
+      font-weight: 400;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.3);
+      z-index: 100;
     }
-    .kpi-help:hover::after {
-      opacity: 1;
+    .info-tip:hover .info-popup { display: block; }
+    .info-popup .info-title {
+      font-weight: 600;
+      font-size: 12px;
+      margin-bottom: 4px;
+      color: #e2e8f0;
     }
+    .info-popup .info-desc {
+      color: #cbd5e1;
+      font-size: 11.5px;
+      margin-bottom: 0;
+    }
+    .info-popup .info-source {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 10.5px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .info-popup .info-source-label {
+      font-weight: 600;
+      color: #a5b4fc;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    /* Keep popup on screen */
+    .info-tip.tip-left .info-popup { left: 0; transform: none; }
+    .info-tip.tip-right .info-popup { left: auto; right: 0; transform: none; }
+
+    /* Legacy compat */
+    .kpi-help { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 9999px; background: rgba(148, 163, 184, 0.18); color: #64748b; font-size: 10px; font-weight: 700; cursor: help; margin-left: 6px; }
+    .kpi-help::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); width: 220px; padding: 8px 10px; border-radius: 10px; background: #0f172a; color: white; font-size: 11px; line-height: 1.4; text-transform: none; letter-spacing: normal; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity 0.15s ease; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24); z-index: 20; }
+    .kpi-help:hover::after { opacity: 1; }
+
+    /* Chart/section heading help */
+    .section-help { display: inline-flex; align-items: center; }
+    .section-help .info-tip { margin-left: 6px; }
 
     /* ===== Pagination ===== */
     .page-btn {
@@ -650,46 +688,57 @@
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
       <!-- Total DSRs -->
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total DSRs</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Total DSRs
+          <span class="info-tip">?<span class="info-popup"><span class="info-title">Total DSRs</span><span class="info-desc">Total Deal Support Requests created. When a date filter is active, counts DSRs created within that date range. Cancelled DSRs are shown separately.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce DSR records (GSO Global Seller Onboarding record type) synced to Airtable via Snowflake. Only includes DSRs owned by the 51 reps on the GSO roster.</span></span></span>
+        </div>
         <div class="text-2xl font-bold text-gray-900" id="kpiDsrs">—</div>
         <div class="text-xs text-gray-400 mt-1">All time</div>
       </div>
       <!-- Completed -->
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Completed</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Completed
+          <span class="info-tip">?<span class="info-popup"><span class="info-title">Completed DSRs</span><span class="info-desc">DSRs with status "Implementation Complete", "Completed", or "Transitioned". When a date filter is active, counts DSRs whose completion date falls within the range.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce STATUS_C field. Completion date from DATE_COMPLETED_C or DATE_TRANSITIONED_C.</span></span></span>
+        </div>
         <div class="text-2xl font-bold text-emerald-600" id="kpiCompleted">—</div>
         <div class="text-xs text-gray-400 mt-1">All time</div>
       </div>
       <!-- Active -->
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Active</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Active
+          <span class="info-tip">?<span class="info-popup"><span class="info-title">Active DSRs</span><span class="info-desc">DSRs currently being worked on — not yet completed, cancelled, or on hold. This is a current snapshot and does not change with date filters. Includes stages like Assigned, Consultation Complete, Training, etc.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce STATUS_C field. Any status not in the Completed, Cancelled, or On Hold categories.</span></span></span>
+        </div>
         <div class="text-2xl font-bold text-blue-600" id="kpiActive">—</div>
         <div class="text-xs text-gray-400 mt-1">In progress</div>
       </div>
       <!-- On Hold -->
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">On Hold</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">On Hold
+          <span class="info-tip">?<span class="info-popup"><span class="info-title">On Hold DSRs</span><span class="info-desc">DSRs paused due to seller unresponsiveness, scheduling issues, or other delays. This is a current snapshot — it shows how many are on hold right now, regardless of date filter.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce STATUS_C = "On Hold". Sub-status (e.g., "Seller Unresponsive") from SUB_STATUS_C.</span></span></span>
+        </div>
         <div class="text-2xl font-bold text-amber-600" id="kpiOnHold">—</div>
         <div class="text-xs text-gray-400 mt-1">Paused</div>
       </div>
       <!-- Cancelled -->
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Cancelled / Rejected</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Cancelled / Rejected
+          <span class="info-tip">?<span class="info-popup"><span class="info-title">Cancelled / Rejected DSRs</span><span class="info-desc">DSRs that were rejected, lost due to no seller contact, or lost due to churn. When a date filter is active, counts cancelled DSRs created within that range.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce STATUS_C in: "Rejected", "Lost - No Seller Contact", "Lost - Churn", "Lost".</span></span></span>
+        </div>
         <div class="text-2xl font-bold text-red-500" id="kpiCancelled">—</div>
         <div class="text-xs text-gray-400 mt-1">Not included in Total DSRs</div>
       </div>
       <!-- Total GPV -->
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">
-          Total GPV (USD)
-          <span class="kpi-help" data-tip="Gross Payment Volume across all DSRs, converted to USD">?</span>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Total GPV (USD)
+          <span class="info-tip">?<span class="info-popup"><span class="info-title">Total GPV (USD)</span><span class="info-desc">Gross Payment Volume — the total annual payment volume of all sellers across DSRs, converted to USD. Each seller is counted once (deduplicated) using their highest GPV across DSRs.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce TOTAL_ANNUAL_GPV_C converted to USD using LIFETIME_GPV_C. Deduplicated by seller name.</span></span></span>
         </div>
         <div class="text-2xl font-bold text-gray-900" id="kpiGpv">—</div>
         <div class="text-xs text-gray-400 mt-1">All sellers</div>
       </div>
       <!-- Pipeline -->
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Active Pipeline</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Active Pipeline
+          <span class="info-tip tip-right">?<span class="info-popup"><span class="info-title">Active Pipeline</span><span class="info-desc">Total open DSRs — the sum of Active + On Hold. This is a current snapshot showing how many DSRs are in the pipeline right now.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>All DSR records where status is not Completed or Cancelled.</span></span></span>
+        </div>
         <div class="text-2xl font-bold text-violet-600" id="kpiPipeline">—</div>
         <div class="text-xs text-gray-400 mt-1">Open DSRs</div>
       </div>
@@ -699,14 +748,18 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       <!-- Monthly Trend Chart -->
       <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <h3 class="text-sm font-semibold text-gray-800 mb-4">Monthly DSR Trend</h3>
+        <h3 class="text-sm font-semibold text-gray-800 mb-4 flex items-center">Monthly DSR Trend
+          <span class="info-tip">?<span class="info-popup"><span class="info-title">Monthly DSR Trend</span><span class="info-desc">Stacked bar chart showing DSR activity by month. Completed DSRs are plotted by their completion date. Active, On Hold, and Cancelled DSRs are plotted by their created date. The total label on top of each bar shows the combined count.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>All 13,000+ DSR records from Salesforce. Completed date = DATE_COMPLETED_C. Created date = CREATED_DATE. Note: this differs from Looker 41363 which shows all DSRs by created date only.</span></span></span>
+        </h3>
         <div class="chart-container" style="height: 300px;">
           <canvas id="chartMonthly"></canvas>
         </div>
       </div>
       <!-- Work Type Distribution -->
       <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <h3 class="text-sm font-semibold text-gray-800 mb-4">Work Type Distribution</h3>
+        <h3 class="text-sm font-semibold text-gray-800 mb-4 flex items-center">Work Type Distribution
+          <span class="info-tip">?<span class="info-popup"><span class="info-title">Work Type Distribution</span><span class="info-desc">Donut chart showing how DSRs are distributed across implementation service types (Onsite, Premium, Plus, etc.). Reflects all DSRs matching the current filters.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce PURCHASED_IMPLEMENTATION_SERVICES_C field, mapped to Work Type in Airtable.</span></span></span>
+        </h3>
         <div class="chart-container" style="height: 300px;">
           <canvas id="chartWorkType"></canvas>
         </div>
@@ -715,7 +768,9 @@
 
     <!-- Weekly Completions Chart -->
     <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-6">
-      <h3 class="text-sm font-semibold text-gray-800 mb-4">Weekly Completions &amp; Median Days to Complete</h3>
+      <h3 class="text-sm font-semibold text-gray-800 mb-4 flex items-center">Weekly Completions &amp; Median Days to Complete
+        <span class="info-tip">?<span class="info-popup"><span class="info-title">Weekly Completions</span><span class="info-desc">Blue bars show the number of DSRs completed each week. The orange line shows the median number of days from DSR creation to completion for that week's completions. Helps spot trends in throughput and turnaround time.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Completion date from DATE_COMPLETED_C / DATE_TRANSITIONED_C. Days to complete = completion date minus CREATED_DATE.</span></span></span>
+      </h3>
       <div class="chart-container" style="height: 280px;">
         <canvas id="chartWeekly"></canvas>
       </div>
@@ -723,7 +778,9 @@
 
     <!-- Completion Rate by Work Type -->
     <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-      <h3 class="text-sm font-semibold text-gray-800 mb-4">Completion Rate by Work Type</h3>
+      <h3 class="text-sm font-semibold text-gray-800 mb-4 flex items-center">Completion Rate by Work Type
+        <span class="info-tip">?<span class="info-popup"><span class="info-title">Completion Rate by Work Type</span><span class="info-desc">Table showing DSR counts and completion rates broken down by work type. Completion rate = completed DSRs ÷ total DSRs for that work type. Helps identify which service types have the highest success rates.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>All DSR records grouped by PURCHASED_IMPLEMENTATION_SERVICES_C, with status classification applied.</span></span></span>
+      </h3>
       <div class="overflow-x-auto">
         <table class="w-full text-sm" id="tableWorkType">
           <thead>
@@ -832,26 +889,26 @@
     <!-- Pipeline KPIs -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Active Pipeline</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Active Pipeline<span class="info-tip">?<span class="info-popup"><span class="info-title">Active Pipeline</span><span class="info-desc">Total DSRs currently in progress — includes Active and On Hold. These are open requests that haven't been completed or cancelled yet.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>DSRs where Salesforce STATUS_C is not in the Completed or Cancelled categories.</span></span></span></div>
         <div class="text-2xl font-bold text-violet-600" id="kpiPipelineCount2">—</div>
       </div>
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Stale &gt; 14d</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Stale &gt; 14d<span class="info-tip">?<span class="info-popup"><span class="info-title">Stale > 14 Days</span><span class="info-desc">DSRs where the record hasn't been updated in more than 14 days. These may need attention — the seller or rep might be unresponsive.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Days since last Salesforce record modification (LAST_MODIFIED_DATE). Red = high priority follow-up.</span></span></span></div>
         <div class="text-2xl font-bold text-red-500" id="kpiStaleRed">—</div>
       </div>
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Stale 7–14d</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Stale 7–14d<span class="info-tip">?<span class="info-popup"><span class="info-title">Stale 7–14 Days</span><span class="info-desc">DSRs where the record hasn't been updated in 7 to 14 days. These are approaching stale and should be checked soon.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Days since last Salesforce record modification (LAST_MODIFIED_DATE). Yellow = monitor closely.</span></span></span></div>
         <div class="text-2xl font-bold text-amber-500" id="kpiStaleYellow">—</div>
       </div>
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Pipeline GPV (USD)</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Pipeline GPV (USD)<span class="info-tip">?<span class="info-popup"><span class="info-title">Pipeline GPV</span><span class="info-desc">Total annual Gross Payment Volume of sellers in the active pipeline, converted to USD. Each seller counted once (deduplicated by highest GPV).</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce TOTAL_ANNUAL_GPV_C for active/on-hold DSRs, deduplicated by seller name.</span></span></span></div>
         <div class="text-2xl font-bold text-gray-900" id="kpiPipelineGpv">—</div>
       </div>
     </div>
 
     <!-- Pipeline by Stage Chart -->
     <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-6">
-      <h3 class="text-sm font-semibold text-gray-800 mb-4">Pipeline by Stage</h3>
+      <h3 class="text-sm font-semibold text-gray-800 mb-4 flex items-center">Pipeline by Stage<span class="info-tip">?<span class="info-popup"><span class="info-title">Pipeline by Stage</span><span class="info-desc">Horizontal bar chart showing how many active DSRs are in each implementation stage. Stages progress from Assigned → Consultation → Training → Implementation Complete.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce STATUS_C for all active and on-hold DSRs.</span></span></span></h3>
       <div class="chart-container" style="height: 320px;">
         <canvas id="chartPipelineStage"></canvas>
       </div>
@@ -915,7 +972,7 @@
   <div class="tab-content" id="tab-journey">
     <!-- Journey Flow -->
     <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-6">
-      <h3 class="text-sm font-semibold text-gray-800 mb-2">Onboarding Journey — Median Days to Reach Stage</h3>
+      <h3 class="text-sm font-semibold text-gray-800 mb-2 flex items-center">Onboarding Journey — Median Days to Reach Stage<span class="info-tip">?<span class="info-popup"><span class="info-title">Onboarding Journey</span><span class="info-desc">Visual flow showing the median number of days it takes a DSR to reach each implementation stage. Stages are shown in order from Submitted through Implementation Complete. When filters are active, stage timings are scaled proportionally based on the filtered median completion time.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Pre-aggregated stage timing data from Salesforce milestone dates. Filtered median uses DSR-level days-to-complete. Note: individual stage timings are estimated (scaled), not computed per-DSR.</span></span></span></h3>
       <p class="text-xs text-gray-500 mb-2">From DSR creation to each milestone. Octagon color indicates pace: <span class="text-emerald-600 font-medium">green</span> = fast, <span class="text-blue-600 font-medium">blue</span> = steady, <span class="text-amber-600 font-medium">orange</span> = slow, <span class="text-red-500 font-medium">red</span> = critical.</p>
       <p class="text-xs font-medium text-blue-600 mb-4" id="journeyFilterContext" style="display:none;"></p>
       <div id="journeyFlow"></div>
@@ -940,7 +997,7 @@
 
     <!-- Stage Duration Table -->
     <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-      <h3 class="text-sm font-semibold text-gray-800 mb-4">Stage Duration Analysis</h3>
+      <h3 class="text-sm font-semibold text-gray-800 mb-4 flex items-center">Stage Duration Analysis<span class="info-tip">?<span class="info-popup"><span class="info-title">Stage Duration Analysis</span><span class="info-desc">Table showing how long DSRs typically spend in each stage. Median = middle value, Avg = average, P75 = 75th percentile (slowest quarter). Transitions = how many DSRs passed through that stage.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Pre-aggregated from Salesforce stage transition timestamps. When filtered, values are proportionally scaled.</span></span></span></h3>
       <div class="overflow-x-auto">
         <table class="w-full text-sm" id="tableStageDuration">
           <thead>
@@ -970,11 +1027,11 @@
         <div class="text-2xl font-bold text-emerald-600" id="kpiCompleted90d">—</div>
       </div>
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total GPV (USD)</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Total GPV (USD)<span class="info-tip">?<span class="info-popup"><span class="info-title">Completed GPV</span><span class="info-desc">Total annual Gross Payment Volume of sellers whose DSRs were completed in this period, converted to USD. Each seller counted once.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce TOTAL_ANNUAL_GPV_C for completed DSRs, deduplicated by seller name.</span></span></span></div>
         <div class="text-2xl font-bold text-gray-900" id="kpiCompletedGpv90d">—</div>
       </div>
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Avg Days to Complete</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Avg Days to Complete<span class="info-tip">?<span class="info-popup"><span class="info-title">Average Days to Complete</span><span class="info-desc">Average number of days from DSR creation to completion for DSRs completed in this period. Lower is better — indicates faster turnaround.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Calculated as completion date minus CREATED_DATE for each completed DSR.</span></span></span></div>
         <div class="text-2xl font-bold text-blue-600" id="kpiAvgDays90d">—</div>
       </div>
     </div>
@@ -1033,29 +1090,26 @@
     <!-- Sellers KPIs -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total Launched</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Total Launched<span class="info-tip">?<span class="info-popup"><span class="info-title">Total Sellers Launched</span><span class="info-desc">Number of completed DSRs for implementation work types only: Onsite, Premium, Plus, Full-day 3rd Party Install, and Half-day 3rd Party Install. Excludes advisory work types like Tasks Only, Optimization Call, and Payroll.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Completed DSRs filtered to 5 launch-eligible PURCHASED_IMPLEMENTATION_SERVICES_C values.</span></span></span></div>
         <div class="text-2xl font-bold text-emerald-600" id="kpiLaunched">—</div>
       </div>
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">
-          TOTAL GPV (USD)
-          <span class="kpi-help" data-tip="Total GPV of all completed sellers, converted to USD">?</span>
-        </div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Total GPV (USD)<span class="info-tip">?<span class="info-popup"><span class="info-title">Launched Seller GPV</span><span class="info-desc">Total annual Gross Payment Volume of launched sellers, converted to USD. Each seller's GPV is counted once (deduplicated by highest GPV).</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce TOTAL_ANNUAL_GPV_C for completed launch-eligible DSRs.</span></span></span></div>
         <div class="text-2xl font-bold text-gray-900" id="kpiLaunchedGpv">—</div>
       </div>
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Countries</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Countries<span class="info-tip">?<span class="info-popup"><span class="info-title">Countries</span><span class="info-desc">Number of distinct countries where sellers were launched. Shows the geographic reach of GSO implementations.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce COUNTRY_CODE_C field on completed launch-eligible DSRs.</span></span></span></div>
         <div class="text-2xl font-bold text-blue-600" id="kpiCountries">—</div>
       </div>
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Avg Days</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Avg Days<span class="info-tip">?<span class="info-popup"><span class="info-title">Average Days to Launch</span><span class="info-desc">Average number of days from DSR creation to completion for launched sellers. Lower is better.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Completion date minus CREATED_DATE for completed launch-eligible DSRs.</span></span></span></div>
         <div class="text-2xl font-bold text-violet-600" id="kpiAvgDaysAll">—</div>
       </div>
     </div>
 
     <!-- GPV by Rep Chart -->
     <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-6">
-      <h3 class="text-sm font-semibold text-gray-800 mb-4">Launched Seller GPV by Rep (USD) — Top 15</h3>
+      <h3 class="text-sm font-semibold text-gray-800 mb-4 flex items-center">Launched Seller GPV by Rep (USD)<span class="info-tip">?<span class="info-popup"><span class="info-title">GPV by Rep</span><span class="info-desc">Top 15 reps ranked by total GPV of their launched sellers. Each seller's GPV is counted once per rep (deduplicated). Shows which reps are handling the highest-value implementations.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce TOTAL_ANNUAL_GPV_C for completed launch-eligible DSRs, grouped by DSR owner.</span></span></span> — Top 15</h3>
       <div class="chart-container" style="height: 380px;">
         <canvas id="chartLaunchedGpv"></canvas>
       </div>
@@ -1118,19 +1172,19 @@
     <!-- Cancelled KPIs -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total Cancelled</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Total Cancelled<span class="info-tip">?<span class="info-popup"><span class="info-title">Total Cancelled / Rejected</span><span class="info-desc">Total DSRs that were cancelled or rejected. Includes Rejected, Lost - No Seller Contact, Lost - Churn, and Lost statuses.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce STATUS_C in cancelled category. Filtered by created date when a date filter is active.</span></span></span></div>
         <div class="text-2xl font-bold text-red-600" id="kpiCancelledTotal">—</div>
       </div>
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Rejected</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Rejected<span class="info-tip">?<span class="info-popup"><span class="info-title">Rejected</span><span class="info-desc">DSRs rejected by the GSO team — typically because the request doesn't meet criteria or is a duplicate.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce STATUS_C = "Rejected".</span></span></span></div>
         <div class="text-2xl font-bold text-orange-600" id="kpiRejected">—</div>
       </div>
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Lost - No Contact</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Lost - No Contact<span class="info-tip">?<span class="info-popup"><span class="info-title">Lost - No Seller Contact</span><span class="info-desc">DSRs cancelled because the seller could not be reached after multiple attempts.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce STATUS_C = "Lost - No Seller Contact".</span></span></span></div>
         <div class="text-2xl font-bold text-amber-600" id="kpiLostNoContact">—</div>
       </div>
       <div class="kpi-card bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Lost - Churn</div>
+        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1 flex items-center">Lost - Churn<span class="info-tip">?<span class="info-popup"><span class="info-title">Lost - Churn</span><span class="info-desc">DSRs cancelled because the seller churned — they stopped using Square before implementation could be completed.</span><span class="info-source"><span class="info-source-label">📊 Data Source</span><br>Salesforce STATUS_C = "Lost - Churn".</span></span></span></div>
         <div class="text-2xl font-bold text-rose-600" id="kpiLostChurn">—</div>
       </div>
     </div>
