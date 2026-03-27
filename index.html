@@ -61,6 +61,9 @@
     }
 
     /* ===== Filter Pills ===== */
+    #workTypeDropdown label:has(input:checked) {
+      background: #eff6ff;
+    }
     .filter-pill {
       display: inline-flex;
       align-items: center;
@@ -452,10 +455,21 @@
         <option value="">All Reps</option>
       </select>
 
-      <!-- Work Type Filter -->
-      <select id="filterWorkType" class="border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none">
-        <option value="">All Work Types</option>
-      </select>
+      <!-- Work Type Filter (Multi-Select) -->
+      <div class="relative" id="workTypeFilterWrap">
+        <button id="workTypeFilterBtn" onclick="toggleWorkTypeDropdown()" class="border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none flex items-center gap-1.5 text-sm min-w-[160px]">
+          <span id="workTypeLabel">All Work Types</span>
+          <svg class="w-3 h-3 ml-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="workTypeDropdown" class="hidden absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-64 max-h-72 overflow-y-auto py-1">
+          <label class="flex items-center gap-2 px-3 py-1.5 hover:bg-blue-50 cursor-pointer text-sm">
+            <input type="checkbox" id="wt-all" checked onchange="toggleAllWorkTypes(this.checked)" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            <span class="font-semibold text-gray-700">All Work Types</span>
+          </label>
+          <div class="border-t border-gray-100 my-1"></div>
+          <div id="workTypeCheckboxes"></div>
+        </div>
+      </div>
 
       <!-- Status Filter -->
       <select id="filterStatus" class="border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none">
@@ -978,6 +992,18 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
     return n.toFixed(1) + '%';
   }
 
+  /** Deduplicate GPV: count each seller's GPV only once (use max GPV across their DSRs) */
+  function dedupeGPV(items) {
+    const sellerMap = {};
+    for (const item of items) {
+      const name = item.seller || item.rep || '';
+      if (!sellerMap[name] || (item.gpv || 0) > sellerMap[name]) {
+        sellerMap[name] = item.gpv || 0;
+      }
+    }
+    return Object.values(sellerMap).reduce((sum, gpv) => sum + gpv, 0);
+  }
+
   /** Escape HTML */
   function esc(s) {
     if (!s) return '';
@@ -1058,7 +1084,6 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
   // ================================================================
   const filterTeam = document.getElementById('filterTeam');
   const filterRep = document.getElementById('filterRep');
-  const filterWorkType = document.getElementById('filterWorkType');
   const filterStatus = document.getElementById('filterStatus');
   const filterTimeFrame = document.getElementById('filterTimeFrame');
   const filterPills = document.getElementById('filterPills');
@@ -1090,12 +1115,36 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
   }
   populateRepFilter('');
 
-  // Populate work type filter
-  Object.keys(GSO_DATA.workTypeSummary).sort().forEach(wt => {
-    const opt = document.createElement('option');
-    opt.value = wt;
-    opt.textContent = wt;
-    filterWorkType.appendChild(opt);
+  // Populate work type multi-select checkboxes
+  const workTypeCheckboxes = document.getElementById('workTypeCheckboxes');
+  const allWorkTypes = Object.keys(GSO_DATA.workTypeSummary).sort();
+  allWorkTypes.forEach(wt => {
+    const label = document.createElement('label');
+    label.className = 'flex items-center gap-2 px-3 py-1.5 hover:bg-blue-50 cursor-pointer text-sm';
+    label.innerHTML = `<input type="checkbox" checked value="${wt}" onchange="onWorkTypeChange()" class="wt-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500"><span class="text-gray-700">${wt}</span>`;
+    workTypeCheckboxes.appendChild(label);
+  });
+
+  // Work type multi-select functions (global scope)
+  window.toggleWorkTypeDropdown = function() {
+    document.getElementById('workTypeDropdown').classList.toggle('hidden');
+  };
+  window.toggleAllWorkTypes = function(checked) {
+    document.querySelectorAll('.wt-checkbox').forEach(cb => cb.checked = checked);
+    onWorkTypeChange();
+  };
+  window.onWorkTypeChange = function() {
+    const checked = [...document.querySelectorAll('.wt-checkbox:checked')].map(cb => cb.value);
+    const allChecked = checked.length === allWorkTypes.length;
+    document.getElementById('wt-all').checked = allChecked;
+    document.getElementById('workTypeLabel').textContent = allChecked ? 'All Work Types' : `${checked.length} selected`;
+    applyFilters();
+  };
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('workTypeFilterWrap').contains(e.target)) {
+      document.getElementById('workTypeDropdown').classList.add('hidden');
+    }
   });
 
   // Team filter cascades to rep filter
@@ -1106,14 +1155,16 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
   });
 
   filterRep.addEventListener('change', applyFilters);
-  filterWorkType.addEventListener('change', applyFilters);
   filterStatus.addEventListener('change', applyFilters);
   filterTimeFrame.addEventListener('change', applyFilters);
 
   clearFiltersBtn.addEventListener('click', () => {
     filterTeam.value = '';
     filterRep.value = '';
-    filterWorkType.value = '';
+    // Reset work type checkboxes to all checked
+    document.getElementById('wt-all').checked = true;
+    document.querySelectorAll('.wt-checkbox').forEach(cb => cb.checked = true);
+    document.getElementById('workTypeLabel').textContent = 'All Work Types';
     filterStatus.value = '';
     filterTimeFrame.value = '90';
     populateRepFilter('');
@@ -1124,7 +1175,8 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
     const filters = {};
     if (filterTeam.value) filters.team = filterTeam.value;
     if (filterRep.value) filters.rep = filterRep.value;
-    if (filterWorkType.value) filters.workType = filterWorkType.value;
+    const selectedWTs = [...document.querySelectorAll('.wt-checkbox:checked')].map(cb => cb.value);
+    if (selectedWTs.length < allWorkTypes.length) filters.workTypes = selectedWTs;
     if (filterStatus.value) filters.status = filterStatus.value;
     if (filterTimeFrame.value) filters.timeFrame = parseInt(filterTimeFrame.value);
     return filters;
@@ -1143,9 +1195,10 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
       hasFilter = true;
       filterPills.innerHTML += `<span class="filter-pill">Rep: ${esc(filters.rep)}<button onclick="document.getElementById('filterRep').value='';document.getElementById('filterRep').dispatchEvent(new Event('change'));">&times;</button></span>`;
     }
-    if (filters.workType) {
+    if (filters.workTypes) {
       hasFilter = true;
-      filterPills.innerHTML += `<span class="filter-pill">Type: ${esc(filters.workType)}<button onclick="document.getElementById('filterWorkType').value='';document.getElementById('filterWorkType').dispatchEvent(new Event('change'));">&times;</button></span>`;
+      const label = filters.workTypes.length <= 2 ? filters.workTypes.join(', ') : `${filters.workTypes.length} types`;
+      filterPills.innerHTML += `<span class="filter-pill">Types: ${esc(label)}<button onclick="document.getElementById('wt-all').checked=true;toggleAllWorkTypes(true);">&times;</button></span>`;
     }
     if (filters.status) {
       hasFilter = true;
@@ -1192,8 +1245,8 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
     let sellers = GSO_DATA.completedSellers;
     const reps = filterReps(filters);
     sellers = sellers.filter(s => reps.includes(s.rep));
-    if (filters.workType) {
-      sellers = sellers.filter(s => s.workType === filters.workType);
+    if (filters.workTypes) {
+      sellers = sellers.filter(s => filters.workTypes.includes(s.workType));
     }
     if (filters.timeFrame) {
       const cutoff = new Date();
@@ -1212,8 +1265,8 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
     }
     const reps = filterReps(filters);
     items = items.filter(i => reps.includes(i.rep));
-    if (filters.workType) {
-      items = items.filter(i => i.workType === filters.workType);
+    if (filters.workTypes) {
+      items = items.filter(i => filters.workTypes.includes(i.workType));
     }
     return items;
   }
@@ -1615,7 +1668,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
     // KPIs
     const staleRed = items.filter(i => i.daysStale > 14).length;
     const staleYellow = items.filter(i => i.daysStale > 7 && i.daysStale <= 14).length;
-    const totalGpv = items.reduce((s, i) => s + (i.gpv || 0), 0);
+    const totalGpv = dedupeGPV(items);
 
     document.getElementById('kpiPipelineCount2').textContent = fmtNum(items.length);
     document.getElementById('kpiStaleRed').textContent = fmtNum(staleRed);
@@ -1853,7 +1906,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
     const sellers = filterCompletedSellers({ ...filters, timeFrame: 90 });
 
     // KPIs
-    const totalGpv = sellers.reduce((s, c) => s + (c.gpv || 0), 0);
+    const totalGpv = dedupeGPV(sellers);
     const daysArr = sellers.filter(c => c.daysToComplete != null).map(c => c.daysToComplete);
     const avgDays = daysArr.length > 0 ? (daysArr.reduce((s, d) => s + d, 0) / daysArr.length) : 0;
 
@@ -1953,7 +2006,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
     const sellers = filterCompletedSellers(filters);
 
     // KPIs
-    const totalGpv = sellers.reduce((s, c) => s + (c.gpv || 0), 0);
+    const totalGpv = dedupeGPV(sellers);
     const countries = new Set(sellers.map(s => s.country).filter(Boolean));
     const daysArr = sellers.filter(c => c.daysToComplete != null).map(c => c.daysToComplete);
     const avgDays = daysArr.length > 0 ? (daysArr.reduce((s, d) => s + d, 0) / daysArr.length) : 0;
@@ -1963,11 +2016,16 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
     document.getElementById('kpiCountries').textContent = fmtNum(countries.size);
     document.getElementById('kpiAvgDaysAll').textContent = avgDays > 0 ? avgDays.toFixed(1) : '—';
 
-    // GPV by Rep Chart
+    // GPV by Rep Chart (deduplicated - each seller counted once per rep)
     destroyChart('chartLaunchedGpv');
     const repGpv = {};
+    const repSellerSeen = {};
     sellers.forEach(s => {
-      repGpv[s.rep] = (repGpv[s.rep] || 0) + (s.gpv || 0);
+      const key = s.rep + '||' + s.seller;
+      if (!repSellerSeen[key]) {
+        repSellerSeen[key] = true;
+        repGpv[s.rep] = (repGpv[s.rep] || 0) + (s.gpv || 0);
+      }
     });
     const topReps = Object.entries(repGpv).sort((a, b) => b[1] - a[1]).slice(0, 15);
 
