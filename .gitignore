@@ -1,5 +1,6 @@
-.DS_Store
-node_modules/
-*.log
-.env
-.env.local
+# Generated data files (regenerated from Airtable)
+dsr_facts.json
+dsr_facts_slim.json
+
+# Build script
+embed_dsr_facts.py
