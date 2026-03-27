@@ -429,6 +429,60 @@
       border-color: #93c5fd;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
+
+    /* ===== Team Comparison Tables ===== */
+    .team-compare {
+      margin-top: 24px;
+    }
+    .team-compare table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .team-compare th {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 10px 12px;
+      text-align: right;
+      color: #475569;
+      border-bottom: 2px solid #e2e8f0;
+      cursor: default;
+    }
+    .team-compare th:first-child {
+      text-align: left;
+      width: 180px;
+    }
+    .team-compare td {
+      padding: 8px 12px;
+      text-align: right;
+      font-size: 0.85rem;
+      color: #334155;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .team-compare td:first-child {
+      text-align: left;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .team-compare tr:hover td {
+      background: #f8fafc;
+    }
+    .team-compare .best-cell {
+      color: #059669;
+      font-weight: 700;
+      background: #ecfdf5;
+      border-radius: 4px;
+    }
+    .team-compare .best-team-header {
+      background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+      border-radius: 8px 8px 0 0;
+    }
+    .team-compare .trophy {
+      display: inline-block;
+      margin-left: 4px;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -684,6 +738,16 @@
         </table>
       </div>
     </div>
+  
+    <!-- Team Comparison -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">Team Comparison — Overview</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing all teams. <span class="text-emerald-600 font-medium">Green</span> = best in category. Respects time, status, and work type filters.</p>
+      <div class="overflow-x-auto">
+        <table id="teamCompareOverview"><tbody></tbody></table>
+      </div>
+    </div>
+  
   </div>
 
   <!-- ============================================================ -->
@@ -730,6 +794,16 @@
         </table>
       </div>
     </div>
+  
+    <!-- Team Comparison -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">Team Comparison — Team Performance</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing all teams. <span class="text-emerald-600 font-medium">Green</span> = best in category. Respects time, status, and work type filters.</p>
+      <div class="overflow-x-auto">
+        <table id="teamCompareTeam"><tbody></tbody></table>
+      </div>
+    </div>
+  
   </div>
 
   <!-- ============================================================ -->
@@ -796,6 +870,16 @@
         <div class="flex gap-1" id="pipelinePagination"></div>
       </div>
     </div>
+  
+    <!-- Team Comparison -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">Team Comparison — Pipeline</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing all teams. <span class="text-emerald-600 font-medium">Green</span> = best in category. Respects time, status, and work type filters.</p>
+      <div class="overflow-x-auto">
+        <table id="teamComparePipeline"><tbody></tbody></table>
+      </div>
+    </div>
+  
   </div>
 
   <!-- ============================================================ -->
@@ -836,6 +920,16 @@
         <canvas id="chartJourneyTiming"></canvas>
       </div>
     </div>
+  
+    <!-- Team Comparison -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">Team Comparison — Journey</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing all teams. <span class="text-emerald-600 font-medium">Green</span> = best in category. Respects time, status, and work type filters.</p>
+      <div class="overflow-x-auto">
+        <table id="teamCompareJourney"><tbody></tbody></table>
+      </div>
+    </div>
+  
   </div>
 
   <!-- ============================================================ -->
@@ -885,6 +979,16 @@
         <div class="flex gap-1" id="completedPagination"></div>
       </div>
     </div>
+  
+    <!-- Team Comparison -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">Team Comparison — Completed</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing all teams. <span class="text-emerald-600 font-medium">Green</span> = best in category. Respects time, status, and work type filters.</p>
+      <div class="overflow-x-auto">
+        <table id="teamCompareCompleted"><tbody></tbody></table>
+      </div>
+    </div>
+  
   </div>
 
   <!-- ============================================================ -->
@@ -949,6 +1053,16 @@
         <div class="flex gap-1" id="sellersPagination"></div>
       </div>
     </div>
+  
+    <!-- Team Comparison -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">Team Comparison — Sellers</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing all teams. <span class="text-emerald-600 font-medium">Green</span> = best in category. Respects time, status, and work type filters.</p>
+      <div class="overflow-x-auto">
+        <table id="teamCompareSellers"><tbody></tbody></table>
+      </div>
+    </div>
+  
   </div>
 
   <!-- ============================================================ -->
@@ -994,6 +1108,16 @@
         </table>
       </div>
     </div>
+  
+    <!-- Team Comparison -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">Team Comparison — Goaling</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing all teams. <span class="text-emerald-600 font-medium">Green</span> = best in category. Respects time, status, and work type filters.</p>
+      <div class="overflow-x-auto">
+        <table id="teamCompareGoaling"><tbody></tbody></table>
+      </div>
+    </div>
+  
   </div>
 
 </main>
@@ -1395,6 +1519,262 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
       goalingFilter.value = '';
     }
     renderGoaling();
+    renderAllTeamComparisons();
+  }
+
+  // ================================================================
+  // TEAM COMPARISON (all tabs)
+  // ================================================================
+
+  function getComparisonFilters() {
+    // Same as getActiveFilters but WITHOUT team/rep (we compare all teams)
+    const filters = {};
+    const selectedWTs = [...document.querySelectorAll('.wt-checkbox:checked')].map(cb => cb.value);
+    if (selectedWTs.length < allWorkTypes.length) filters.workTypes = selectedWTs;
+    if (filterStatus.value) filters.status = filterStatus.value;
+    if (filterTimeFrame.value) {
+      filters.timeFrame = filterTimeFrame.value;
+      filters.dateRange = resolveTimeRange(filterTimeFrame.value);
+    }
+    return filters;
+  }
+
+  function getTeamData(teamName, filters) {
+    const teamReps = GSO_DATA.teams[teamName] || [];
+    const range = filters.dateRange || null;
+    const hasWT = !!filters.workTypes;
+    const hasDate = !!range;
+
+    // Completed sellers for this team
+    let comp = GSO_DATA.completedSellers.filter(s => teamReps.includes(s.rep));
+    if (hasWT) comp = comp.filter(s => filters.workTypes.includes(s.workType));
+    if (hasDate) comp = comp.filter(s => isDateInRange(s.completedDate, range));
+
+    // Pipeline for this team
+    let pipe = [];
+    for (const [stage, items] of Object.entries(GSO_DATA.activePipeline)) {
+      items.forEach(item => pipe.push({ ...item, stage }));
+    }
+    pipe = pipe.filter(i => teamReps.includes(i.rep));
+    if (hasWT) pipe = pipe.filter(i => filters.workTypes.includes(i.workType));
+    if (hasDate) pipe = pipe.filter(i => isDateInRange(i.created, range));
+
+    const activePipe = pipe.filter(i => i.stage !== 'On Hold');
+    const onHoldPipe = pipe.filter(i => i.stage === 'On Hold');
+
+    // Rep summary totals
+    let totalDsrs = 0, totalCompleted = 0, totalActive = 0, totalOnHold = 0, totalCancelled = 0, totalGpv = 0;
+    if (hasDate) {
+      totalCompleted = comp.length;
+      totalActive = activePipe.length;
+      totalOnHold = onHoldPipe.length;
+      teamReps.forEach(rep => {
+        const r = GSO_DATA.repSummary[rep];
+        if (r) totalCancelled += r.cancelled || 0;
+      });
+      totalDsrs = totalCompleted + totalActive + totalOnHold + totalCancelled;
+      totalGpv = dedupeGPV(comp) + dedupeGPV(pipe);
+    } else {
+      teamReps.forEach(rep => {
+        const r = GSO_DATA.repSummary[rep];
+        if (!r) return;
+        if (hasWT) {
+          const wts = r.workTypes || {};
+          Object.entries(wts).forEach(([wt, cnt]) => {
+            if (filters.workTypes.includes(wt)) {
+              totalDsrs += cnt;
+              const ratio = cnt / (r.total || 1);
+              totalCompleted += Math.round((r.completed || 0) * ratio);
+              totalActive += Math.round((r.active || 0) * ratio);
+              totalOnHold += Math.round((r.onHold || 0) * ratio);
+              totalCancelled += Math.round((r.cancelled || 0) * ratio);
+            }
+          });
+          totalGpv += r.gpv || 0;
+        } else {
+          totalDsrs += r.total || 0;
+          totalCompleted += r.completed || 0;
+          totalActive += r.active || 0;
+          totalOnHold += r.onHold || 0;
+          totalCancelled += r.cancelled || 0;
+          totalGpv += r.gpv || 0;
+        }
+      });
+    }
+
+    const daysArr = comp.filter(s => s.daysToComplete != null && s.daysToComplete >= 0).map(s => s.daysToComplete).sort((a,b) => a-b);
+    const medianDays = daysArr.length ? daysArr[Math.floor(daysArr.length / 2)] : 0;
+    const avgDays = daysArr.length ? daysArr.reduce((a,b) => a+b, 0) / daysArr.length : 0;
+
+    const pipelineDaysOpen = pipe.length ? pipe.reduce((s,i) => s + (i.daysOpen || 0), 0) / pipe.length : 0;
+    const pipelineDaysStale = pipe.length ? pipe.reduce((s,i) => s + (i.daysStale || 0), 0) / pipe.length : 0;
+
+    const completionRate = totalDsrs > 0 ? (totalCompleted / totalDsrs * 100) : 0;
+
+    return {
+      team: teamName,
+      reps: teamReps.length,
+      dsrs: totalDsrs,
+      completed: totalCompleted,
+      active: totalActive,
+      onHold: totalOnHold,
+      cancelled: totalCancelled,
+      gpv: totalGpv,
+      completionRate,
+      medianDays,
+      avgDays,
+      completedSellers: comp,
+      pipeline: pipe,
+      activePipeline: activePipe,
+      onHoldPipeline: onHoldPipe,
+      pipelineDaysOpen,
+      pipelineDaysStale,
+    };
+  }
+
+  function buildComparisonTable(tableId, rows, teams, teamData, options = {}) {
+    // rows: [{label, key, format, higherIsBetter}]
+    // teams: [teamName, ...]
+    // teamData: {teamName: data}
+    const table = document.getElementById(tableId);
+    if (!table) return;
+
+    // Find best overall team (most "best" metrics)
+    const bestCounts = {};
+    teams.forEach(t => bestCounts[t] = 0);
+
+    const bestPerRow = {};
+    rows.forEach(row => {
+      let bestVal = null;
+      let bestTeam = null;
+      teams.forEach(t => {
+        const val = typeof row.key === 'function' ? row.key(teamData[t]) : teamData[t][row.key];
+        if (val == null) return;
+        const better = row.higherIsBetter !== false;
+        if (bestVal === null || (better ? val > bestVal : val < bestVal)) {
+          bestVal = val;
+          bestTeam = t;
+        }
+      });
+      bestPerRow[row.label] = bestTeam;
+      if (bestTeam && bestVal !== 0) bestCounts[bestTeam]++;
+    });
+
+    const bestOverall = Object.entries(bestCounts).sort((a,b) => b[1] - a[1])[0][0];
+
+    let html = '<thead><tr><th>Metric</th>';
+    teams.forEach(t => {
+      const isBest = t === bestOverall;
+      html += `<th class="${isBest ? 'best-team-header' : ''}">${esc(t)}${isBest ? ' <span class="trophy">🏆</span>' : ''}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    rows.forEach(row => {
+      html += `<tr><td>${row.label}</td>`;
+      teams.forEach(t => {
+        const val = typeof row.key === 'function' ? row.key(teamData[t]) : teamData[t][row.key];
+        const formatted = row.format ? row.format(val) : fmtNum(val);
+        const isBest = bestPerRow[row.label] === t && val !== 0 && val != null;
+        html += `<td class="${isBest ? 'best-cell' : ''}">${formatted}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody>';
+    table.innerHTML = html;
+  }
+
+  function renderAllTeamComparisons() {
+    const filters = getComparisonFilters();
+    const teams = Object.keys(GSO_DATA.teams).sort();
+    const teamData = {};
+    teams.forEach(t => teamData[t] = getTeamData(t, filters));
+
+    // Overview
+    buildComparisonTable('teamCompareOverview', [
+      { label: 'Total DSRs', key: 'dsrs' },
+      { label: 'Completed', key: 'completed' },
+      { label: 'Active Pipeline', key: 'active' },
+      { label: 'On Hold', key: 'onHold', higherIsBetter: false },
+      { label: 'Cancelled', key: 'cancelled', higherIsBetter: false },
+      { label: 'Completion Rate', key: 'completionRate', format: v => fmtPct(v) },
+      { label: 'GPV', key: 'gpv', format: v => fmtUSD(v) },
+    ], teams, teamData);
+
+    // Team Performance
+    buildComparisonTable('teamCompareTeam', [
+      { label: 'Reps', key: 'reps' },
+      { label: 'Total DSRs', key: 'dsrs' },
+      { label: 'Completed', key: 'completed' },
+      { label: 'GPV', key: 'gpv', format: v => fmtUSD(v) },
+      { label: 'DSRs per Rep', key: d => d.reps > 0 ? Math.round(d.dsrs / d.reps) : 0 },
+      { label: 'GPV per Rep', key: d => d.reps > 0 ? d.gpv / d.reps : 0, format: v => fmtUSD(v) },
+      { label: 'Median Days', key: 'medianDays', higherIsBetter: false },
+    ], teams, teamData);
+
+    // Pipeline
+    buildComparisonTable('teamComparePipeline', [
+      { label: 'Active Pipeline', key: d => d.activePipeline.length },
+      { label: 'On Hold', key: d => d.onHoldPipeline.length, higherIsBetter: false },
+      { label: 'Total Pipeline', key: d => d.pipeline.length },
+      { label: 'Avg Days Open', key: 'pipelineDaysOpen', format: v => v > 0 ? v.toFixed(1) : '—', higherIsBetter: false },
+      { label: 'Avg Days Stale', key: 'pipelineDaysStale', format: v => v > 0 ? v.toFixed(1) : '—', higherIsBetter: false },
+    ], teams, teamData);
+
+    // Journey
+    buildComparisonTable('teamCompareJourney', [
+      { label: 'Median Days to Complete', key: 'medianDays', higherIsBetter: false },
+      { label: 'Avg Days to Complete', key: 'avgDays', format: v => v > 0 ? v.toFixed(1) : '—', higherIsBetter: false },
+      { label: 'Completions (sample)', key: d => d.completedSellers.length },
+    ], teams, teamData);
+
+    // Completed
+    buildComparisonTable('teamCompareCompleted', [
+      { label: 'Completions', key: 'completed' },
+      { label: 'Median Days', key: 'medianDays', higherIsBetter: false },
+      { label: 'Avg Days', key: 'avgDays', format: v => v > 0 ? v.toFixed(1) : '—', higherIsBetter: false },
+      { label: 'GPV Completed', key: d => dedupeGPV(d.completedSellers), format: v => fmtUSD(v) },
+    ], teams, teamData);
+
+    // Sellers
+    buildComparisonTable('teamCompareSellers', [
+      { label: 'Completed Sellers', key: d => d.completedSellers.length },
+      { label: 'GPV', key: d => dedupeGPV(d.completedSellers), format: v => fmtUSD(v) },
+      { label: 'Avg GPV per Seller', key: d => { const c = d.completedSellers.length; return c > 0 ? dedupeGPV(d.completedSellers) / c : 0; }, format: v => fmtUSD(v) },
+      { label: 'Active Pipeline', key: d => d.activePipeline.length },
+    ], teams, teamData);
+
+    // Goaling (static — ignores filters, uses goaling data directly)
+    const goalingTeams = {};
+    teams.forEach(t => {
+      const teamReps = GSO_DATA.teams[t] || [];
+      let dsrPacing = 0, ptsPacing = 0, onTrack = 0, atRisk = 0, offTrack = 0, count = 0;
+      teamReps.forEach(rep => {
+        const g = (GSO_DATA.goaling || {})[rep];
+        if (!g) return;
+        count++;
+        dsrPacing += g.dsrPacingPct || 0;
+        ptsPacing += g.ptsPacingPct || 0;
+        if (g.status === 'On Track') onTrack++;
+        else if (g.status === 'At Risk') atRisk++;
+        else offTrack++;
+      });
+      goalingTeams[t] = {
+        repsWithGoals: count,
+        avgDsrPacing: count > 0 ? dsrPacing / count : 0,
+        avgPtsPacing: count > 0 ? ptsPacing / count : 0,
+        onTrack, atRisk, offTrack,
+      };
+    });
+
+    buildComparisonTable('teamCompareGoaling', [
+      { label: 'Reps with Goals', key: 'repsWithGoals' },
+      { label: 'Avg DSR Pacing %', key: 'avgDsrPacing', format: v => fmtPct(v) },
+      { label: 'Avg Points Pacing %', key: 'avgPtsPacing', format: v => fmtPct(v) },
+      { label: 'On Track', key: 'onTrack' },
+      { label: 'At Risk', key: 'atRisk', higherIsBetter: false },
+      { label: 'Off Track', key: 'offTrack', higherIsBetter: false },
+    ], teams, goalingTeams);
   }
 
   // ================================================================
