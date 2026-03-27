@@ -2417,14 +2417,32 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
       return color;
     });
 
+    const wtTotal = wtNames.reduce((s, w) => s + (wtFromFacts[w] || 0), 0);
     charts.chartWorkType = new Chart(document.getElementById('chartWorkType'), {
       type: 'doughnut',
       data: { labels: wtNames, datasets: [{ data: wtNames.map(w => wtFromFacts[w] || 0), backgroundColor: wtColors, borderWidth: 1, borderColor: '#fff' }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 }, padding: 8 } },
-          tooltip: { callbacks: { label: ctx => { const total = wtNames.reduce((s, w) => s + (wtFromFacts[w] || 0), 0); return `${ctx.label}: ${fmtNum(ctx.raw)} (${fmtPct(total > 0 ? ctx.raw / total * 100 : 0)})`; } } }
+          legend: {
+            position: 'right',
+            labels: {
+              boxWidth: 10, font: { size: 10 }, padding: 6,
+              generateLabels: chart => chart.data.labels.map((label, i) => {
+                const value = chart.data.datasets[0].data[i];
+                const pct = wtTotal > 0 ? (value / wtTotal * 100).toFixed(1) : '0.0';
+                return {
+                  text: `${label}  (${fmtNum(value)} · ${pct}%)`,
+                  fillStyle: chart.data.datasets[0].backgroundColor[i],
+                  strokeStyle: '#fff',
+                  lineWidth: 1,
+                  hidden: false,
+                  index: i
+                };
+              })
+            }
+          },
+          tooltip: { callbacks: { label: ctx => { return `${ctx.label}: ${fmtNum(ctx.raw)} (${fmtPct(wtTotal > 0 ? ctx.raw / wtTotal * 100 : 0)})`; } } }
         }
       }
     });
