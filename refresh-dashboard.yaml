@@ -1,15 +1,25 @@
 version: "1.0.0"
 title: "Refresh GSO Dashboard"
-description: "Pull latest DSR data from Airtable and Snowflake, rebuild the dashboard, and deploy to Blockcell. This updates all KPIs, charts, and tables with the most current Salesforce data."
+description: "Pull latest DSR data from Airtable and Snowflake, rebuild the dashboard, and deploy to Blockcell. Works from any machine with Goose Desktop."
 instructions: |
-  You are refreshing the GSO Dashboard at /Users/mhofer/gso-dashboard.
+  You are refreshing the GSO Dashboard.
 
-  Follow these steps in order:
+  ## Setup
+  First, clone or pull the latest repo:
+  ```bash
+  if [ -d "/tmp/gso-dashboard" ]; then
+    cd /tmp/gso-dashboard && git pull
+  else
+    git clone https://github.com/mhoferblock/gso-dashboard.git /tmp/gso-dashboard
+    cd /tmp/gso-dashboard
+  fi
+  ```
+  Work in /tmp/gso-dashboard for all subsequent steps.
 
   ## Step 1: Pull DSR Facts from Airtable
   Pull ALL records from Airtable base appsnfWWzptN9cwD0, table tblqfqKMvmdufvRjD (DSR Facts).
   Fields to extract for each record: SFDC ID, DSR Name, Rep, Team Lead, Seller, Work Type, Status, Sub Status, Request Reason, Product Version, Country, Currency, GPV, GPV USD, Created Date, Completed Date, Go Live Date, Days to Complete, Days Open, Days Stale, Opp Owner, Opp Owner Role, Num Locations, Is Onsite.
-  Page through all records (100 per page) and save to /Users/mhofer/gso-dashboard/dsr_facts.json as an array of objects with camelCase keys (id, rep, teamLead, seller, workType, status, subStatus, requestReason, country, currency, gpv, gpvUsd, createdDate, completedDate, goLiveDate, daysToComplete, daysOpen, daysStale, oppOwner, oppOwnerRole, numLocations, isOnsite).
+  Page through all records (100 per page) and save to /tmp/gso-dashboard/dsr_facts.json as an array of objects with camelCase keys (id, rep, teamLead, seller, workType, status, subStatus, requestReason, country, currency, gpv, gpvUsd, createdDate, completedDate, goLiveDate, daysToComplete, daysOpen, daysStale, oppOwner, oppOwnerRole, numLocations, isOnsite).
 
   ## Step 2: Enrich with Opp Owner from Snowflake
   Query Snowflake to get Opportunity Owner data:
@@ -19,19 +29,20 @@ instructions: |
   WHERE RECORD_TYPE_NAME_C = 'GSO Global Seller Onboarding'
     AND OPPORTUNITY_OWNER_C IS NOT NULL
   ```
+  Set the Snowflake row limit to at least 200000 before running.
   Merge the Opp Owner and Opp Owner Role into the dsr_facts.json records by matching on SFDC ID.
   Save the updated dsr_facts.json.
 
   ## Step 3: Rebuild and embed
-  Run: python3 /Users/mhofer/gso-dashboard/rebuild_embed.py
+  Run: python3 /tmp/gso-dashboard/rebuild_embed.py
   This builds the slim JSON and embeds it into index.html.
 
   ## Step 4: Deploy to Blockcell
-  Upload /Users/mhofer/gso-dashboard to Blockcell site "gso-dashboard".
+  Upload /tmp/gso-dashboard to Blockcell site "gso-dashboard".
 
   ## Step 5: Commit and push
   ```bash
-  cd /Users/mhofer/gso-dashboard
+  cd /tmp/gso-dashboard
   git add index.html dsr_facts.json dsr_facts_slim.json
   git commit -m "Refresh dashboard data — $(date +%Y-%m-%d)"
   git push
@@ -46,37 +57,3 @@ instructions: |
   - Git push status
 
 prompt: "Refresh the GSO Dashboard with the latest data from Airtable and Snowflake."
-
-extensions:
-  - type: builtin
-    name: developer
-    bundled: true
-    description: "File operations and shell commands"
-    timeout: 300
-
-  - type: stdio
-    name: airtable
-    cmd: uvx
-    args:
-      - mcp_airtable@latest
-    timeout: 300
-    bundled: true
-    description: "Read and write Airtable records"
-
-  - type: stdio
-    name: snowflake
-    cmd: uvx
-    args:
-      - mcp-snowflake@latest
-    timeout: 300
-    bundled: true
-    description: "Query Snowflake data warehouse"
-
-  - type: stdio
-    name: blockcell
-    cmd: uvx
-    args:
-      - mcp_blockcell@latest
-    timeout: 300
-    bundled: true
-    description: "Deploy to Blockcell static hosting"
