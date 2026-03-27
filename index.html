@@ -1525,13 +1525,46 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
   function renderTeamPerformance() {
     const filters = getActiveFilters();
     const reps = filterReps(filters);
+    const hasWorkTypeFilter = !!filters.workTypes;
+    const hasStatusFilter = !!filters.status;
 
-    // Build rep data array
-    const repData = reps.map(rep => ({
-      rep,
-      team: getTeam(rep),
-      ...GSO_DATA.repSummary[rep]
-    })).filter(r => r.total > 0);
+    // Build rep data array — recalculate if work type or status filtered
+    const repData = reps.map(rep => {
+      const r = GSO_DATA.repSummary[rep];
+      if (!r) return null;
+      let total = r.total || 0;
+      let completed = r.completed || 0;
+      let active = r.active || 0;
+      let onHold = r.onHold || 0;
+      let cancelled = r.cancelled || 0;
+      let gpv = r.gpv || 0;
+
+      // Recalculate if work type filter is active
+      if (hasWorkTypeFilter) {
+        const wts = r.workTypes || {};
+        let filteredTotal = 0;
+        Object.entries(wts).forEach(([wt, cnt]) => {
+          if (filters.workTypes.includes(wt)) filteredTotal += cnt;
+        });
+        const ratio = total > 0 ? filteredTotal / total : 0;
+        total = filteredTotal;
+        completed = Math.round(completed * ratio);
+        active = Math.round(active * ratio);
+        onHold = Math.round(onHold * ratio);
+        cancelled = Math.round(cancelled * ratio);
+      }
+
+      // Apply status filter
+      if (hasStatusFilter) {
+        const s = filters.status;
+        if (s === 'completed') total = completed;
+        else if (s === 'active') total = active;
+        else if (s === 'onHold') total = onHold;
+        else if (s === 'cancelled') total = cancelled;
+      }
+
+      return { rep, team: getTeam(rep), total, completed, active, onHold, cancelled, gpv, workTypes: r.workTypes };
+    }).filter(r => r && r.total > 0);
 
     // Rep GPV Chart - Top 20
     destroyChart('chartRepGpv');
