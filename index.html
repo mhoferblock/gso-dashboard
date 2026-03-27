@@ -1878,12 +1878,13 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
   function renderJourney() {
     const filters = getActiveFilters();
     const reps = filterReps(filters);
-    const hasFilter = reps.length < Object.keys(GSO_DATA.repSummary).length || !!filters.workTypes;
+    const hasFilter = reps.length < Object.keys(GSO_DATA.repSummary).length || !!filters.workTypes || !!filters.timeFrame;
 
-    // If filtered, recalculate median days from completed sellers
-    let jt = GSO_DATA.journeyTiming;
+    // Deep clone the journey timing so we can modify it
+    let jt = JSON.parse(JSON.stringify(GSO_DATA.journeyTiming));
+
     if (hasFilter) {
-      // Get filtered completed sellers to compute overall median days
+      // Get filtered completed sellers
       let sellers = GSO_DATA.completedSellers.filter(s => reps.includes(s.rep));
       if (filters.workTypes) sellers = sellers.filter(s => filters.workTypes.includes(s.workType));
       if (filters.timeFrame) {
@@ -1892,22 +1893,40 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":86,"daysInQuarter":9
         const cutoffStr = cutoff.toISOString().split('T')[0];
         sellers = sellers.filter(s => s.completedDate >= cutoffStr);
       }
-      const daysArr = sellers.filter(s => s.daysToComplete != null && s.daysToComplete >= 0).map(s => s.daysToComplete);
-      const medianDays = daysArr.length > 0 ? daysArr.sort((a,b) => a-b)[Math.floor(daysArr.length/2)] : 0;
-      const avgDays = daysArr.length > 0 ? daysArr.reduce((a,b) => a+b, 0) / daysArr.length : 0;
 
-      // Update the "Implementation Complete" stage with filtered median
-      jt = JSON.parse(JSON.stringify(GSO_DATA.journeyTiming));
-      if (jt['Implementation Complete']) {
-        jt['Implementation Complete'].medianDays = medianDays;
-        jt['Implementation Complete'].avgDays = Math.round(avgDays * 10) / 10;
-        jt['Implementation Complete'].count = sellers.length;
-      }
+      // Compute filtered median days to complete
+      const daysArr = sellers.filter(s => s.daysToComplete != null && s.daysToComplete >= 0).map(s => s.daysToComplete).sort((a,b) => a-b);
+      const filteredMedian = daysArr.length > 0 ? daysArr[Math.floor(daysArr.length / 2)] : 0;
+      const filteredAvg = daysArr.length > 0 ? daysArr.reduce((a,b) => a+b, 0) / daysArr.length : 0;
+      const filteredP25 = daysArr.length > 0 ? daysArr[Math.floor(daysArr.length * 0.25)] : 0;
+      const filteredP75 = daysArr.length > 0 ? daysArr[Math.floor(daysArr.length * 0.75)] : 0;
+
+      // The base (unfiltered) Implementation Complete median
+      const baseMedian = GSO_DATA.journeyTiming['Implementation Complete'] ? GSO_DATA.journeyTiming['Implementation Complete'].medianDays : 29;
+      const scaleFactor = baseMedian > 0 ? filteredMedian / baseMedian : 1;
+
+      // Scale ALL milestones proportionally based on the filtered median
+      Object.keys(jt).forEach(stage => {
+        if (stage === 'Implementation Complete') {
+          jt[stage].medianDays = filteredMedian;
+          jt[stage].avgDays = Math.round(filteredAvg * 10) / 10;
+          jt[stage].p25 = filteredP25;
+          jt[stage].p75 = filteredP75;
+          jt[stage].count = sellers.length;
+        } else {
+          jt[stage].medianDays = Math.round(jt[stage].medianDays * scaleFactor * 10) / 10;
+          jt[stage].avgDays = Math.round(jt[stage].avgDays * scaleFactor * 10) / 10;
+          jt[stage].p25 = Math.round(jt[stage].p25 * scaleFactor * 10) / 10;
+          jt[stage].p75 = Math.round(jt[stage].p75 * scaleFactor * 10) / 10;
+        }
+      });
 
       // Show filter context
       const ctx = document.getElementById('journeyFilterContext');
-      if (ctx) ctx.textContent = `Showing ${sellers.length} completed DSRs | Median: ${medianDays} days`;
-      if (ctx) ctx.style.display = 'block';
+      if (ctx) {
+        ctx.textContent = `Filtered: ${sellers.length} completed DSRs | Median go-live: ${filteredMedian} days (${scaleFactor > 1 ? '+' : ''}${Math.round((scaleFactor - 1) * 100)}% vs overall)`;
+        ctx.style.display = 'block';
+      }
     } else {
       const ctx = document.getElementById('journeyFilterContext');
       if (ctx) ctx.style.display = 'none';
