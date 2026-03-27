@@ -185,58 +185,49 @@
       flex-direction: row-reverse;
     }
     .journey-turn {
-      position: relative;
-      height: 64px;
-      margin: 0 74px;
+      display: flex;
+      height: 56px;
     }
-    /* Right-side U-turn: row 1 (L→R) connects to row 2 (R→L) via right edge */
     .journey-turn-right {
-      position: absolute;
-      right: 0;
-      top: 0;
-      width: 48px;
+      margin-left: auto;
+      margin-right: 74px;
+      width: 5px;
       height: 100%;
-      border-right: 5px solid #60a5fa;
-      border-top: 5px solid #60a5fa;
-      border-bottom: 5px solid #60a5fa;
-      border-radius: 0 20px 20px 0;
-      border-left: none;
+      border-radius: 9999px;
+      background: linear-gradient(180deg, #60a5fa 0%, #1d4ed8 100%);
+      position: relative;
     }
     .journey-turn-right::after {
       content: '';
       position: absolute;
-      bottom: -3px;
-      left: -9px;
-      width: 12px;
-      height: 12px;
-      border-bottom: 3.5px solid #1d4ed8;
-      border-left: 3.5px solid #1d4ed8;
-      transform: rotate(-45deg);
-      border-radius: 2px;
-    }
-    /* Left-side U-turn: row 2 (R→L) connects to row 3 (L→R) via left edge */
-    .journey-turn-left {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 48px;
-      height: 100%;
-      border-left: 5px solid #60a5fa;
-      border-top: 5px solid #60a5fa;
-      border-bottom: 5px solid #60a5fa;
-      border-radius: 20px 0 0 20px;
-      border-right: none;
-    }
-    .journey-turn-left::after {
-      content: '';
-      position: absolute;
-      bottom: -3px;
-      right: -9px;
+      bottom: -2px;
+      left: 50%;
       width: 12px;
       height: 12px;
       border-bottom: 3.5px solid #1d4ed8;
       border-right: 3.5px solid #1d4ed8;
-      transform: rotate(-45deg);
+      transform: translateX(-50%) rotate(45deg);
+      border-radius: 2px;
+    }
+    .journey-turn-left {
+      margin-right: auto;
+      margin-left: 74px;
+      width: 5px;
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(180deg, #60a5fa 0%, #1d4ed8 100%);
+      position: relative;
+    }
+    .journey-turn-left::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 50%;
+      width: 12px;
+      height: 12px;
+      border-bottom: 3.5px solid #1d4ed8;
+      border-right: 3.5px solid #1d4ed8;
+      transform: translateX(-50%) rotate(45deg);
       border-radius: 2px;
     }
     .journey-stage {
