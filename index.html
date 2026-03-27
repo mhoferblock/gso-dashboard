@@ -1790,97 +1790,75 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
     return filters;
   }
 
-  function getTeamData(teamName, filters) {
-    const teamReps = GSO_DATA.teams[teamName] || [];
-    const range = filters.dateRange || null;
-    const hasWT = !!filters.workTypes;
-    const hasDate = !!range;
+  /** Build a summary object from a filtered set of DSR facts */
+  function buildSummaryFromFacts(facts, range, extra = {}) {
+    let totalDsrs = 0, totalCompleted = 0, totalActive = 0, totalOnHold = 0, totalCancelled = 0;
+    const sellerGpv = {};
+    const compDays = [];
+    const pipeItems = [];
 
-    // Completed sellers for this team
-    let comp = GSO_DATA.completedSellers.filter(s => teamReps.includes(s.rep));
-    if (hasWT) comp = comp.filter(s => filters.workTypes.includes(s.workType));
-    if (hasDate) comp = comp.filter(s => isDateInRange(s.completedDate, range));
+    facts.forEach(f => {
+      if (range) {
+        if (isDateInRange(f.createdDate, range)) totalDsrs++;
+        if (f.category === 'completed' && isDateInRange(f.completedDate, range)) totalCompleted++;
+        if (f.category === 'cancelled' && isDateInRange(f.createdDate, range)) totalCancelled++;
+      } else {
+        totalDsrs++;
+        if (f.category === 'completed') totalCompleted++;
+        if (f.category === 'cancelled') totalCancelled++;
+      }
+      if (f.category === 'active') totalActive++;
+      if (f.category === 'onHold') totalOnHold++;
 
-    // Pipeline for this team
-    let pipe = [];
-    for (const [stage, items] of Object.entries(GSO_DATA.activePipeline)) {
-      items.forEach(item => pipe.push({ ...item, stage }));
-    }
-    pipe = pipe.filter(i => teamReps.includes(i.rep));
-    if (hasWT) pipe = pipe.filter(i => filters.workTypes.includes(i.workType));
-    if (hasDate) pipe = pipe.filter(i => isDateInRange(i.created, range));
+      // GPV dedup by seller
+      if (!sellerGpv[f.seller] || f.gpvUsd > sellerGpv[f.seller]) sellerGpv[f.seller] = f.gpvUsd;
 
-    const activePipe = pipe.filter(i => i.stage !== 'On Hold');
-    const onHoldPipe = pipe.filter(i => i.stage === 'On Hold');
+      // Completed days
+      if (f.category === 'completed' && f.daysToComplete != null && f.daysToComplete >= 0) {
+        if (!range || isDateInRange(f.completedDate, range)) compDays.push(f.daysToComplete);
+      }
 
-    // Rep summary totals
-    let totalDsrs = 0, totalCompleted = 0, totalActive = 0, totalOnHold = 0, totalCancelled = 0, totalGpv = 0;
-    if (hasDate) {
-      totalCompleted = comp.length;
-      totalActive = activePipe.length;
-      totalOnHold = onHoldPipe.length;
-      teamReps.forEach(rep => {
-        const r = GSO_DATA.repSummary[rep];
-        if (r) totalCancelled += r.cancelled || 0;
-      });
-      totalDsrs = totalCompleted + totalActive + totalOnHold + totalCancelled;
-      totalGpv = dedupeGPV(comp) + dedupeGPV(pipe);
-    } else {
-      teamReps.forEach(rep => {
-        const r = GSO_DATA.repSummary[rep];
-        if (!r) return;
-        if (hasWT) {
-          const wts = r.workTypes || {};
-          Object.entries(wts).forEach(([wt, cnt]) => {
-            if (filters.workTypes.includes(wt)) {
-              totalDsrs += cnt;
-              const ratio = cnt / (r.total || 1);
-              totalCompleted += Math.round((r.completed || 0) * ratio);
-              totalActive += Math.round((r.active || 0) * ratio);
-              totalOnHold += Math.round((r.onHold || 0) * ratio);
-              totalCancelled += Math.round((r.cancelled || 0) * ratio);
-            }
-          });
-          totalGpv += r.gpv || 0;
-        } else {
-          totalDsrs += r.total || 0;
-          totalCompleted += r.completed || 0;
-          totalActive += r.active || 0;
-          totalOnHold += r.onHold || 0;
-          totalCancelled += r.cancelled || 0;
-          totalGpv += r.gpv || 0;
-        }
-      });
-    }
+      // Pipeline items (active + onHold)
+      if (f.category === 'active' || f.category === 'onHold') {
+        pipeItems.push({ rep: f.rep, seller: f.seller, stage: f.status, workType: f.workType, gpv: f.gpvUsd, daysOpen: f.daysOpen, daysStale: f.daysStale, created: f.createdDate });
+      }
+    });
 
-    const daysArr = comp.filter(s => s.daysToComplete != null && s.daysToComplete >= 0).map(s => s.daysToComplete).sort((a,b) => a-b);
-    const medianDays = daysArr.length ? daysArr[Math.floor(daysArr.length / 2)] : 0;
-    const avgDays = daysArr.length ? daysArr.reduce((a,b) => a+b, 0) / daysArr.length : 0;
-
-    const pipelineDaysOpen = pipe.length ? pipe.reduce((s,i) => s + (i.daysOpen || 0), 0) / pipe.length : 0;
-    const pipelineDaysStale = pipe.length ? pipe.reduce((s,i) => s + (i.daysStale || 0), 0) / pipe.length : 0;
-
+    const totalGpv = Object.values(sellerGpv).reduce((s, v) => s + v, 0);
+    compDays.sort((a, b) => a - b);
+    const medianDays = compDays.length ? compDays[Math.floor(compDays.length / 2)] : 0;
+    const avgDays = compDays.length ? compDays.reduce((a, b) => a + b, 0) / compDays.length : 0;
     const completionRate = totalDsrs > 0 ? (totalCompleted / totalDsrs * 100) : 0;
+    const activePipe = pipeItems.filter(i => i.stage !== 'On Hold');
+    const onHoldPipe = pipeItems.filter(i => i.stage === 'On Hold');
+    const pipelineDaysOpen = pipeItems.length ? pipeItems.reduce((s, i) => s + (i.daysOpen || 0), 0) / pipeItems.length : 0;
+    const pipelineDaysStale = pipeItems.length ? pipeItems.reduce((s, i) => s + (i.daysStale || 0), 0) / pipeItems.length : 0;
+
+    // Build completedSellers shape for compatibility
+    const comp = facts.filter(f => f.category === 'completed' && (!range || isDateInRange(f.completedDate, range)))
+      .map(f => ({ rep: f.rep, seller: f.seller, workType: f.workType, gpv: f.gpvUsd, country: f.country, completedDate: f.completedDate, daysToComplete: f.daysToComplete }));
 
     return {
-      team: teamName,
-      reps: teamReps.length,
-      dsrs: totalDsrs,
-      completed: totalCompleted,
-      active: totalActive,
-      onHold: totalOnHold,
-      cancelled: totalCancelled,
-      gpv: totalGpv,
-      completionRate,
-      medianDays,
-      avgDays,
-      completedSellers: comp,
-      pipeline: pipe,
-      activePipeline: activePipe,
-      onHoldPipeline: onHoldPipe,
-      pipelineDaysOpen,
-      pipelineDaysStale,
+      ...extra,
+      dsrs: totalDsrs, completed: totalCompleted, active: totalActive,
+      onHold: totalOnHold, cancelled: totalCancelled, gpv: totalGpv,
+      completionRate, medianDays, avgDays,
+      completedSellers: comp, pipeline: pipeItems,
+      activePipeline: activePipe, onHoldPipeline: onHoldPipe,
+      pipelineDaysOpen, pipelineDaysStale,
     };
+  }
+
+  function getTeamData(teamName, filters) {
+    const teamReps = new Set(GSO_DATA.teams[teamName] || []);
+    const range = filters.dateRange || null;
+    const wtSet = filters.workTypes ? new Set(filters.workTypes) : null;
+
+    // Get all facts for this team, filtered by work type
+    let facts = DSR_FACTS.filter(f => teamReps.has(f.rep));
+    if (wtSet) facts = facts.filter(f => wtSet.has(f.workType));
+
+    return buildSummaryFromFacts(facts, range, { team: teamName, reps: teamReps.size });
   }
 
   function buildComparisonTable(tableId, rows, teams, teamData, options = {}) {
@@ -2063,74 +2041,12 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
 
   function getRepData(repName, filters) {
     const range = filters.dateRange || null;
-    const hasWT = !!filters.workTypes;
-    const hasDate = !!range;
+    const wtSet = filters.workTypes ? new Set(filters.workTypes) : null;
 
-    let comp = GSO_DATA.completedSellers.filter(s => s.rep === repName);
-    if (hasWT) comp = comp.filter(s => filters.workTypes.includes(s.workType));
-    if (hasDate) comp = comp.filter(s => isDateInRange(s.completedDate, range));
+    let facts = DSR_FACTS.filter(f => f.rep === repName);
+    if (wtSet) facts = facts.filter(f => wtSet.has(f.workType));
 
-    let pipe = [];
-    for (const [stage, items] of Object.entries(GSO_DATA.activePipeline)) {
-      items.forEach(item => pipe.push({ ...item, stage }));
-    }
-    pipe = pipe.filter(i => i.rep === repName);
-    if (hasWT) pipe = pipe.filter(i => filters.workTypes.includes(i.workType));
-    if (hasDate) pipe = pipe.filter(i => isDateInRange(i.created, range));
-
-    const activePipe = pipe.filter(i => i.stage !== 'On Hold');
-    const onHoldPipe = pipe.filter(i => i.stage === 'On Hold');
-
-    let totalDsrs = 0, totalCompleted = 0, totalActive = 0, totalOnHold = 0, totalCancelled = 0, totalGpv = 0;
-    if (hasDate) {
-      totalCompleted = comp.length;
-      totalActive = activePipe.length;
-      totalOnHold = onHoldPipe.length;
-      const r = GSO_DATA.repSummary[repName];
-      if (r) totalCancelled = r.cancelled || 0;
-      totalDsrs = totalCompleted + totalActive + totalOnHold + totalCancelled;
-      totalGpv = dedupeGPV(comp) + dedupeGPV(pipe);
-    } else {
-      const r = GSO_DATA.repSummary[repName];
-      if (r) {
-        if (hasWT) {
-          const wts = r.workTypes || {};
-          Object.entries(wts).forEach(([wt, cnt]) => {
-            if (filters.workTypes.includes(wt)) {
-              totalDsrs += cnt;
-              const ratio = cnt / (r.total || 1);
-              totalCompleted += Math.round((r.completed || 0) * ratio);
-              totalActive += Math.round((r.active || 0) * ratio);
-              totalOnHold += Math.round((r.onHold || 0) * ratio);
-              totalCancelled += Math.round((r.cancelled || 0) * ratio);
-            }
-          });
-          totalGpv = r.gpv || 0;
-        } else {
-          totalDsrs = r.total || 0;
-          totalCompleted = r.completed || 0;
-          totalActive = r.active || 0;
-          totalOnHold = r.onHold || 0;
-          totalCancelled = r.cancelled || 0;
-          totalGpv = r.gpv || 0;
-        }
-      }
-    }
-
-    const daysArr = comp.filter(s => s.daysToComplete != null && s.daysToComplete >= 0).map(s => s.daysToComplete).sort((a,b) => a-b);
-    const medianDays = daysArr.length ? daysArr[Math.floor(daysArr.length / 2)] : 0;
-    const avgDays = daysArr.length ? daysArr.reduce((a,b) => a+b, 0) / daysArr.length : 0;
-    const completionRate = totalDsrs > 0 ? (totalCompleted / totalDsrs * 100) : 0;
-    const pipelineDaysOpen = pipe.length ? pipe.reduce((s,i) => s + (i.daysOpen || 0), 0) / pipe.length : 0;
-    const pipelineDaysStale = pipe.length ? pipe.reduce((s,i) => s + (i.daysStale || 0), 0) / pipe.length : 0;
-
-    return {
-      rep: repName, dsrs: totalDsrs, completed: totalCompleted, active: totalActive,
-      onHold: totalOnHold, cancelled: totalCancelled, gpv: totalGpv, completionRate,
-      medianDays, avgDays, completedSellers: comp, pipeline: pipe,
-      activePipeline: activePipe, onHoldPipeline: onHoldPipe,
-      pipelineDaysOpen, pipelineDaysStale,
-    };
+    return buildSummaryFromFacts(facts, range, { rep: repName });
   }
 
   function renderAllRepComparisons() {
@@ -2148,7 +2064,7 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
     wrapIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
 
     const filters = getComparisonFilters();
-    const teamReps = (GSO_DATA.teams[selectedTeam] || []).filter(r => GSO_DATA.repSummary[r]);
+    const teamReps = GSO_DATA.teams[selectedTeam] || [];
     if (teamReps.length === 0) {
       wrapIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
       return;
@@ -2702,7 +2618,10 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
 
   function renderPipeline() {
     const filters = getActiveFilters();
-    let items = filterPipelineItems(filters);
+    // Pipeline = active + onHold facts, mapped to pipeline item shape
+    let items = getFilteredFacts(filters)
+      .filter(f => f.category === 'active' || f.category === 'onHold')
+      .map(f => ({ rep: f.rep, seller: f.seller, stage: f.status, workType: f.workType, gpv: f.gpvUsd, daysOpen: f.daysOpen, daysStale: f.daysStale, created: f.createdDate }));
 
     // Pipeline stage filter dropdown
     const stageSelect = document.getElementById('filterPipelineStage');
@@ -3022,12 +2941,12 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
 
   function renderCompleted() {
     const filters = getActiveFilters();
-    // If no date filter is active, default to 90 days for this tab
-    const completedFilters = { ...filters };
-    if (!completedFilters.dateRange) {
-      completedFilters.dateRange = resolveTimeRange('this_month');
-    }
-    const sellers = filterCompletedSellers(completedFilters);
+    // If no date filter is active, default to this_month for this tab
+    const range = filters.dateRange || resolveTimeRange('this_month');
+    // Get completed facts from dsrFacts, filtered by completedDate in range
+    const sellers = getFilteredFacts(filters)
+      .filter(f => f.category === 'completed' && isDateInRange(f.completedDate, range))
+      .map(f => ({ rep: f.rep, seller: f.seller, workType: f.workType, gpv: f.gpvUsd, country: f.country, completedDate: f.completedDate, daysToComplete: f.daysToComplete }));
 
     // KPIs
     const totalGpv = dedupeGPV(sellers);
@@ -3044,9 +2963,14 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
 
   function renderCompletedTable(sellers) {
     const search = (document.getElementById('searchCompleted').value || '').toLowerCase();
-    const fallbackFilters = { ...getActiveFilters() };
-    if (!fallbackFilters.dateRange) fallbackFilters.dateRange = resolveTimeRange('this_month');
-    let data = sellers || filterCompletedSellers(fallbackFilters);
+    let data = sellers;
+    if (!data) {
+      const filters = getActiveFilters();
+      const range = filters.dateRange || resolveTimeRange('this_month');
+      data = getFilteredFacts(filters)
+        .filter(f => f.category === 'completed' && isDateInRange(f.completedDate, range))
+        .map(f => ({ rep: f.rep, seller: f.seller, workType: f.workType, gpv: f.gpvUsd, country: f.country, completedDate: f.completedDate, daysToComplete: f.daysToComplete }));
+    }
     if (search) {
       data = data.filter(s =>
         s.rep.toLowerCase().includes(search) ||
@@ -3135,7 +3059,10 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
 
   function renderSellers() {
     const filters = getActiveFilters();
-    const sellers = filterCompletedSellers(filters).filter(s => LAUNCH_WORK_TYPES.has(s.workType));
+    const range = filters.dateRange || null;
+    const sellers = getFilteredFacts(filters)
+      .filter(f => f.category === 'completed' && LAUNCH_WORK_TYPES.has(f.workType) && (!range || isDateInRange(f.completedDate, range)))
+      .map(f => ({ rep: f.rep, seller: f.seller, workType: f.workType, gpv: f.gpvUsd, gpvLocal: f.gpvUsd, currency: f.country === 'US' ? 'USD' : '', country: f.country, completedDate: f.completedDate, daysToComplete: f.daysToComplete }));
 
     // KPIs
     const totalGpv = dedupeGPV(sellers);
@@ -3204,7 +3131,14 @@ GSO_DATA.dsrFacts = [{"i":"a2y4W000002FLidQAG","r":"Olignne Diaz","s":"7th Wave 
 
   function renderSellersTable(sellers) {
     const search = (document.getElementById('searchSellers').value || '').toLowerCase();
-    let data = sellers || filterCompletedSellers(getActiveFilters()).filter(s => LAUNCH_WORK_TYPES.has(s.workType));
+    let data = sellers;
+    if (!data) {
+      const filters = getActiveFilters();
+      const range = filters.dateRange || null;
+      data = getFilteredFacts(filters)
+        .filter(f => f.category === 'completed' && LAUNCH_WORK_TYPES.has(f.workType) && (!range || isDateInRange(f.completedDate, range)))
+        .map(f => ({ rep: f.rep, seller: f.seller, workType: f.workType, gpv: f.gpvUsd, country: f.country, completedDate: f.completedDate, daysToComplete: f.daysToComplete }));
+    }
     if (search) {
       data = data.filter(s =>
         s.rep.toLowerCase().includes(search) ||
