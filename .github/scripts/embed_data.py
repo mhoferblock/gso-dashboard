@@ -44,14 +44,20 @@ def main():
         print("ERROR: Could not find GSO_DATA block")
         return
 
-    # Replace goaling data
-    # Pattern: GSO_DATA.goaling = {...} followed optionally by GSO_DATA.goalingMeta = {...};
-    goaling_match = re.search(r'GSO_DATA\.goaling = \{.*?\}\n', html, re.DOTALL)
+    # Replace goaling data block
+    # Match from GSO_DATA.goaling through the closing </script> tag
+    goaling_match = re.search(
+        r'(GSO_DATA\.goaling = \{.*?\})\n'
+        r'(GSO_DATA\.goalingMeta = \{.*?\};\n)?'
+        r'</script>',
+        html, re.DOTALL
+    )
     if goaling_match:
         new_goaling = 'GSO_DATA.goaling = ' + json.dumps(goaling, separators=(',', ':')) + '\n'
         new_goaling += 'GSO_DATA.goalingMeta = ' + json.dumps(goaling_meta, separators=(',', ':')) + ';\n'
+        new_goaling += '</script>'
         html = html[:goaling_match.start()] + new_goaling + html[goaling_match.end():]
-        print(f"Replaced goaling + meta: {len(goaling_match.group(0)):,} -> {len(new_goaling):,} bytes")
+        print(f"Replaced goaling + meta block")
     else:
         print("WARNING: Could not find goaling block")
 
