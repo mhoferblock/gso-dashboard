@@ -181,10 +181,7 @@
       gap: 0;
       justify-content: flex-start;
     }
-    .journey-row.reverse {
-      flex-direction: row-reverse;
-      justify-content: flex-start;
-    }
+    
     .journey-turn {
       display: flex;
       align-items: stretch;
@@ -2143,10 +2140,12 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
 
     rows.forEach((rowStages, rowIdx) => {
       const isReverse = rowIdx % 2 === 1;
-      // Reverse rows: CSS row-reverse puts last item (highest milestone) on the right
-      // DOM order: App Training, SO Training, ..., 2nd Q&A
-      // Visual order (row-reverse): 2nd Q&A on RIGHT ← ... ← App Training on LEFT
-      const displayStages = rowStages;
+      // Reverse rows: reverse array so highest milestone (App Training) is on the right
+      // DOM order (reversed): 2nd Q&A, 1st Q&A, ..., SO Training, App Training
+      // Visual (normal flex L→R): 2nd Q&A on LEFT ... App Training on RIGHT
+      // Arrows point left via .reverse CSS class
+      // Down arrow connects Dashboard Training (row1 right) → App Training (row2 right) ✓
+      const displayStages = isReverse ? [...rowStages].reverse() : rowStages;
 
       let rowHtml = `<div class="journey-row${isReverse ? ' reverse' : ''}">`;
       displayStages.forEach((stage, colIdx) => {
