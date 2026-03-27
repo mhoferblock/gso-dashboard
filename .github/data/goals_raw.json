@@ -1,0 +1,720 @@
+{
+  "rows": [
+    {
+      "level": "2",
+      "country": "AU",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "AU",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "AU",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "5",
+      "country": "AU",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "CA",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "2",
+      "country": "GB",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "GB",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "GB",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "IE",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "IE",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "JP",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "20",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "2",
+      "country": "MD",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "25",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "MD",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "25",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "MD",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "25",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "US",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "US",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "2",
+      "country": "AU",
+      "goal_name": "# of Points",
+      "goal_amount": "125",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "AU",
+      "goal_name": "# of Points",
+      "goal_amount": "125",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "AU",
+      "goal_name": "# of Points",
+      "goal_amount": "125",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "5",
+      "country": "AU",
+      "goal_name": "# of Points",
+      "goal_amount": "125",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "CA",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "2",
+      "country": "GB",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "GB",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "GB",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "IE",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "IE",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "JP",
+      "goal_name": "# of Points",
+      "goal_amount": "125",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "2",
+      "country": "MD",
+      "goal_name": "# of Points",
+      "goal_amount": "100",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "MD",
+      "goal_name": "# of Points",
+      "goal_amount": "100",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "MD",
+      "goal_name": "# of Points",
+      "goal_amount": "100",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "US",
+      "goal_name": "# of Points",
+      "goal_amount": "125",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "US",
+      "goal_name": "# of Points",
+      "goal_amount": "125",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "2",
+      "country": "AU",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "AU",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "AU",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "5",
+      "country": "AU",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "CA",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "20",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "2",
+      "country": "GB",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "GB",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "GB",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "IE",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "40",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "IE",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "40",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "JP",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "20",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "2",
+      "country": "MD",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "MD",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "MD",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "US",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "4",
+      "country": "US",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "45931"
+    },
+    {
+      "level": "3",
+      "country": "US",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "US",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "JP",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "JP",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "CA",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "CA",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "GB",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "GB",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "AU",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "AU",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "IE",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "IE",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "2",
+      "country": "MD",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "MD",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "MD",
+      "goal_name": "# Premium/Onsites/Plus Completed",
+      "goal_amount": "40",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "US",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "US",
+      "goal_name": "# of Points",
+      "goal_amount": "175",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "JP",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "JP",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "CA",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "CA",
+      "goal_name": "# of Points",
+      "goal_amount": "175",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "GB",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "GB",
+      "goal_name": "# of Points",
+      "goal_amount": "175",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "AU",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "AU",
+      "goal_name": "# of Points",
+      "goal_amount": "175",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "IE",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "IE",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "2",
+      "country": "MD",
+      "goal_name": "# of Points",
+      "goal_amount": "125",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "MD",
+      "goal_name": "# of Points",
+      "goal_amount": "150",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "MD",
+      "goal_name": "# of Points",
+      "goal_amount": "175",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "2",
+      "country": "MD",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "MD",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "MD",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "2",
+      "country": "AU",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "AU",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "AU",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "5",
+      "country": "AU",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "CA",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "CA",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "2",
+      "country": "GB",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "GB",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "GB",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "IE",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "IE",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "JP",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "20",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "JP",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "20",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "MD",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "MD",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "3",
+      "country": "US",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    },
+    {
+      "level": "4",
+      "country": "US",
+      "goal_name": "Median Days to Complete",
+      "goal_amount": "35",
+      "goal_quarter": "46023"
+    }
+  ],
+  "qMap": {
+    "45931": "Q4 FY2025 (Oct-Dec 2025)",
+    "46023": "Q1 FY2026 (Jan-Mar 2026)",
+    "46113": "Q2 FY2026 (Apr-Jun 2026)",
+    "46204": "Q3 FY2026 (Jul-Sep 2026)"
+  },
+  "goalNames": [
+    "# Premium/Onsites/Plus Completed",
+    "# of Points",
+    "Median Days to Complete"
+  ],
+  "countries": [
+    "AU",
+    "CA",
+    "GB",
+    "IE",
+    "JP",
+    "MD",
+    "US"
+  ],
+  "levels": [
+    "2",
+    "3",
+    "4",
+    "5"
+  ],
+  "quarters": [
+    "45931",
+    "46023"
+  ]
+}
