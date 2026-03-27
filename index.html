@@ -2153,7 +2153,9 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
 
     rows.forEach((rowStages, rowIdx) => {
       const isReverse = rowIdx % 2 === 1;
-      // Reverse rows: CSS flex-direction handles visual order, arrows point left
+      // Reverse rows: CSS row-reverse puts last item (highest milestone) on the right
+      // DOM order: App Training, SO Training, ..., 2nd Q&A
+      // Visual order (row-reverse): 2nd Q&A on RIGHT ← ... ← App Training on LEFT
       const displayStages = rowStages;
 
       let rowHtml = `<div class="journey-row${isReverse ? ' reverse' : ''}">`;
