@@ -747,6 +747,14 @@
         <table id="teamCompareOverview"><tbody></tbody></table>
       </div>
     </div>
+    <!-- Rep Comparison (visible when team filtered) -->
+    <div id="repCompareOverviewWrap" class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare mt-6" style="display:none;">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1" id="repCompareOverviewTitle">Rep Comparison — Overview</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing reps within the selected team. <span class="text-emerald-600 font-medium">Green</span> = best in category.</p>
+      <div class="overflow-x-auto">
+        <table id="repCompareOverview"><tbody></tbody></table>
+      </div>
+    </div>
   
   </div>
 
@@ -801,6 +809,14 @@
       <p class="text-xs text-gray-500 mb-4">Comparing all teams. <span class="text-emerald-600 font-medium">Green</span> = best in category. Respects time, status, and work type filters.</p>
       <div class="overflow-x-auto">
         <table id="teamCompareTeam"><tbody></tbody></table>
+      </div>
+    </div>
+    <!-- Rep Comparison (visible when team filtered) -->
+    <div id="repCompareTeamWrap" class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare mt-6" style="display:none;">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1" id="repCompareTeamTitle">Rep Comparison — Team Performance</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing reps within the selected team. <span class="text-emerald-600 font-medium">Green</span> = best in category.</p>
+      <div class="overflow-x-auto">
+        <table id="repCompareTeam"><tbody></tbody></table>
       </div>
     </div>
   
@@ -879,6 +895,14 @@
         <table id="teamComparePipeline"><tbody></tbody></table>
       </div>
     </div>
+    <!-- Rep Comparison (visible when team filtered) -->
+    <div id="repComparePipelineWrap" class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare mt-6" style="display:none;">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1" id="repComparePipelineTitle">Rep Comparison — Pipeline</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing reps within the selected team. <span class="text-emerald-600 font-medium">Green</span> = best in category.</p>
+      <div class="overflow-x-auto">
+        <table id="repComparePipeline"><tbody></tbody></table>
+      </div>
+    </div>
   
   </div>
 
@@ -900,6 +924,14 @@
       <p class="text-xs text-gray-500 mb-4">Comparing all teams. <span class="text-emerald-600 font-medium">Green</span> = best in category. Respects time, status, and work type filters.</p>
       <div class="overflow-x-auto">
         <table id="teamCompareJourney"><tbody></tbody></table>
+      </div>
+    </div>
+    <!-- Rep Comparison (visible when team filtered) -->
+    <div id="repCompareJourneyWrap" class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare mt-6" style="display:none;">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1" id="repCompareJourneyTitle">Rep Comparison — Journey</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing reps within the selected team. <span class="text-emerald-600 font-medium">Green</span> = best in category.</p>
+      <div class="overflow-x-auto">
+        <table id="repCompareJourney"><tbody></tbody></table>
       </div>
     </div>
 
@@ -980,6 +1012,14 @@
         <table id="teamCompareCompleted"><tbody></tbody></table>
       </div>
     </div>
+    <!-- Rep Comparison (visible when team filtered) -->
+    <div id="repCompareCompletedWrap" class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare mt-6" style="display:none;">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1" id="repCompareCompletedTitle">Rep Comparison — Completed</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing reps within the selected team. <span class="text-emerald-600 font-medium">Green</span> = best in category.</p>
+      <div class="overflow-x-auto">
+        <table id="repCompareCompleted"><tbody></tbody></table>
+      </div>
+    </div>
   
   </div>
 
@@ -1052,6 +1092,14 @@
       <p class="text-xs text-gray-500 mb-4">Comparing all teams. <span class="text-emerald-600 font-medium">Green</span> = best in category. Respects time, status, and work type filters.</p>
       <div class="overflow-x-auto">
         <table id="teamCompareSellers"><tbody></tbody></table>
+      </div>
+    </div>
+    <!-- Rep Comparison (visible when team filtered) -->
+    <div id="repCompareSellersWrap" class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm team-compare mt-6" style="display:none;">
+      <h3 class="text-sm font-semibold text-gray-800 mb-1" id="repCompareSellersTitle">Rep Comparison — Sellers</h3>
+      <p class="text-xs text-gray-500 mb-4">Comparing reps within the selected team. <span class="text-emerald-600 font-medium">Green</span> = best in category.</p>
+      <div class="overflow-x-auto">
+        <table id="repCompareSellers"><tbody></tbody></table>
       </div>
     </div>
   
@@ -1512,6 +1560,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
     }
     renderGoaling();
     renderAllTeamComparisons();
+    renderAllRepComparisons();
   }
 
   // ================================================================
@@ -1796,6 +1845,184 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
       { label: 'At Risk', key: 'atRisk', higherIsBetter: false },
       { label: 'Off Track', key: 'offTrack', higherIsBetter: false },
     ], teams, goalingTeams);
+  }
+
+  // ================================================================
+  // REP COMPARISON (visible when team filtered)
+  // ================================================================
+
+  function getRepData(repName, filters) {
+    const range = filters.dateRange || null;
+    const hasWT = !!filters.workTypes;
+    const hasDate = !!range;
+
+    let comp = GSO_DATA.completedSellers.filter(s => s.rep === repName);
+    if (hasWT) comp = comp.filter(s => filters.workTypes.includes(s.workType));
+    if (hasDate) comp = comp.filter(s => isDateInRange(s.completedDate, range));
+
+    let pipe = [];
+    for (const [stage, items] of Object.entries(GSO_DATA.activePipeline)) {
+      items.forEach(item => pipe.push({ ...item, stage }));
+    }
+    pipe = pipe.filter(i => i.rep === repName);
+    if (hasWT) pipe = pipe.filter(i => filters.workTypes.includes(i.workType));
+    if (hasDate) pipe = pipe.filter(i => isDateInRange(i.created, range));
+
+    const activePipe = pipe.filter(i => i.stage !== 'On Hold');
+    const onHoldPipe = pipe.filter(i => i.stage === 'On Hold');
+
+    let totalDsrs = 0, totalCompleted = 0, totalActive = 0, totalOnHold = 0, totalCancelled = 0, totalGpv = 0;
+    if (hasDate) {
+      totalCompleted = comp.length;
+      totalActive = activePipe.length;
+      totalOnHold = onHoldPipe.length;
+      const r = GSO_DATA.repSummary[repName];
+      if (r) totalCancelled = r.cancelled || 0;
+      totalDsrs = totalCompleted + totalActive + totalOnHold + totalCancelled;
+      totalGpv = dedupeGPV(comp) + dedupeGPV(pipe);
+    } else {
+      const r = GSO_DATA.repSummary[repName];
+      if (r) {
+        if (hasWT) {
+          const wts = r.workTypes || {};
+          Object.entries(wts).forEach(([wt, cnt]) => {
+            if (filters.workTypes.includes(wt)) {
+              totalDsrs += cnt;
+              const ratio = cnt / (r.total || 1);
+              totalCompleted += Math.round((r.completed || 0) * ratio);
+              totalActive += Math.round((r.active || 0) * ratio);
+              totalOnHold += Math.round((r.onHold || 0) * ratio);
+              totalCancelled += Math.round((r.cancelled || 0) * ratio);
+            }
+          });
+          totalGpv = r.gpv || 0;
+        } else {
+          totalDsrs = r.total || 0;
+          totalCompleted = r.completed || 0;
+          totalActive = r.active || 0;
+          totalOnHold = r.onHold || 0;
+          totalCancelled = r.cancelled || 0;
+          totalGpv = r.gpv || 0;
+        }
+      }
+    }
+
+    const daysArr = comp.filter(s => s.daysToComplete != null && s.daysToComplete >= 0).map(s => s.daysToComplete).sort((a,b) => a-b);
+    const medianDays = daysArr.length ? daysArr[Math.floor(daysArr.length / 2)] : 0;
+    const avgDays = daysArr.length ? daysArr.reduce((a,b) => a+b, 0) / daysArr.length : 0;
+    const completionRate = totalDsrs > 0 ? (totalCompleted / totalDsrs * 100) : 0;
+    const pipelineDaysOpen = pipe.length ? pipe.reduce((s,i) => s + (i.daysOpen || 0), 0) / pipe.length : 0;
+    const pipelineDaysStale = pipe.length ? pipe.reduce((s,i) => s + (i.daysStale || 0), 0) / pipe.length : 0;
+
+    return {
+      rep: repName, dsrs: totalDsrs, completed: totalCompleted, active: totalActive,
+      onHold: totalOnHold, cancelled: totalCancelled, gpv: totalGpv, completionRate,
+      medianDays, avgDays, completedSellers: comp, pipeline: pipe,
+      activePipeline: activePipe, onHoldPipeline: onHoldPipe,
+      pipelineDaysOpen, pipelineDaysStale,
+    };
+  }
+
+  function renderAllRepComparisons() {
+    const selectedTeam = filterTeam.value;
+    const wrapIds = ['repCompareOverviewWrap','repCompareTeamWrap','repComparePipelineWrap',
+                     'repCompareJourneyWrap','repCompareCompletedWrap','repCompareSellersWrap'];
+
+    // Hide all if no team selected
+    if (!selectedTeam) {
+      wrapIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+      return;
+    }
+
+    // Show all
+    wrapIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
+
+    const filters = getComparisonFilters();
+    const teamReps = (GSO_DATA.teams[selectedTeam] || []).filter(r => GSO_DATA.repSummary[r]);
+    if (teamReps.length === 0) {
+      wrapIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+      return;
+    }
+
+    const repData = {};
+    teamReps.forEach(r => repData[r] = getRepData(r, filters));
+
+    // Update titles
+    wrapIds.forEach(id => {
+      const titleEl = document.getElementById(id.replace('Wrap', 'Title'));
+      if (titleEl) titleEl.textContent = `Rep Comparison — ${selectedTeam}'s Team`;
+    });
+
+    // Overview
+    buildComparisonTable('repCompareOverview', [
+      { label: 'Total DSRs', key: 'dsrs' },
+      { label: 'Completed', key: 'completed' },
+      { label: 'Active Pipeline', key: 'active' },
+      { label: 'On Hold', key: 'onHold', higherIsBetter: false },
+      { label: 'Cancelled', key: 'cancelled', higherIsBetter: false },
+      { label: 'Completion Rate', key: 'completionRate', format: v => fmtPct(v) },
+      { label: 'GPV', key: 'gpv', format: v => fmtUSD(v) },
+    ], teamReps, repData);
+
+    // Team Performance
+    buildComparisonTable('repCompareTeam', [
+      { label: 'Total DSRs', key: 'dsrs' },
+      { label: 'Completed', key: 'completed' },
+      { label: 'GPV', key: 'gpv', format: v => fmtUSD(v) },
+      { label: 'Median Days', key: 'medianDays', higherIsBetter: false },
+      { label: 'Avg Days', key: 'avgDays', format: v => v > 0 ? v.toFixed(1) : '—', higherIsBetter: false },
+    ], teamReps, repData);
+
+    // Pipeline
+    buildComparisonTable('repComparePipeline', [
+      { label: 'Active Pipeline', key: d => d.activePipeline.length },
+      { label: 'On Hold', key: d => d.onHoldPipeline.length, higherIsBetter: false },
+      { label: 'Total Pipeline', key: d => d.pipeline.length },
+      { label: 'Avg Days Open', key: 'pipelineDaysOpen', format: v => v > 0 ? v.toFixed(1) : '—', higherIsBetter: false },
+      { label: 'Avg Days Stale', key: 'pipelineDaysStale', format: v => v > 0 ? v.toFixed(1) : '—', higherIsBetter: false },
+    ], teamReps, repData);
+
+    // Journey — per-milestone scaled
+    const jt = GSO_DATA.journeyTiming;
+    const milestones = Object.keys(jt);
+    const baseImplMedian = jt['Implementation Complete'] ? jt['Implementation Complete'].medianDays : 29;
+    const journeyRepData = {};
+    teamReps.forEach(r => {
+      const rd = repData[r];
+      const scale = (baseImplMedian > 0 && rd.medianDays > 0) ? rd.medianDays / baseImplMedian : 1;
+      const md = {};
+      milestones.forEach(m => { md[m] = Math.round(jt[m].medianDays * scale * 10) / 10; });
+      md._medianDays = rd.medianDays;
+      md._avgDays = rd.avgDays;
+      md._count = rd.completedSellers.length;
+      journeyRepData[r] = md;
+    });
+    const journeyRows = milestones.map(m => ({
+      label: m, key: d => d[m], format: v => v != null ? v + 'd' : '—', higherIsBetter: false,
+    }));
+    journeyRows.push(
+      { label: '—', key: () => '', format: () => '' },
+      { label: 'Overall Median Days', key: '_medianDays', format: v => v > 0 ? v + 'd' : '—', higherIsBetter: false },
+      { label: 'Overall Avg Days', key: '_avgDays', format: v => v > 0 ? v.toFixed(1) + 'd' : '—', higherIsBetter: false },
+      { label: 'Completions (n)', key: '_count' },
+    );
+    buildComparisonTable('repCompareJourney', journeyRows, teamReps, journeyRepData);
+
+    // Completed
+    buildComparisonTable('repCompareCompleted', [
+      { label: 'Completions', key: 'completed' },
+      { label: 'Median Days', key: 'medianDays', higherIsBetter: false },
+      { label: 'Avg Days', key: 'avgDays', format: v => v > 0 ? v.toFixed(1) : '—', higherIsBetter: false },
+      { label: 'GPV Completed', key: d => dedupeGPV(d.completedSellers), format: v => fmtUSD(v) },
+    ], teamReps, repData);
+
+    // Sellers
+    buildComparisonTable('repCompareSellers', [
+      { label: 'Completed Sellers', key: d => d.completedSellers.length },
+      { label: 'GPV', key: d => dedupeGPV(d.completedSellers), format: v => fmtUSD(v) },
+      { label: 'Avg GPV per Seller', key: d => { const c = d.completedSellers.length; return c > 0 ? dedupeGPV(d.completedSellers) / c : 0; }, format: v => fmtUSD(v) },
+      { label: 'Active Pipeline', key: d => d.activePipeline.length },
+    ], teamReps, repData);
   }
 
   // ================================================================
@@ -3022,6 +3249,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
   renderSellers();
   renderGoaling();
   renderAllTeamComparisons();
+  renderAllRepComparisons();
 
   // ================================================================
   // GOOSE REFRESH INSTRUCTIONS
