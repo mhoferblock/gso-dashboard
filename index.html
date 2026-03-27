@@ -186,39 +186,37 @@
     }
     .journey-turn {
       display: flex;
+      align-items: flex-start;
+      gap: 0;
       height: 56px;
     }
-    .journey-turn-right {
-      margin-left: auto;
-      margin-right: 74px;
+    .journey-turn-spacer {
+      min-width: 148px;
+      max-width: 170px;
+      flex-shrink: 0;
+      padding: 0 2px;
+    }
+    .journey-turn-connector-spacer {
+      min-width: 50px;
+      flex: 1;
+      max-width: 80px;
+    }
+    .journey-turn-active {
+      min-width: 148px;
+      max-width: 170px;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+    .journey-turn-bar {
       width: 5px;
       height: 100%;
       border-radius: 9999px;
       background: linear-gradient(180deg, #60a5fa 0%, #1d4ed8 100%);
       position: relative;
     }
-    .journey-turn-right::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      left: 50%;
-      width: 12px;
-      height: 12px;
-      border-bottom: 3.5px solid #1d4ed8;
-      border-right: 3.5px solid #1d4ed8;
-      transform: translateX(-50%) rotate(45deg);
-      border-radius: 2px;
-    }
-    .journey-turn-left {
-      margin-right: auto;
-      margin-left: 74px;
-      width: 5px;
-      height: 100%;
-      border-radius: 9999px;
-      background: linear-gradient(180deg, #60a5fa 0%, #1d4ed8 100%);
-      position: relative;
-    }
-    .journey-turn-left::after {
+    .journey-turn-bar::after {
       content: '';
       position: absolute;
       bottom: -2px;
@@ -2178,14 +2176,25 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
       rowHtml += `</div>`;
       flow.innerHTML += rowHtml;
 
-      // Add U-turn connector between rows
+      // Add U-turn connector between rows — aligned to last stage position
       if (rowIdx < rows.length - 1) {
-        // After a L→R row, turn on the right side; after a R→L row, turn on the left side
-        const turnSide = isReverse ? 'left' : 'right';
-        flow.innerHTML += `
-          <div class="journey-turn">
-            <div class="journey-turn-${turnSide}"></div>
-          </div>`;
+        const stagesInRow = displayStages.length;
+        let turnHtml = `<div class="journey-turn">`;
+        if (isReverse) {
+          // After R→L row: connector on the left (first visual position = last DOM position)
+          turnHtml += `<div class="journey-turn-active"><div class="journey-turn-bar"></div></div>`;
+          for (let s = 1; s < stagesInRow; s++) {
+            turnHtml += `<div class="journey-turn-connector-spacer"></div><div class="journey-turn-spacer"></div>`;
+          }
+        } else {
+          // After L→R row: connector on the right (last position)
+          for (let s = 0; s < stagesInRow - 1; s++) {
+            turnHtml += `<div class="journey-turn-spacer"></div><div class="journey-turn-connector-spacer"></div>`;
+          }
+          turnHtml += `<div class="journey-turn-active"><div class="journey-turn-bar"></div></div>`;
+        }
+        turnHtml += `</div>`;
+        flow.innerHTML += turnHtml;
       }
     });
 
