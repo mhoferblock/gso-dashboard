@@ -1373,6 +1373,9 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
     if (filters.workTypes) {
       items = items.filter(i => filters.workTypes.includes(i.workType));
     }
+    if (filters.dateRange) {
+      items = items.filter(i => isDateInRange(i.created, filters.dateRange));
+    }
     return items;
   }
 
@@ -1622,43 +1625,79 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
     const reps = filterReps(filters);
     const hasWorkTypeFilter = !!filters.workTypes;
     const hasStatusFilter = !!filters.status;
+    const hasDateFilter = !!filters.dateRange;
 
-    // Build rep data array — recalculate if work type or status filtered
+    // Build filtered row-level data for date-aware calculations
+    let fCompleted = GSO_DATA.completedSellers.filter(s => reps.includes(s.rep));
+    let fPipeline = [];
+    for (const [stage, items] of Object.entries(GSO_DATA.activePipeline)) {
+      items.forEach(item => fPipeline.push({ ...item, stage }));
+    }
+    fPipeline = fPipeline.filter(i => reps.includes(i.rep));
+    if (hasWorkTypeFilter) {
+      fCompleted = fCompleted.filter(s => filters.workTypes.includes(s.workType));
+      fPipeline = fPipeline.filter(i => filters.workTypes.includes(i.workType));
+    }
+    if (hasDateFilter) {
+      fCompleted = fCompleted.filter(s => isDateInRange(s.completedDate, filters.dateRange));
+      fPipeline = fPipeline.filter(i => isDateInRange(i.created, filters.dateRange));
+    }
+
+    // Build rep data array
     const repData = reps.map(rep => {
-      const r = GSO_DATA.repSummary[rep];
-      if (!r) return null;
-      let total = r.total || 0;
-      let completed = r.completed || 0;
-      let active = r.active || 0;
-      let onHold = r.onHold || 0;
-      let cancelled = r.cancelled || 0;
-      let gpv = r.gpv || 0;
+      if (hasDateFilter) {
+        // Date-filtered: compute from row-level data
+        const rc = fCompleted.filter(s => s.rep === rep);
+        const rp = fPipeline.filter(i => i.rep === rep);
+        const completed = rc.length;
+        const active = rp.filter(i => i.stage !== 'On Hold').length;
+        const onHold = rp.filter(i => i.stage === 'On Hold').length;
+        let total = completed + active + onHold;
+        const gpv = dedupeGPV(rc) + dedupeGPV(rp);
 
-      // Recalculate if work type filter is active
-      if (hasWorkTypeFilter) {
-        const wts = r.workTypes || {};
-        let filteredTotal = 0;
-        Object.entries(wts).forEach(([wt, cnt]) => {
-          if (filters.workTypes.includes(wt)) filteredTotal += cnt;
-        });
-        const ratio = total > 0 ? filteredTotal / total : 0;
-        total = filteredTotal;
-        completed = Math.round(completed * ratio);
-        active = Math.round(active * ratio);
-        onHold = Math.round(onHold * ratio);
-        cancelled = Math.round(cancelled * ratio);
+        if (hasStatusFilter) {
+          const s = filters.status;
+          if (s === 'completed') total = completed;
+          else if (s === 'active') total = active;
+          else if (s === 'onHold') total = onHold;
+        }
+
+        return { rep, team: getTeam(rep), total, completed, active, onHold, cancelled: 0, gpv, workTypes: {} };
+      } else {
+        // No date filter: use pre-aggregated repSummary
+        const r = GSO_DATA.repSummary[rep];
+        if (!r) return null;
+        let total = r.total || 0;
+        let completed = r.completed || 0;
+        let active = r.active || 0;
+        let onHold = r.onHold || 0;
+        let cancelled = r.cancelled || 0;
+        let gpv = r.gpv || 0;
+
+        if (hasWorkTypeFilter) {
+          const wts = r.workTypes || {};
+          let filteredTotal = 0;
+          Object.entries(wts).forEach(([wt, cnt]) => {
+            if (filters.workTypes.includes(wt)) filteredTotal += cnt;
+          });
+          const ratio = total > 0 ? filteredTotal / total : 0;
+          total = filteredTotal;
+          completed = Math.round(completed * ratio);
+          active = Math.round(active * ratio);
+          onHold = Math.round(onHold * ratio);
+          cancelled = Math.round(cancelled * ratio);
+        }
+
+        if (hasStatusFilter) {
+          const s = filters.status;
+          if (s === 'completed') total = completed;
+          else if (s === 'active') total = active;
+          else if (s === 'onHold') total = onHold;
+          else if (s === 'cancelled') total = cancelled;
+        }
+
+        return { rep, team: getTeam(rep), total, completed, active, onHold, cancelled, gpv, workTypes: r.workTypes };
       }
-
-      // Apply status filter
-      if (hasStatusFilter) {
-        const s = filters.status;
-        if (s === 'completed') total = completed;
-        else if (s === 'active') total = active;
-        else if (s === 'onHold') total = onHold;
-        else if (s === 'cancelled') total = cancelled;
-      }
-
-      return { rep, team: getTeam(rep), total, completed, active, onHold, cancelled, gpv, workTypes: r.workTypes };
     }).filter(r => r && r.total > 0);
 
     // Rep GPV Chart - Top 20
@@ -1975,10 +2014,12 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
 
     // Deep clone the journey timing so we can modify it
     let jt = JSON.parse(JSON.stringify(GSO_DATA.journeyTiming));
+    let sellers = GSO_DATA.completedSellers;
+    let filteredMedian = 0;
 
     if (hasFilter) {
       // Get filtered completed sellers
-      let sellers = GSO_DATA.completedSellers.filter(s => reps.includes(s.rep));
+      sellers = GSO_DATA.completedSellers.filter(s => reps.includes(s.rep));
       if (filters.workTypes) sellers = sellers.filter(s => filters.workTypes.includes(s.workType));
       if (filters.dateRange) {
         sellers = sellers.filter(s => isDateInRange(s.completedDate, filters.dateRange));
@@ -1986,7 +2027,7 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
 
       // Compute filtered median days to complete
       const daysArr = sellers.filter(s => s.daysToComplete != null && s.daysToComplete >= 0).map(s => s.daysToComplete).sort((a,b) => a-b);
-      const filteredMedian = daysArr.length > 0 ? daysArr[Math.floor(daysArr.length / 2)] : 0;
+      filteredMedian = daysArr.length > 0 ? daysArr[Math.floor(daysArr.length / 2)] : 0;
       const filteredAvg = daysArr.length > 0 ? daysArr.reduce((a,b) => a+b, 0) / daysArr.length : 0;
       const filteredP25 = daysArr.length > 0 ? daysArr[Math.floor(daysArr.length * 0.25)] : 0;
       const filteredP75 = daysArr.length > 0 ? daysArr[Math.floor(daysArr.length * 0.75)] : 0;
@@ -2052,19 +2093,24 @@ GSO_DATA.goalingMeta = {"quarter":"Q1 FY2026","daysElapsed":85,"daysInQuarter":8
       }
     });
 
-    // Stage Duration Table
+    // Stage Duration Table — scale proportionally when filtered
     const sd = GSO_DATA.stageDuration;
+    const baseMedian = GSO_DATA.journeyTiming['Implementation Complete'] ? GSO_DATA.journeyTiming['Implementation Complete'].medianDays : 29;
+    const sdScale = hasFilter && filteredMedian > 0 && baseMedian > 0 ? filteredMedian / baseMedian : 1;
     const sdStages = Object.entries(sd).sort((a, b) => b[1].medianDays - a[1].medianDays);
     const tbody = document.getElementById('tbodyStageDuration');
     tbody.innerHTML = '';
     sdStages.forEach(([stage, d]) => {
+      const med = Math.round(d.medianDays * sdScale * 10) / 10;
+      const avg = Math.round(d.avgDays * sdScale * 10) / 10;
+      const p75 = Math.round(d.p75 * sdScale * 10) / 10;
       tbody.innerHTML += `
         <tr class="border-b border-gray-50 hover:bg-gray-50">
           <td class="py-2 px-3 font-medium text-gray-800">${esc(stage)}</td>
-          <td class="py-2 px-3 text-right text-gray-700">${d.medianDays}</td>
-          <td class="py-2 px-3 text-right text-gray-600">${d.avgDays.toFixed(1)}</td>
-          <td class="py-2 px-3 text-right text-gray-600">${d.p75}</td>
-          <td class="py-2 px-3 text-right text-gray-500">${fmtNum(d.transitions)}</td>
+          <td class="py-2 px-3 text-right text-gray-700">${med}</td>
+          <td class="py-2 px-3 text-right text-gray-600">${avg.toFixed(1)}</td>
+          <td class="py-2 px-3 text-right text-gray-600">${p75}</td>
+          <td class="py-2 px-3 text-right text-gray-500">${fmtNum(hasFilter ? Math.round(d.transitions * sellers.length / (GSO_DATA.completedSellers.length || 1)) : d.transitions)}</td>
         </tr>`;
     });
 
