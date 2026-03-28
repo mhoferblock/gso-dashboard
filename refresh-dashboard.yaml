@@ -1,11 +1,13 @@
 version: "1.0.0"
 title: "Refresh GSO Dashboard"
-description: "Pull latest DSR data from Airtable and Snowflake, rebuild the dashboard, and deploy to Blockcell. Works from any machine with Goose Desktop."
+description: "Pull latest DSR data from Airtable (incremental) and Snowflake (new/modified only), rebuild the dashboard, and deploy to Blockcell."
 instructions: |
-  You are refreshing the GSO Dashboard.
+  You are refreshing the GSO Dashboard. The data architecture is:
+  - Airtable base appsnfWWzptN9cwD0 is the persistent data store (~40K DSR records)
+  - Snowflake FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C is the source of truth
+  - On each refresh, we sync new/modified records from Snowflake → Airtable, then pull all from Airtable → dashboard
 
   ## Setup
-  First, clone or pull the latest repo:
   ```bash
   if [ -d "/tmp/gso-dashboard" ]; then
     cd /tmp/gso-dashboard && git pull
@@ -16,31 +18,135 @@ instructions: |
   ```
   Work in /tmp/gso-dashboard for all subsequent steps.
 
-  ## Step 1: Pull DSR Facts from Airtable
-  Pull ALL records from Airtable base appsnfWWzptN9cwD0, table tblqfqKMvmdufvRjD (DSR Facts).
-  Fields to extract for each record: SFDC ID, DSR Name, Rep, Team Lead, Seller, Work Type, Status, Sub Status, Request Reason, Product Version, Country, Currency, GPV, GPV USD, Created Date, Completed Date, Go Live Date, Days to Complete, Days Open, Days Stale, Opp Owner, Opp Owner Role, Num Locations, Is Onsite.
-  Page through all records (100 per page) and save to /tmp/gso-dashboard/dsr_facts.json as an array of objects with camelCase keys (id, rep, teamLead, seller, workType, status, subStatus, requestReason, country, currency, gpv, gpvUsd, createdDate, completedDate, goLiveDate, daysToComplete, daysOpen, daysStale, oppOwner, oppOwnerRole, numLocations, isOnsite).
+  ## Step 1: Find new/modified records in Snowflake
+  Check the Sync Log table in Airtable (base appsnfWWzptN9cwD0, table "Sync Log") for the last successful sync timestamp.
+  If no sync log exists, use 7 days ago as the cutoff.
 
-  ## Step 2: Enrich with Opp Owner from Snowflake
-  Query Snowflake to get Opportunity Owner data:
+  Query Snowflake for records modified since the cutoff:
   ```sql
-  SELECT ID AS SFDC_ID, OPPORTUNITY_OWNER_C AS OPP_OWNER, OPPORTUNITY_OWNER_ROLE_C AS OPP_OWNER_ROLE
-  FROM FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C
-  WHERE RECORD_TYPE_NAME_C = 'GSO Global Seller Onboarding'
-    AND OPPORTUNITY_OWNER_C IS NOT NULL
+  SELECT
+    d.ID,
+    u.NAME AS REP_NAME,
+    d.STATUS_C,
+    d.SUB_STATUS_C,
+    d.ACCOUNT_NAME_C,
+    d.PURCHASED_IMPLEMENTATION_SERVICES_C AS WORK_TYPE,
+    d.REQUEST_REASON_C,
+    d.PRODUCT_VERSIONS_C,
+    d.COUNTRY_CODE_C,
+    d.LANGUAGE_C,
+    d.CURRENCY_ISO_CODE,
+    d.TOTAL_ANNUAL_GPV_C,
+    d.LIFETIME_GPV_C,
+    d.IMPLEMENTATION_SERVICES_PRICE_C,
+    d.COMPLEXITY_SCORE_C,
+    d.NUMBER_OF_LOCATIONS_C,
+    d.COMPETITOR_POS_C,
+    d.OPPORTUNITY_OWNER_C,
+    d.OPPORTUNITY_OWNER_ROLE_C,
+    d.MERCHANT_TOKEN_C,
+    TO_VARCHAR(d.CREATED_DATE, 'YYYY-MM-DD') AS CREATED_DT,
+    d.FIRST_TOUCH_C,
+    d.DESIRED_GO_LIVE_DATE_C,
+    d.AE_DESIRED_GO_LIVE_C,
+    d.DATE_COMPLETED_C,
+    d.DATE_TRANSITIONED_C,
+    TO_VARCHAR(d.LAST_MODIFIED_DATE, 'YYYY-MM-DD HH24:MI:SS') AS LAST_MOD,
+    d.ONSITE_C,
+    DATEDIFF('day', d.CREATED_DATE, COALESCE(d.DATE_COMPLETED_C, d.DATE_TRANSITIONED_C)) AS DAYS_TO_COMPLETE,
+    DATEDIFF('day', d.CREATED_DATE, CURRENT_DATE()) AS DAYS_OPEN,
+    DATEDIFF('day', d.LAST_MODIFIED_DATE, CURRENT_DATE()) AS DAYS_STALE
+  FROM FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C d
+  LEFT JOIN FIVETRAN.APP_SALES_SFDC."USER" u ON d.OWNER_ID = u.ID
+  WHERE d.RECORD_TYPE_NAME_C = 'GSO Global Seller Onboarding'
+    AND d.LAST_MODIFIED_DATE >= '{cutoff_date}'
+  ORDER BY d.LAST_MODIFIED_DATE DESC
   ```
-  Set the Snowflake row limit to at least 200000 before running.
-  Merge the Opp Owner and Opp Owner Role into the dsr_facts.json records by matching on SFDC ID.
-  Save the updated dsr_facts.json.
+  Set the Snowflake row limit to at least 10000 before running.
 
-  ## Step 3: Rebuild and embed
+  ## Step 2: Upsert new/modified records into Airtable
+  For each Snowflake record:
+  - Search Airtable for existing record by SFDC ID: filterByFormula `{SFDC ID} = "ID_VALUE"`
+  - If found: update the existing record with new field values
+  - If not found: create a new record
+
+  Field mapping (Snowflake → Airtable):
+  - ID → SFDC ID
+  - REP_NAME → Rep
+  - ACCOUNT_NAME_C → Seller
+  - WORK_TYPE (PURCHASED_IMPLEMENTATION_SERVICES_C) → Work Type
+  - STATUS_C → Status
+  - SUB_STATUS_C → Sub Status
+  - REQUEST_REASON_C → Request Reason (map: "Restaurant Implementation"→"Restaurant", "Retail Implementation"→"Retail", "SPOS Implementation"→"Square POS", "Appointments Implementation"→"Appointments", all others→"Other")
+  - PRODUCT_VERSIONS_C → Product Version
+  - COUNTRY_CODE_C → Country
+  - LANGUAGE_C → Language
+  - CURRENCY_ISO_CODE → Currency
+  - TOTAL_ANNUAL_GPV_C → GPV Annual
+  - LIFETIME_GPV_C → GPV USD
+  - IMPLEMENTATION_SERVICES_PRICE_C → Impl Services Price
+  - COMPLEXITY_SCORE_C → Complexity Score
+  - CREATED_DT → Created Date
+  - DATE_COMPLETED_C → Completed Date
+  - DESIRED_GO_LIVE_DATE_C → Go Live Date
+  - AE_DESIRED_GO_LIVE_C → AE Desired Go Live
+  - DATE_TRANSITIONED_C → Transitioned Date
+  - FIRST_TOUCH_C → First Touch Date
+  - DAYS_TO_COMPLETE → Days to Complete
+  - DAYS_OPEN → Days Open
+  - DAYS_STALE → Days Stale
+  - OPPORTUNITY_OWNER_C → Opp Owner
+  - OPPORTUNITY_OWNER_ROLE_C → Opp Owner Role
+  - MERCHANT_TOKEN_C → Merchant Token
+  - NUMBER_OF_LOCATIONS_C → Num Locations
+  - COMPETITOR_POS_C → Competitor POS
+  - ONSITE_C → Is Onsite
+
+  Batch creates in groups of 10. Use typecast: true for all writes.
+
+  ## Step 3: Pull ALL records from Airtable → dsr_facts.json
+  Pull ALL records from Airtable base appsnfWWzptN9cwD0, table tblqfqKMvmdufvRjD (DSR Facts).
+  Page through all records (100 per page).
+  Save to /tmp/gso-dashboard/dsr_facts.json as an array of objects with camelCase keys:
+  - SFDC ID → id
+  - Rep → rep
+  - Team Lead → teamLead
+  - Seller → seller
+  - Work Type → workType
+  - Status → status
+  - Sub Status → subStatus
+  - Request Reason → requestReason
+  - Country → country
+  - Currency → currency
+  - GPV Annual → gpv
+  - GPV USD → gpvUsd
+  - Created Date → createdDate
+  - Completed Date → completedDate
+  - Go Live Date → goLiveDate
+  - Days to Complete → daysToComplete
+  - Days Open → daysOpen
+  - Days Stale → daysStale
+  - Opp Owner → oppOwner
+  - Opp Owner Role → oppOwnerRole
+  - Num Locations → numLocations
+  - Is Onsite → isOnsite
+
+  Also classify each record's channel:
+  - Check if rep is in the LATAM BPO list (see Team Roster table, team "LATAM BPO"): channel = "bpo"
+  - Check if rep is in one of the 4 GSO teams (Ben Pomeroy, Caleb Cunningham, Kamilla Warr, Meaghan Biederman): channel = "gso"
+  - Otherwise: channel = "other"
+
+  ## Step 4: Rebuild and embed
   Run: python3 /tmp/gso-dashboard/rebuild_embed.py
   This builds the slim JSON and embeds it into index.html.
 
-  ## Step 4: Deploy to Blockcell
+  ## Step 5: Update the "Last refreshed" date in index.html
+  Find the footer date span and update it to today's date (e.g., "Mar 28, 2026").
+
+  ## Step 6: Deploy to Blockcell
   Upload /tmp/gso-dashboard to Blockcell site "gso-dashboard".
 
-  ## Step 5: Commit and push
+  ## Step 7: Commit and push
   ```bash
   cd /tmp/gso-dashboard
   git add index.html dsr_facts.json dsr_facts_slim.json
@@ -48,12 +154,21 @@ instructions: |
   git push
   ```
 
-  ## Step 6: Report results
+  ## Step 8: Log the sync
+  Create a record in the Sync Log table (base appsnfWWzptN9cwD0, table "Sync Log") with:
+  - Timestamp: current ISO datetime
+  - Records Synced: number of new/modified records from Snowflake
+  - Total Records: total records now in Airtable
+  - Status: "success" or "error"
+  - Notes: summary of what happened
+
+  ## Step 9: Report results
   After completing all steps, report:
-  - Total DSR records pulled
-  - Opp Owner fill rate
+  - New/modified records synced from Snowflake
+  - Total DSR records in Airtable
+  - Channel breakdown (gso/bpo/other)
   - New index.html size
   - Blockcell deploy status
   - Git push status
 
-prompt: "Refresh the GSO Dashboard with the latest data from Airtable and Snowflake."
+prompt: "Refresh the GSO Dashboard with the latest data."

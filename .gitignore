@@ -1,6 +1,17 @@
-# Generated data files (regenerated from Airtable)
+# Generated data files (regenerated from Airtable/Snowflake)
 dsr_facts.json
 dsr_facts_slim.json
 
-# Build script
+# Build scripts (kept locally, not needed in repo)
 embed_dsr_facts.py
+backfill_airtable.py
+
+# Temp files from data processing
+chunk_*.json
+*_ids.json
+*_records.json
+*_batches.json
+*_lookup.json
+*_raw.json
+*_pull.json
+*_sellers.json

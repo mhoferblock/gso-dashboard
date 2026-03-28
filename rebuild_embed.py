@@ -2,7 +2,7 @@
 """
 Rebuild and re-embed dsrFacts into index.html.
 
-Reads dsr_facts.json (full facts with oppOwner), builds slim JSON,
+Reads dsr_facts.json (full facts with oppOwner + channel), builds slim JSON,
 and replaces the GSO_DATA.dsrFacts block in index.html.
 
 Usage:
@@ -46,6 +46,7 @@ for f in facts:
     if f.get("daysStale") is not None: r["ds"] = f["daysStale"]
     if f.get("oppOwner"): r["ao"] = f["oppOwner"]
     if f.get("oppOwnerRole"): r["ar"] = f["oppOwnerRole"]
+    if f.get("channel"): r["ch"] = f["channel"]
     slim.append(r)
 
 slim_json = json.dumps(slim, separators=(",", ":"))
@@ -65,6 +66,12 @@ hold = sum(1 for r in slim if r.get("st", "") == "On Hold")
 active = len(slim) - comp - canc - hold
 with_ao = sum(1 for r in slim if "ao" in r)
 
+# Channel breakdown
+channels = {}
+for r in slim:
+    ch = r.get("ch", "other")
+    channels[ch] = channels.get(ch, 0) + 1
+
 print(f"\nValidation:")
 print(f"  Total:     {len(slim):>6}")
 print(f"  Completed: {comp:>6}")
@@ -72,6 +79,9 @@ print(f"  Active:    {active:>6}")
 print(f"  On Hold:   {hold:>6}")
 print(f"  Cancelled: {canc:>6}")
 print(f"  Opp Owner: {with_ao:>6} ({with_ao/len(slim)*100:.1f}%)")
+print(f"\n  Channels:")
+for ch, cnt in sorted(channels.items()):
+    print(f"    {ch}: {cnt}")
 
 # ── Re-embed into index.html ──
 with open("index.html") as f:
