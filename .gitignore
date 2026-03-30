@@ -1,6 +1,15 @@
 # Generated data files (regenerated from Airtable/Snowflake)
 dsr_facts.json
 dsr_facts_slim.json
+dsa_records.json
+csat_data.json
+late_cancels.json
+late_cancel_records.json
+vendor_spend.json
+goaling.json
+
+# Backups
+.backups/
 
 # Build scripts (kept locally, not needed in repo)
 embed_dsr_facts.py

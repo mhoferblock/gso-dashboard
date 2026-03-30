@@ -1,174 +1,151 @@
 version: "1.0.0"
 title: "Refresh GSO Dashboard"
-description: "Pull latest DSR data from Airtable (incremental) and Snowflake (new/modified only), rebuild the dashboard, and deploy to Blockcell."
+description: "Pull latest data from all sources, rebuild dashboard.html, and deploy to Blockcell."
 instructions: |
-  You are refreshing the GSO Dashboard. The data architecture is:
-  - Airtable base appsnfWWzptN9cwD0 is the persistent data store (~40K DSR records)
-  - Snowflake FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C is the source of truth
-  - On each refresh, we sync new/modified records from Snowflake → Airtable, then pull all from Airtable → dashboard
+  You are refreshing the GSO Dashboard. Work in /Users/mhofer/gso-dashboard (the local working copy).
+  The main file is **dashboard.html** (NOT index.html — that's just a redirect stub).
 
-  ## Setup
-  ```bash
-  if [ -d "/tmp/gso-dashboard" ]; then
-    cd /tmp/gso-dashboard && git pull
-  else
-    git clone https://github.com/mhoferblock/gso-dashboard.git /tmp/gso-dashboard
-    cd /tmp/gso-dashboard
-  fi
-  ```
-  Work in /tmp/gso-dashboard for all subsequent steps.
+  ## Data Architecture
+  - **dashboard.html** — single-file SPA with all data embedded as GSO_DATA.xxx = {...};
+  - **Airtable** base appsnfWWzptN9cwD0 — persistent data store
+  - **Snowflake** — source of truth for DSR and DSA records
+  - **GetFeedback** — CSAT survey responses (sluricane API)
+  - **refresh_all.py** — embed script that replaces data blocks in dashboard.html
 
-  ## Step 1: Find new/modified records in Snowflake
-  Check the Sync Log table in Airtable (base appsnfWWzptN9cwD0, table "Sync Log") for the last successful sync timestamp.
-  If no sync log exists, use 7 days ago as the cutoff.
+  ## IMPORTANT RULES
+  - Always work on /Users/mhofer/gso-dashboard/dashboard.html (NOT /tmp, NOT index.html)
+  - Create a backup BEFORE modifying: cp dashboard.html .backups/dashboard_$(date +%Y%m%d_%H%M%S).html
+  - Validate after embedding — check for JS syntax errors before deploying
+  - If anything fails, restore from backup immediately
+  - Set Snowflake row limit to 50000 before running queries
 
-  Query Snowflake for records modified since the cutoff:
+  ## Step 1: DSR Facts (Snowflake → Airtable → embed)
+  This is the largest dataset (~40K records). Do an incremental sync.
+
+  ### 1a. Set Snowflake config
+  Set Snowflake limit to 50000 and timeout to 300.
+
+  ### 1b. Query Snowflake for new/modified records
+  Check Airtable Sync Log (table tbl4lnLHEmNyqpCjc) for last sync date. Default to 7 days ago.
+  
   ```sql
   SELECT
-    d.ID,
-    u.NAME AS REP_NAME,
-    d.STATUS_C,
-    d.SUB_STATUS_C,
-    d.ACCOUNT_NAME_C,
-    d.PURCHASED_IMPLEMENTATION_SERVICES_C AS WORK_TYPE,
-    d.REQUEST_REASON_C,
-    d.PRODUCT_VERSIONS_C,
-    d.COUNTRY_CODE_C,
-    d.LANGUAGE_C,
-    d.CURRENCY_ISO_CODE,
-    d.TOTAL_ANNUAL_GPV_C,
-    d.LIFETIME_GPV_C,
-    d.IMPLEMENTATION_SERVICES_PRICE_C,
-    d.COMPLEXITY_SCORE_C,
-    d.NUMBER_OF_LOCATIONS_C,
-    d.COMPETITOR_POS_C,
-    d.OPPORTUNITY_OWNER_C,
-    d.OPPORTUNITY_OWNER_ROLE_C,
-    d.MERCHANT_TOKEN_C,
+    d.ID, u.NAME AS REP_NAME, d.STATUS_C, d.SUB_STATUS_C,
+    d.ACCOUNT_NAME_C, d.PURCHASED_IMPLEMENTATION_SERVICES_C AS WORK_TYPE,
+    d.REQUEST_REASON_C, d.COUNTRY_CODE_C, d.CURRENCY_ISO_CODE,
+    d.TOTAL_ANNUAL_GPV_C, d.LIFETIME_GPV_C,
+    d.OPPORTUNITY_OWNER_C, d.OPPORTUNITY_OWNER_ROLE_C,
     TO_VARCHAR(d.CREATED_DATE, 'YYYY-MM-DD') AS CREATED_DT,
-    d.FIRST_TOUCH_C,
-    d.DESIRED_GO_LIVE_DATE_C,
-    d.AE_DESIRED_GO_LIVE_C,
-    d.DATE_COMPLETED_C,
-    d.DATE_TRANSITIONED_C,
-    TO_VARCHAR(d.LAST_MODIFIED_DATE, 'YYYY-MM-DD HH24:MI:SS') AS LAST_MOD,
-    d.ONSITE_C,
+    d.DATE_COMPLETED_C, d.DATE_TRANSITIONED_C,
     DATEDIFF('day', d.CREATED_DATE, COALESCE(d.DATE_COMPLETED_C, d.DATE_TRANSITIONED_C)) AS DAYS_TO_COMPLETE,
     DATEDIFF('day', d.CREATED_DATE, CURRENT_DATE()) AS DAYS_OPEN,
-    DATEDIFF('day', d.LAST_MODIFIED_DATE, CURRENT_DATE()) AS DAYS_STALE
+    DATEDIFF('day', d.LAST_MODIFIED_DATE, CURRENT_DATE()) AS DAYS_STALE,
+    d.ONSITE_C, d.NUMBER_OF_LOCATIONS_C
   FROM FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C d
   LEFT JOIN FIVETRAN.APP_SALES_SFDC."USER" u ON d.OWNER_ID = u.ID
   WHERE d.RECORD_TYPE_NAME_C = 'GSO Global Seller Onboarding'
     AND d.LAST_MODIFIED_DATE >= '{cutoff_date}'
   ORDER BY d.LAST_MODIFIED_DATE DESC
   ```
-  Set the Snowflake row limit to at least 10000 before running.
 
-  ## Step 2: Upsert new/modified records into Airtable
-  For each Snowflake record:
-  - Search Airtable for existing record by SFDC ID: filterByFormula `{SFDC ID} = "ID_VALUE"`
-  - If found: update the existing record with new field values
-  - If not found: create a new record
+  ### 1c. Upsert to Airtable
+  For each record, search Airtable DSR Facts (tblqfqKMvmdufvRjD) by filterByFormula `{SFDC ID} = "ID"`.
+  If found → update. If not → create. Batch in groups of 10. Use typecast: true.
 
-  Field mapping (Snowflake → Airtable):
-  - ID → SFDC ID
-  - REP_NAME → Rep
-  - ACCOUNT_NAME_C → Seller
-  - WORK_TYPE (PURCHASED_IMPLEMENTATION_SERVICES_C) → Work Type
-  - STATUS_C → Status
-  - SUB_STATUS_C → Sub Status
-  - REQUEST_REASON_C → Request Reason (map: "Restaurant Implementation"→"Restaurant", "Retail Implementation"→"Retail", "SPOS Implementation"→"Square POS", "Appointments Implementation"→"Appointments", all others→"Other")
-  - PRODUCT_VERSIONS_C → Product Version
-  - COUNTRY_CODE_C → Country
-  - LANGUAGE_C → Language
-  - CURRENCY_ISO_CODE → Currency
-  - TOTAL_ANNUAL_GPV_C → GPV Annual
-  - LIFETIME_GPV_C → GPV USD
-  - IMPLEMENTATION_SERVICES_PRICE_C → Impl Services Price
-  - COMPLEXITY_SCORE_C → Complexity Score
-  - CREATED_DT → Created Date
-  - DATE_COMPLETED_C → Completed Date
-  - DESIRED_GO_LIVE_DATE_C → Go Live Date
-  - AE_DESIRED_GO_LIVE_C → AE Desired Go Live
-  - DATE_TRANSITIONED_C → Transitioned Date
-  - FIRST_TOUCH_C → First Touch Date
-  - DAYS_TO_COMPLETE → Days to Complete
-  - DAYS_OPEN → Days Open
-  - DAYS_STALE → Days Stale
-  - OPPORTUNITY_OWNER_C → Opp Owner
-  - OPPORTUNITY_OWNER_ROLE_C → Opp Owner Role
-  - MERCHANT_TOKEN_C → Merchant Token
-  - NUMBER_OF_LOCATIONS_C → Num Locations
-  - COMPETITOR_POS_C → Competitor POS
-  - ONSITE_C → Is Onsite
+  Field mapping: ID→SFDC ID, REP_NAME→Rep, ACCOUNT_NAME_C→Seller, WORK_TYPE→Work Type,
+  STATUS_C→Status, SUB_STATUS_C→Sub Status, REQUEST_REASON_C→Request Reason,
+  COUNTRY_CODE_C→Country, CURRENCY_ISO_CODE→Currency, TOTAL_ANNUAL_GPV_C→GPV Annual,
+  LIFETIME_GPV_C→GPV USD, CREATED_DT→Created Date, DATE_COMPLETED_C→Completed Date,
+  DAYS_TO_COMPLETE→Days to Complete, DAYS_OPEN→Days Open, DAYS_STALE→Days Stale,
+  OPPORTUNITY_OWNER_C→Opp Owner, OPPORTUNITY_OWNER_ROLE_C→Opp Owner Role
 
-  Batch creates in groups of 10. Use typecast: true for all writes.
+  ### 1d. Pull ALL records from Airtable
+  Pull all records from DSR Facts (tblqfqKMvmdufvRjD), page through all (100/page).
+  Save as /Users/mhofer/gso-dashboard/dsr_facts.json with camelCase keys.
+  Classify channel: check Team Roster (tbl0I2oNZdYPlJ5EH) for BPO team membership.
 
-  ## Step 3: Pull ALL records from Airtable → dsr_facts.json
-  Pull ALL records from Airtable base appsnfWWzptN9cwD0, table tblqfqKMvmdufvRjD (DSR Facts).
-  Page through all records (100 per page).
-  Save to /tmp/gso-dashboard/dsr_facts.json as an array of objects with camelCase keys:
-  - SFDC ID → id
-  - Rep → rep
-  - Team Lead → teamLead
-  - Seller → seller
-  - Work Type → workType
-  - Status → status
-  - Sub Status → subStatus
-  - Request Reason → requestReason
-  - Country → country
-  - Currency → currency
-  - GPV Annual → gpv
-  - GPV USD → gpvUsd
-  - Created Date → createdDate
-  - Completed Date → completedDate
-  - Go Live Date → goLiveDate
-  - Days to Complete → daysToComplete
-  - Days Open → daysOpen
-  - Days Stale → daysStale
-  - Opp Owner → oppOwner
-  - Opp Owner Role → oppOwnerRole
-  - Num Locations → numLocations
-  - Is Onsite → isOnsite
+  ## Step 2: DSA Records (Snowflake direct)
+  Pull 3P partner DSA activities for the 13 implementation partners.
 
-  Also classify each record's channel:
-  - Check if rep is in the LATAM BPO list (see Team Roster table, team "LATAM BPO"): channel = "bpo"
-  - Check if rep is in one of the 4 GSO teams (Ben Pomeroy, Caleb Cunningham, Kamilla Warr, Meaghan Biederman): channel = "gso"
-  - Otherwise: channel = "other"
+  ```sql
+  SELECT
+    pa.NAME as PARTNER, d.CUSTOMER_BUSINESS_NAME_C as SELLER,
+    d.ACTIVITY_TYPE_C as ACTIVITY_TYPE, d.STATUS_C as STATUS,
+    d.DEAL_SUPPORT_REQUEST_C as DSR_ID,
+    TO_VARCHAR(d.CREATED_DATE, 'YYYY-MM-DD') as CREATED_DATE
+  FROM FIVETRAN.APP_PARTNERSHIPS.DEAL_SUPPORT_ACTIVITY_C d
+  LEFT JOIN FIVETRAN.APP_PARTNERSHIPS.ACCOUNT pa ON d.PARTNER_ACCOUNT_C = pa.ID
+  WHERE d.PARTNER_ACCOUNT_C IS NOT NULL
+    AND pa.NAME IN ('Absolute POS','Absolute POS LLC','Absolute POS (Vendor)',
+      'Boomtown','Ovation (Vendor)','Sora Partners','Sora Partners (Vendor)',
+      'Solio Marlow','Solio Marlow (Vendor)','F3 Technologies','F3 (Vendor)',
+      'Tech Pantry','Tech Pantry (Vendor)','One World Rental UK','One World Rental UK (Vendor)',
+      'One World Rental Oceania (Vendor)','Eposability','Eposability (Vendor)',
+      'Akae','Akae (Vendor)','SVO','SVO (Vendor)','Khiron','Khiron (Vendor)',
+      'FiTech','Bright')
+    AND d.CREATED_DATE >= DATEADD('month', -24, CURRENT_DATE())
+  ORDER BY d.CREATED_DATE DESC
+  ```
 
-  ## Step 4: Rebuild and embed
-  Run: python3 /tmp/gso-dashboard/rebuild_embed.py
-  This builds the slim JSON and embeds it into index.html.
+  Normalize partner names (remove " (Vendor)" suffix, map Boomtown→Ovation, etc.).
+  Build compact format: {p:partner, sl:seller, at:activity, st:status, dr:dsrId, cd:date}
+  Also compute summary stats: dsaTotal, dsaByPartner, dsaByActivity, dsaMonthly, dsaNormStatus, dsaPartnerPerf.
+  Save records as /Users/mhofer/gso-dashboard/dsa_records.json
 
-  ## Step 5: Update the "Last refreshed" date in index.html
-  Find the footer date span and update it to today's date (e.g., "Mar 28, 2026").
+  ## Step 3: Late Cancellations (Snowflake direct)
+  Pull cancelled DSAs within 24h of scheduled date — see existing query pattern in the codebase.
+  Save summary as /Users/mhofer/gso-dashboard/late_cancels.json
+  Save detail records as /Users/mhofer/gso-dashboard/late_cancel_records.json
 
-  ## Step 6: Deploy to Blockcell
-  Upload /tmp/gso-dashboard to Blockcell site "gso-dashboard".
-
-  ## Step 7: Commit and push
+  ## Step 4: CSAT (GetFeedback API)
   ```bash
-  cd /tmp/gso-dashboard
-  git add index.html dsr_facts.json dsr_facts_slim.json
+  curl -s "https://sc.getfeedback.com/data?token=eJyrViouLSpLrYzPTFGyMjQyMzA3MNdRSsvMKUktUrKqVkpSslJKzEtRAoopWUXH1tYCAIIbDv8.3sL7BRMf74hpIzAX7meFAWjVcwJebrYbG-hosMJMgpQ&limit=500" -o /tmp/csat_raw.json
+  ```
+  Transform to compact format: {r:rating, d:date, c:comment, s:sentiment, at:activity, sl:seller, di:dsaId, sc:contact}
+  Save as /Users/mhofer/gso-dashboard/csat_data.json
+
+  ## Step 5: Vendor Spend (Airtable)
+  Pull all records from Vendor Spend table (tblgVXWTVTO9u1WxX).
+  Compute: spendByPartner, spendInvoicesByPartner, spendMonthly, spendByCurrency, spendTotal, spendInvoiceCount, spendMonthlyByPartner.
+  Save as /Users/mhofer/gso-dashboard/vendor_spend.json
+
+  ## Step 6: Goaling (Airtable)
+  Pull all records from Goaling table (tblB0NwaUmNv19B4c).
+  Save as /Users/mhofer/gso-dashboard/goaling.json
+
+  ## Step 7: Embed all data
+  ```bash
+  cd /Users/mhofer/gso-dashboard
+  python3 refresh_all.py
+  ```
+  This creates a backup, embeds all JSON files into dashboard.html, validates, and reports.
+
+  ## Step 8: Deploy
+  Upload to Blockcell:
+  - Use the Blockcell manageSite tool: action=upload, site_name=gso-dashboard, directory_path=/Users/mhofer/gso-dashboard
+  - Verify with list_versions that the new version is current
+
+  ## Step 9: Git commit and push
+  ```bash
+  cd /Users/mhofer/gso-dashboard
+  git add dashboard.html dsr_facts.json dsr_facts_slim.json
   git commit -m "Refresh dashboard data — $(date +%Y-%m-%d)"
   git push
   ```
 
-  ## Step 8: Log the sync
-  Create a record in the Sync Log table (base appsnfWWzptN9cwD0, table "Sync Log") with:
-  - Timestamp: current ISO datetime
-  - Records Synced: number of new/modified records from Snowflake
-  - Total Records: total records now in Airtable
-  - Status: "success" or "error"
-  - Notes: summary of what happened
+  ## Step 10: Log the sync
+  Create a record in Airtable Sync Log (tbl4lnLHEmNyqpCjc) with timestamp, record counts, status.
 
-  ## Step 9: Report results
-  After completing all steps, report:
-  - New/modified records synced from Snowflake
-  - Total DSR records in Airtable
-  - Channel breakdown (gso/bpo/other)
-  - New index.html size
-  - Blockcell deploy status
-  - Git push status
+  ## Error Recovery
+  If ANY step fails after modifying dashboard.html:
+  1. Restore from backup: cp .backups/dashboard_LATEST.html dashboard.html
+  2. Re-upload to Blockcell
+  3. Report what failed
 
-prompt: "Refresh the GSO Dashboard with the latest data."
+  ## What NOT to refresh (static/manual data)
+  - dispatchPartners — partner config, only changes when partners are added/removed
+  - dsaStatusMap — static status normalization map
+  - stratPmMonthly — from Looker 41363, updated manually
+  - goalingMeta — quarter config, updated manually at quarter boundaries
+
+prompt: "Refresh the GSO Dashboard with the latest data from all sources."

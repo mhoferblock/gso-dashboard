@@ -83,25 +83,37 @@ print(f"\n  Channels:")
 for ch, cnt in sorted(channels.items()):
     print(f"    {ch}: {cnt}")
 
-# ── Re-embed into index.html ──
-with open("index.html") as f:
+# ── Re-embed into dashboard.html ──
+target_file = "dashboard.html"
+with open(target_file) as f:
     html = f.read()
 
 marker = "GSO_DATA.dsrFacts = "
 start_idx = html.find(marker)
 if start_idx == -1:
-    print("\nERROR: Could not find GSO_DATA.dsrFacts in index.html")
+    print(f"\nERROR: Could not find GSO_DATA.dsrFacts in {target_file}")
     sys.exit(1)
 
-end_idx = html.find(";\n", start_idx)
+# Find end of the array value (track brackets)
+val_start = start_idx + len(marker)
+bracket = 0
+i = val_start
+while i < len(html):
+    if html[i] == '[': bracket += 1
+    if html[i] == ']': bracket -= 1
+    if bracket == 0 and html[i] == ']':
+        end_idx = html.find(';', i)
+        break
+    i += 1
+
 if end_idx == -1:
-    print("\nERROR: Could not find end of dsrFacts line")
+    print(f"\nERROR: Could not find end of dsrFacts in {target_file}")
     sys.exit(1)
 
 html_new = html[:start_idx] + marker + slim_json + html[end_idx:]
 
-with open("index.html", "w") as f:
+with open(target_file, "w") as f:
     f.write(html_new)
 
-print(f"\nEmbedded into index.html: {len(html_new)/1024/1024:.2f} MB")
+print(f"\nEmbedded into {target_file}: {len(html_new)/1024/1024:.2f} MB")
 print("Done! Ready to deploy.")
