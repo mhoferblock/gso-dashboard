@@ -514,6 +514,58 @@ if __name__ == "__main__":
     if os.path.exists(goaling_path):
         content = embed_json_file(content, "goaling", goaling_path)
     
+    # Merge goal overrides (from Settings page exports)
+    overrides_path = os.path.join(data_dir, "goal_overrides.json")
+    if os.path.exists(overrides_path):
+        try:
+            with open(overrides_path) as f:
+                overrides = json.load(f)
+            if overrides and isinstance(overrides, dict):
+                # Find the goaling data block in the content and parse it
+                goaling_match = re.search(r'GSO_DATA\.goaling = (\{.*?\});\s*\n', content)
+                if goaling_match:
+                    goaling_data = json.loads(goaling_match.group(1))
+                    merge_count = 0
+                    for rep, changes in overrides.items():
+                        if rep in goaling_data and isinstance(changes, dict):
+                            for field, val in changes.items():
+                                if field in ('ptsGoal', 'dsrGoal', 'daysGoal', 'level'):
+                                    goaling_data[rep][field] = val
+                                    merge_count += 1
+                    if merge_count > 0:
+                        # Recalculate pacing for overridden reps
+                        meta_match = re.search(r'GSO_DATA\.goalingMeta = (\{.*?\});', content)
+                        meta = json.loads(meta_match.group(1)) if meta_match else {}
+                        days_elapsed = meta.get('daysElapsed', 85)
+                        days_in_quarter = meta.get('daysInQuarter', 89)
+                        pacing_factor = days_elapsed / days_in_quarter if days_in_quarter > 0 else 1
+                        for rep in overrides:
+                            if rep in goaling_data:
+                                g = goaling_data[rep]
+                                g['ptsPacingGoal'] = round(g['ptsGoal'] * pacing_factor)
+                                g['dsrPacingGoal'] = round(g['dsrGoal'] * pacing_factor)
+                                g['ptsPacingPct'] = round(g['ptsActual'] / g['ptsPacingGoal'] * 1000) / 10 if g['ptsPacingGoal'] > 0 else 0
+                                g['dsrPacingPct'] = round(g['dsrActual'] / g['dsrPacingGoal'] * 1000) / 10 if g['dsrPacingGoal'] > 0 else 0
+                                g['ptsQuarterPct'] = round(g['ptsActual'] / g['ptsGoal'] * 1000) / 10 if g['ptsGoal'] > 0 else 0
+                                g['dsrQuarterPct'] = round(g['dsrActual'] / g['dsrGoal'] * 1000) / 10 if g['dsrGoal'] > 0 else 0
+                                if g['ptsPacingPct'] >= 95: g['status'] = 'On Track'
+                                elif g['ptsPacingPct'] >= 80: g['status'] = 'At Risk'
+                                else: g['status'] = 'Off Track'
+                        # Re-embed the updated goaling data
+                        new_goaling = json.dumps(goaling_data, separators=(',', ':'))
+                        content = re.sub(
+                            r'GSO_DATA\.goaling = \{.*?\};\s*\n',
+                            f'GSO_DATA.goaling = {new_goaling};\n',
+                            content
+                        )
+                        print(f"  ✅ Merged {len(overrides)} goal override(s) ({merge_count} field changes) from goal_overrides.json")
+                    else:
+                        print(f"  ⚠️ goal_overrides.json found but no matching reps to merge")
+                else:
+                    print(f"  ⚠️ Could not find goaling data block to merge overrides into")
+        except Exception as e:
+            print(f"  ⚠️ Failed to merge goal overrides: {e}")
+    
     # Update refresh date
     content = update_refresh_date(content)
     
