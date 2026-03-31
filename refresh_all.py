@@ -521,10 +521,23 @@ if __name__ == "__main__":
             with open(overrides_path) as f:
                 overrides = json.load(f)
             if overrides and isinstance(overrides, dict):
-                # Find the goaling data block in the content and parse it
-                goaling_match = re.search(r'GSO_DATA\.goaling = (\{.*?\});\s*\n', content)
-                if goaling_match:
-                    goaling_data = json.loads(goaling_match.group(1))
+                # Find the goaling data block using bracket matching (handles no-semicolon case)
+                marker = 'GSO_DATA.goaling = '
+                marker_idx = content.find(marker)
+                if marker_idx != -1:
+                    val_start = marker_idx + len(marker)
+                    # Bracket-match to find end of JSON object
+                    depth = 0
+                    val_end = val_start
+                    for ci in range(val_start, min(val_start + 200000, len(content))):
+                        if content[ci] == '{': depth += 1
+                        elif content[ci] == '}': depth -= 1
+                        if depth == 0:
+                            val_end = ci + 1
+                            break
+                    goaling_json = content[val_start:val_end]
+                    goaling_data = json.loads(goaling_json)
+                    
                     merge_count = 0
                     for rep, changes in overrides.items():
                         if rep in goaling_data and isinstance(changes, dict):
@@ -534,7 +547,7 @@ if __name__ == "__main__":
                                     merge_count += 1
                     if merge_count > 0:
                         # Recalculate pacing for overridden reps
-                        meta_match = re.search(r'GSO_DATA\.goalingMeta = (\{.*?\});', content)
+                        meta_match = re.search(r'GSO_DATA\.goalingMeta = (\{[^}]+\});', content)
                         meta = json.loads(meta_match.group(1)) if meta_match else {}
                         days_elapsed = meta.get('daysElapsed', 85)
                         days_in_quarter = meta.get('daysInQuarter', 89)
@@ -551,13 +564,9 @@ if __name__ == "__main__":
                                 if g['ptsPacingPct'] >= 95: g['status'] = 'On Track'
                                 elif g['ptsPacingPct'] >= 80: g['status'] = 'At Risk'
                                 else: g['status'] = 'Off Track'
-                        # Re-embed the updated goaling data
+                        # Re-embed using replace_data_block (handles semicolon/no-semicolon)
                         new_goaling = json.dumps(goaling_data, separators=(',', ':'))
-                        content = re.sub(
-                            r'GSO_DATA\.goaling = \{.*?\};\s*\n',
-                            f'GSO_DATA.goaling = {new_goaling};\n',
-                            content
-                        )
+                        content = replace_data_block(content, "goaling", new_goaling)
                         print(f"  ✅ Merged {len(overrides)} goal override(s) ({merge_count} field changes) from goal_overrides.json")
                     else:
                         print(f"  ⚠️ goal_overrides.json found but no matching reps to merge")
