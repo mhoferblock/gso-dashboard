@@ -17,7 +17,7 @@ instructions: |
 
   ## Data Architecture
   - **dashboard.html** — single-file SPA (~12MB) with all data embedded as GSO_DATA.xxx = {...};
-  - **Airtable** base appsnfWWzptN9cwD0 — persistent data store (6 tables)
+  - **Airtable** base appsnfWWzptN9cwD0 — persistent data store (7 tables)
   - **Snowflake** — source of truth for DSR and DSA records
   - **GetFeedback** — CSAT survey responses
   - **refresh_all.py** — embed script with channel tagging, validation, and before/after comparison
@@ -215,8 +215,10 @@ instructions: |
     dsaTotal, dsaByPartner, dsaByActivity, dsaMonthly, dsaNormStatus, dsaPartnerPerf
 
   ═══════════════════════════════════════════════════════════
-  STEP 2b: BPO Activities (Snowflake)
+  STEP 2b: BPO Activities (Snowflake → Airtable → JSON)
   ═══════════════════════════════════════════════════════════
+
+  ### 2b-i. Query Snowflake for BPO Activities
 
   Set Snowflake limit to 50000 and timeout to 300.
 
@@ -258,13 +260,45 @@ instructions: |
   LIMIT 100
   ```
 
-  Save as compact JSON to /Users/mhofer/gso-dashboard/bpo_activities.json with short keys:
-    id=DSA_ID, n=DSA_NUMBER, at=ACTIVITY_TYPE, st=STATUS,
-    dr=DSR_ID, dn=DSR_NAME, sl=SELLER, as=ASSIGNED_TO,
-    cn=CUSTOMER_NAME, cd=CREATED_DATE, lm=LAST_MODIFIED, cpd=COMPLETED_DATE
+  Expected: 500-12,000 records (12 months of BPO activity).
 
-  Expected: 500-5,000 records (12 months of BPO activity).
-  If Jennifer reports 1,000+/month, expect 5,000-12,000 total.
+  ### 2b-ii. Upsert to Airtable BPO Activities table
+
+  For each Snowflake record, search Airtable BPO Activities (tbl2jhvPGsV6Akdgv) in base appsnfWWzptN9cwD0 by:
+    filterByFormula: {DSA ID} = "THE_DSA_ID"
+
+  If found → UPDATE the existing record.
+  If not found → CREATE a new record.
+
+  Field mapping (Snowflake → Airtable):
+    DSA_ID → DSA ID
+    DSA_NUMBER → Activity Number
+    ACTIVITY_TYPE → Activity Type
+    STATUS → Status
+    DSR_ID → DSR ID
+    DSR_NAME → DSR Name
+    SELLER → Seller
+    ASSIGNED_TO → Assigned To
+    CUSTOMER_NAME → Customer Name
+    CREATED_DATE → Created Date
+    LAST_MODIFIED → Last Modified
+    COMPLETED_DATE → Completed Date
+
+  Process records one at a time (search then update/create).
+  Report: total processed, updated count, created count, error count.
+  Expected: 0 errors. If errors > 5, STOP and report.
+
+  ### 2b-iii. Pull from Airtable → JSON
+
+  Pull ALL records from BPO Activities table (tbl2jhvPGsV6Akdgv) in base appsnfWWzptN9cwD0.
+  Page through all records (100 per page, use offset for pagination).
+
+  Save as compact JSON to /Users/mhofer/gso-dashboard/bpo_activities.json with short keys:
+    id=DSA ID, n=Activity Number, at=Activity Type, st=Status,
+    dr=DSR ID, dn=DSR Name, sl=Seller, as=Assigned To,
+    cn=Customer Name, cd=Created Date, lm=Last Modified, cpd=Completed Date
+
+  Report: total records saved.
 
   ═══════════════════════════════════════════════════════════
   STEP 3: Late Cancellations (Snowflake)
