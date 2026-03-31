@@ -215,6 +215,58 @@ instructions: |
     dsaTotal, dsaByPartner, dsaByActivity, dsaMonthly, dsaNormStatus, dsaPartnerPerf
 
   ═══════════════════════════════════════════════════════════
+  STEP 2b: BPO Activities (Snowflake)
+  ═══════════════════════════════════════════════════════════
+
+  Set Snowflake limit to 50000 and timeout to 300.
+
+  Query for all Deal Support Activities with Record Type = 'BPO Activity':
+
+  ```sql
+  SELECT
+    d.ID AS DSA_ID,
+    d.NAME AS DSA_NUMBER,
+    d.ACTIVITY_TYPE_C AS ACTIVITY_TYPE,
+    d.STATUS_C AS STATUS,
+    d.DEAL_SUPPORT_REQUEST_C AS DSR_ID,
+    dsr.NAME AS DSR_NAME,
+    dsr.ACCOUNT_NAME_C AS SELLER,
+    u.NAME AS ASSIGNED_TO,
+    d.CUSTOMER_BUSINESS_NAME_C AS CUSTOMER_NAME,
+    TO_VARCHAR(d.CREATED_DATE, 'YYYY-MM-DD') AS CREATED_DATE,
+    TO_VARCHAR(d.LAST_MODIFIED_DATE, 'YYYY-MM-DD') AS LAST_MODIFIED,
+    TO_VARCHAR(d.COMPLETED_DATE_C, 'YYYY-MM-DD') AS COMPLETED_DATE
+  FROM FIVETRAN.APP_PARTNERSHIPS.DEAL_SUPPORT_ACTIVITY_C d
+  LEFT JOIN FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C dsr ON d.DEAL_SUPPORT_REQUEST_C = dsr.ID
+  LEFT JOIN FIVETRAN.APP_SALES_SFDC."USER" u ON d.OWNER_ID = u.ID
+  WHERE d.RECORD_TYPE_ID IN (
+    SELECT ID FROM FIVETRAN.APP_PARTNERSHIPS.RECORD_TYPE
+    WHERE NAME = 'BPO Activity' OR DEVELOPER_NAME = 'BPO_Activity'
+  )
+    AND d.CREATED_DATE >= DATEADD('month', -12, CURRENT_DATE())
+  ORDER BY d.CREATED_DATE DESC
+  ```
+
+  If the RECORD_TYPE subquery doesn't work, try filtering by name pattern:
+  ```sql
+  WHERE d.RECORD_TYPE_C = 'BPO Activity'
+  ```
+  Or check available record types first:
+  ```sql
+  SELECT DISTINCT d.RECORD_TYPE_C, d.RECORD_TYPE_ID
+  FROM FIVETRAN.APP_PARTNERSHIPS.DEAL_SUPPORT_ACTIVITY_C d
+  LIMIT 100
+  ```
+
+  Save as compact JSON to /Users/mhofer/gso-dashboard/bpo_activities.json with short keys:
+    id=DSA_ID, n=DSA_NUMBER, at=ACTIVITY_TYPE, st=STATUS,
+    dr=DSR_ID, dn=DSR_NAME, sl=SELLER, as=ASSIGNED_TO,
+    cn=CUSTOMER_NAME, cd=CREATED_DATE, lm=LAST_MODIFIED, cpd=COMPLETED_DATE
+
+  Expected: 500-5,000 records (12 months of BPO activity).
+  If Jennifer reports 1,000+/month, expect 5,000-12,000 total.
+
+  ═══════════════════════════════════════════════════════════
   STEP 3: Late Cancellations (Snowflake)
   ═══════════════════════════════════════════════════════════
 

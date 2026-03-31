@@ -483,6 +483,11 @@ if __name__ == "__main__":
     if os.path.exists(dsa_path):
         content = embed_json_file(content, "dsaRecords", dsa_path)
     
+    # BPO Activities (Deal Support Activities with Record Type = BPO Activity)
+    bpo_act_path = os.path.join(data_dir, "bpo_activities.json")
+    if os.path.exists(bpo_act_path):
+        content = embed_json_file(content, "bpoActivities", bpo_act_path)
+    
     # CSAT
     csat_path = os.path.join(data_dir, "csat_data.json")
     if os.path.exists(csat_path):
