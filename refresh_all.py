@@ -2,37 +2,257 @@
 """
 GSO Dashboard — Full Data Refresh Script
 =========================================
-Rebuilds ALL embedded data in dashboard.html from source systems.
+Rebuilds ALL embedded data in dashboard.html from source JSON files.
 
-Usage (run via goose session):
-  1. goose runs this script's steps using its Snowflake + Airtable extensions
-  2. Or: python3 refresh_all.py  (for the embed step only, after data is pulled)
+Usage:
+  python3 refresh_all.py           # Normal mode — validates before embedding
+  python3 refresh_all.py --force   # Skip validation thresholds (use with caution)
 
-Data Sources:
-  1. DSR Facts     — Snowflake → Airtable → embed (~40K records, ~11MB)
-  2. DSA Records   — Snowflake direct (~6K records, ~800KB)
-  3. DSA Summaries — Computed from DSA records
-  4. Late Cancels  — Snowflake direct (~400 records, ~58KB)
-  5. CSAT          — GetFeedback API (~170 responses, ~29KB)
-  6. Vendor Spend  — Airtable Vendor Spend table (~926 invoices)
-  7. Goaling       — Airtable Goaling table
+This script handles:
+  1. Channel tagging (BPO, Vendor Ops) — MUST be applied before embedding
+  2. Before/after metric comparison — refuses to embed if metrics shift too much
+  3. Slim format conversion for DSR facts
+  4. Embedding all data blocks into dashboard.html
+  5. Dashboard validation (syntax, size, data blocks)
 
-Static data (not refreshed automatically):
-  - dispatchPartners (partner config — manual)
-  - dsaStatusMap (status normalization — static)
-  - stratPmMonthly (from Looker — manual)
-  - goalingMeta (quarter config — manual)
-
-Architecture:
-  dashboard.html is the single-file SPA. All data is embedded as GSO_DATA.xxx = {...};
-  This script replaces each data block in-place using marker-based replacement.
+Data Sources (JSON files must exist in same directory):
+  - dsr_facts.json      — DSR Facts from Airtable (~40K records)
+  - dsa_records.json    — DSA Records from Snowflake (~6K records)
+  - late_cancels.json   — Late cancel summary
+  - late_cancel_records.json — Late cancel detail records
+  - csat_data.json      — CSAT from GetFeedback (~170 responses)
+  - vendor_spend.json   — Vendor Spend from Airtable
+  - goaling.json        — Goaling from Airtable
 """
 
 import json, sys, os, re, shutil
-from datetime import datetime, timedelta
+from datetime import datetime
 
 DASHBOARD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard.html")
 BACKUP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".backups")
+
+# ══════════════════════════════════════════════════════════════
+# BUSINESS LOGIC — Channel tagging and name mapping
+# ══════════════════════════════════════════════════════════════
+
+# BPO team members — reports to Jennifer Walker
+BPO_TEAM = {
+    'Yesenia Lineth Echeverria Ochaeta', 'Jackelline Rodriguez', 'Abner Avila',
+    'Serghei Miheev', 'Luis Solares', 'Danna Villagran', 'Cristian Plugaru',
+    'Pamela Gil', 'Diana Giron', 'Ginger Torres', 'Karen Najarro',
+    'Maria Torres', 'Julissa Rosa', 'Scarlet Recinos', 'Luis Rosales',
+    'Jose Xocoy', 'Angel Mauricio', 'Rosa Hernandez', 'Lucia Zarceno',
+    'Edgar Cocinero', 'Yanelis Morales', 'Michael Rivera', 'Josue De La Roca',
+    'Leonel Guerra', 'Walter Perez', 'Melissa Alvarez', 'Karen Melendez',
+    'Susan Enriquez', 'Erwin Gonzalez', 'Claudia Piedrasanta', 'Mellisa Gregorio',
+}
+
+# Vendor Ops team — uses DSR data names (not display names)
+VENDOR_OPS = {
+    'Megan Martchink', 'Kyle Rominger', 'Jean- Arthur', 'Meri Fakraufon',
+}
+
+# Current GSO roster — used for validation only (dashboard has its own copy)
+GSO_ROSTER = {
+    # US East — Meaghan Biederman
+    'Austin Crittenden', 'Meven Le Corre', 'Joe Pharaon', 'Moussa Kamakate',
+    'Brandon Redmond', 'Livia Horn-Scarpulla', 'Andrea Guevara', 'Griffin Ulsh',
+    'Miles McMillin', 'Josie Vogt', 'Lee Williamson', 'Paige Benik', 'Chelsea Falato',
+    # US West — Ben Pomeroy
+    'Michael Bavaro', 'Ashley McDonald', 'Olignne Diaz', 'Travis Castroman',
+    'Ruben Reynoso', 'Kalani Cuaresma', 'John Tudhope', 'Jasmine Johnson',
+    'Taylar Jones', 'Kat Gleason', 'Janayra Rivera Algarin', 'Paul Kim',
+    # EMEA — Caleb Cunningham
+    'Alexandre Garreau', 'Arantxa Abellan', 'Eugeniu Vascu', 'Francisco Alvarez',
+    'Igor Rusu', 'Kerry Nelson', 'Lupe Buitrago Echeverria', 'Merve Oancea',
+    'Oleg Gnatovski', 'Olga Kanna',
+    # APAC — Kamilla Schou Warr
+    'Takao Kinjo', 'Misho Arai', 'Mary Hirata McJilton', 'Ben Braun',
+    'Macarena Castillo', 'Kristian Bojsen-Moller', 'Chandreyee Bose',
+    'Josh stoffels', 'Jamahl G',
+    # Leadership
+    'Meaghan Biederman', 'Ben Pomeroy', 'Caleb Cunningham',
+}
+
+COMPLETED_STATUSES = {'Implementation Complete', 'Completed', 'Transitioned'}
+CANCELLED_STATUSES = {'Rejected', 'Lost - No Seller Contact', 'Lost - Churn', 'Lost'}
+DRAFT_STATUSES = {'Draft'}
+
+
+def tag_channels(facts):
+    """Apply channel tags to DSR facts based on rep name.
+    
+    Returns tagged facts and prints summary.
+    CRITICAL: This must run before embedding. Without it, BPO and Vendor Ops
+    records will be mixed into GSO metrics.
+    """
+    bpo_count = 0
+    vo_count = 0
+    other_count = 0
+    
+    for f in facts:
+        rep = f.get('rep', '')
+        if rep in BPO_TEAM:
+            f['channel'] = 'bpo'
+            bpo_count += 1
+        elif rep in VENDOR_OPS:
+            f['channel'] = 'vendorops'
+            vo_count += 1
+        else:
+            f['channel'] = ''
+            other_count += 1
+    
+    print(f"  Channel tagging: {bpo_count} BPO, {vo_count} Vendor Ops, {other_count} GSO/other")
+    
+    if bpo_count == 0:
+        print("  ❌ WARNING: Zero BPO records tagged! Check BPO_TEAM list.")
+    if vo_count == 0:
+        print("  ❌ WARNING: Zero Vendor Ops records tagged! Check VENDOR_OPS list.")
+    
+    return facts
+
+
+def compute_metrics(facts):
+    """Compute key metrics from DSR facts for before/after comparison."""
+    gso = [f for f in facts if f.get('channel', '') not in ('bpo', 'vendorops')]
+    bpo = [f for f in facts if f.get('channel') == 'bpo']
+    vo = [f for f in facts if f.get('channel') == 'vendorops']
+    
+    workable = [f for f in gso if f.get('status') not in DRAFT_STATUSES]
+    
+    # Current month
+    now = datetime.now()
+    month_prefix = now.strftime('%Y-%m')
+    
+    created_month = len([f for f in workable if (f.get('createdDate') or '').startswith(month_prefix)])
+    comp_month = len([f for f in workable if f.get('status') in COMPLETED_STATUSES 
+                      and (f.get('completedDate') or '').startswith(month_prefix)])
+    
+    # Active pipeline (roster only)
+    active_statuses = [f for f in workable if f.get('status') not in COMPLETED_STATUSES 
+                       and f.get('status') not in CANCELLED_STATUSES 
+                       and f.get('status') not in DRAFT_STATUSES
+                       and f.get('status') != 'On Hold'
+                       and f.get('rep') in GSO_ROSTER]
+    on_hold = [f for f in workable if f.get('status') == 'On Hold' and f.get('rep') in GSO_ROSTER]
+    
+    return {
+        'total': len(facts),
+        'gso': len(gso),
+        'bpo': len(bpo),
+        'vo': len(vo),
+        'drafts': len([f for f in gso if f.get('status') in DRAFT_STATUSES]),
+        'workable': len(workable),
+        'created_month': created_month,
+        'completed_month': comp_month,
+        'active_roster': len(active_statuses),
+        'on_hold_roster': len(on_hold),
+        'pipeline': len(active_statuses) + len(on_hold),
+    }
+
+
+def extract_current_metrics(content):
+    """Extract key metrics from the currently embedded dashboard data."""
+    # Find and parse the embedded dsrFacts
+    marker = 'GSO_DATA.dsrFacts = '
+    idx = content.find(marker)
+    if idx == -1:
+        return None
+    
+    val_start = idx + len(marker)
+    # Find the end — it's a single line ending with ;
+    line_end = content.find('\n', val_start)
+    if line_end == -1:
+        return None
+    
+    json_str = content[val_start:line_end].rstrip().rstrip(';')
+    
+    try:
+        slim_facts = json.loads(json_str)
+    except json.JSONDecodeError:
+        print("  ⚠️ Could not parse current dsrFacts for comparison")
+        return None
+    
+    # Expand slim to full format for metric computation
+    facts = []
+    for sf in slim_facts:
+        facts.append({
+            'id': sf.get('i', ''),
+            'rep': sf.get('r', ''),
+            'status': sf.get('st', ''),
+            'channel': sf.get('ch', ''),
+            'createdDate': sf.get('cd', ''),
+            'completedDate': sf.get('cpd', ''),
+            'country': sf.get('co', ''),
+        })
+    
+    return compute_metrics(facts)
+
+
+def compare_metrics(old, new, force=False):
+    """Compare before/after metrics and flag anomalies.
+    
+    Returns (ok, warnings) tuple. If ok is False, embedding should be aborted.
+    """
+    if old is None:
+        return True, ["⚠️ No previous metrics to compare (first embed or parse failed)"]
+    
+    warnings = []
+    errors = []
+    
+    def check(name, old_val, new_val, max_pct_change=25, min_val=0):
+        if old_val == 0:
+            if new_val > 0:
+                warnings.append(f"  {name}: 0 → {new_val} (new data)")
+            return
+        pct = abs(new_val - old_val) / old_val * 100
+        direction = "↑" if new_val > old_val else "↓"
+        if pct > max_pct_change:
+            msg = f"  {name}: {old_val:,} → {new_val:,} ({direction}{pct:.0f}%) — exceeds {max_pct_change}% threshold"
+            errors.append(msg)
+        elif pct > 10:
+            warnings.append(f"  {name}: {old_val:,} → {new_val:,} ({direction}{pct:.0f}%)")
+        if new_val < min_val:
+            errors.append(f"  {name}: {new_val} is below minimum {min_val}")
+    
+    check("Total records", old['total'], new['total'], max_pct_change=10)
+    check("BPO records", old['bpo'], new['bpo'], max_pct_change=25, min_val=100)
+    check("Vendor Ops records", old['vo'], new['vo'], max_pct_change=25, min_val=10)
+    check("GSO records", old['gso'], new['gso'], max_pct_change=15)
+    check("Created this month", old['created_month'], new['created_month'], max_pct_change=50)
+    check("Completed this month", old['completed_month'], new['completed_month'], max_pct_change=50)
+    check("Pipeline (roster)", old['pipeline'], new['pipeline'], max_pct_change=30)
+    
+    # Zero checks
+    if new['bpo'] == 0:
+        errors.append("  BPO records = 0 — channel tagging likely failed!")
+    if new['vo'] == 0:
+        errors.append("  Vendor Ops records = 0 — channel tagging likely failed!")
+    if new['created_month'] == 0:
+        warnings.append("  Created this month = 0 — is this expected?")
+    
+    if warnings:
+        print("\n⚠️ WARNINGS:")
+        for w in warnings:
+            print(w)
+    
+    if errors:
+        print("\n❌ METRIC SHIFTS EXCEED THRESHOLDS:")
+        for e in errors:
+            print(e)
+        if force:
+            print("\n⚠️ --force flag set, proceeding anyway...")
+            return True, warnings + errors
+        else:
+            print("\n❌ Aborting embed. Use --force to override.")
+            return False, warnings + errors
+    
+    return True, warnings
+
+
+# ══════════════════════════════════════════════════════════════
+# EMBED FUNCTIONS
+# ══════════════════════════════════════════════════════════════
 
 def backup_dashboard():
     """Create a timestamped backup before modifying."""
@@ -41,27 +261,25 @@ def backup_dashboard():
     backup_path = os.path.join(BACKUP_DIR, f"dashboard_{ts}.html")
     shutil.copy2(DASHBOARD, backup_path)
     print(f"✅ Backup: {backup_path}")
-    # Keep only last 5 backups
+    # Keep only last 10 backups
     backups = sorted([f for f in os.listdir(BACKUP_DIR) if f.startswith("dashboard_")])
-    for old in backups[:-5]:
+    for old in backups[:-10]:
         os.remove(os.path.join(BACKUP_DIR, old))
     return backup_path
+
 
 def read_dashboard():
     with open(DASHBOARD, "r") as f:
         return f.read()
 
+
 def write_dashboard(content):
     with open(DASHBOARD, "w") as f:
         f.write(content)
 
+
 def replace_data_block(content, var_name, new_value_json):
-    """Replace GSO_DATA.varName = ...; with new value.
-    
-    All data blocks are single-line: GSO_DATA.xxx = VALUE;\n
-    For large blocks (dsrFacts ~11MB), we find the line end directly.
-    For multi-line blocks (dispatchPartners), we track brackets.
-    """
+    """Replace GSO_DATA.varName = ...; with new value."""
     marker = f"GSO_DATA.{var_name} = "
     idx = content.find(marker)
     if idx == -1:
@@ -69,22 +287,16 @@ def replace_data_block(content, var_name, new_value_json):
         return content
     
     val_start = idx + len(marker)
-    
-    # Fast path: find the end of the line (works for single-line values)
     line_end = content.find('\n', val_start)
     if line_end == -1:
         line_end = len(content)
     
     line_content = content[val_start:line_end]
     
-    # Check if the line ends with a semicolon (single-line value)
     if line_content.rstrip().endswith(';'):
-        # Single-line — find the semicolon
         semi = content.rfind(';', val_start, line_end + 1)
-        new_content = content[:idx] + marker + new_value_json + content[semi:]
-        return new_content
+        return content[:idx] + marker + new_value_json + content[semi:]
     
-    # Multi-line value — track brackets
     if content[val_start] in '[{':
         bracket = 0
         i = val_start
@@ -94,31 +306,38 @@ def replace_data_block(content, var_name, new_value_json):
             if bracket == 0:
                 end = content.find(';', i)
                 if end == -1:
-                    print(f"  ⚠️ Could not find semicolon after {var_name}")
                     return content
-                new_content = content[:idx] + marker + new_value_json + content[end:]
-                return new_content
+                return content[:idx] + marker + new_value_json + content[end:]
             i += 1
     else:
-        # Simple value (number, string) — find next semicolon
         end = content.find(';', val_start)
         if end == -1:
             return content
-        new_content = content[:idx] + marker + new_value_json + content[end:]
-        return new_content
+        return content[:idx] + marker + new_value_json + content[end:]
     
     return content
 
+
 def embed_dsr_facts(content, facts_json_path):
-    """Embed DSR facts from a JSON file."""
+    """Tag channels, validate, and embed DSR facts."""
     if not os.path.exists(facts_json_path):
         print(f"  ⚠️ {facts_json_path} not found")
-        return content
+        return content, None
     
     with open(facts_json_path) as f:
         facts = json.load(f)
     
     print(f"  Loaded {len(facts)} DSR facts")
+    
+    # CRITICAL: Apply channel tagging
+    facts = tag_channels(facts)
+    
+    # Save tagged version back (so it's available for debugging)
+    with open(facts_json_path, 'w') as f:
+        json.dump(facts, f, separators=(',', ':'))
+    
+    # Compute new metrics
+    new_metrics = compute_metrics(facts)
     
     # Build slim format
     slim = []
@@ -148,14 +367,14 @@ def embed_dsr_facts(content, facts_json_path):
     
     slim_json = json.dumps(slim, separators=(",", ":"))
     
-    # Save slim file too
     slim_path = facts_json_path.replace(".json", "_slim.json")
     with open(slim_path, "w") as f:
         f.write(slim_json)
     
     content = replace_data_block(content, "dsrFacts", slim_json)
     print(f"  ✅ Embedded {len(slim)} DSR facts ({len(slim_json)/1024/1024:.1f} MB)")
-    return content
+    return content, new_metrics
+
 
 def embed_json_file(content, var_name, json_path):
     """Embed a JSON file as a data block."""
@@ -170,29 +389,26 @@ def embed_json_file(content, var_name, json_path):
     print(f"  ✅ Embedded {var_name} ({len(data)/1024:.1f} KB)")
     return content
 
+
 def validate_dashboard(content):
-    """Basic validation that the dashboard isn't broken."""
+    """Validate the dashboard isn't broken."""
     errors = []
     
-    # Check script tag balance
     opens = len(re.findall(r'<script', content))
     closes = len(re.findall(r'</script>', content))
     if opens != closes:
         errors.append(f"Script tag mismatch: {opens} open, {closes} close")
     
-    # Check for TypeScript syntax that breaks browsers
     for pattern in ['as any', ': [string,', ': any)']:
         if pattern in content:
             idx = content.index(pattern)
             line = content[:idx].count('\n') + 1
             errors.append(f"TypeScript syntax '{pattern}' at line {line}")
     
-    # Check key data blocks exist
     for var in ['dsrFacts', 'dsaRecords', 'csatResponses', 'lateCancels', 'goaling']:
         if f'GSO_DATA.{var}' not in content:
             errors.append(f"Missing GSO_DATA.{var}")
     
-    # Check file size is reasonable (should be 10-15MB)
     size_mb = len(content) / 1024 / 1024
     if size_mb < 5:
         errors.append(f"File too small ({size_mb:.1f} MB) — data may be missing")
@@ -201,10 +417,10 @@ def validate_dashboard(content):
     
     return errors
 
+
 def update_refresh_date(content):
     """Update the 'Last refreshed' date in the footer."""
     today = datetime.now().strftime("%b %d, %Y")
-    # Look for the refresh date pattern
     pattern = r'(Last refreshed:?\s*</?\w*>?\s*)([\w\s,]+)(<)'
     match = re.search(pattern, content)
     if match:
@@ -212,12 +428,15 @@ def update_refresh_date(content):
         print(f"  ✅ Updated refresh date to {today}")
     return content
 
+
 # ══════════════════════════════════════════════════════════════
-# MAIN — Embed step (run after data has been pulled by goose)
+# MAIN
 # ══════════════════════════════════════════════════════════════
 if __name__ == "__main__":
+    force = '--force' in sys.argv
+    
     print("=" * 60)
-    print("GSO Dashboard — Embed Data")
+    print("GSO Dashboard — Embed Data" + (" [FORCE MODE]" if force else ""))
     print("=" * 60)
     
     # Backup
@@ -227,15 +446,37 @@ if __name__ == "__main__":
     content = read_dashboard()
     original_size = len(content)
     
-    # Embed each data source if the file exists
-    data_dir = os.path.dirname(DASHBOARD)
+    # Extract current metrics for comparison
+    print("\n📊 Extracting current metrics from dashboard...")
+    old_metrics = extract_current_metrics(content)
+    if old_metrics:
+        print(f"  Current: {old_metrics['total']:,} total, {old_metrics['bpo']:,} BPO, "
+              f"{old_metrics['vo']:,} VO, {old_metrics['pipeline']:,} pipeline")
     
-    # DSR Facts
+    # Embed each data source
+    data_dir = os.path.dirname(DASHBOARD)
+    new_metrics = None
+    
+    print("\n📦 Embedding data...")
+    
+    # DSR Facts (with channel tagging + validation)
     dsr_path = os.path.join(data_dir, "dsr_facts.json")
     if os.path.exists(dsr_path):
-        content = embed_dsr_facts(content, dsr_path)
+        content, new_metrics = embed_dsr_facts(content, dsr_path)
     else:
         print("  ⏭ dsr_facts.json not found — skipping DSR Facts")
+    
+    # Before/after comparison
+    if new_metrics:
+        print(f"\n📊 New metrics: {new_metrics['total']:,} total, {new_metrics['bpo']:,} BPO, "
+              f"{new_metrics['vo']:,} VO, {new_metrics['pipeline']:,} pipeline, "
+              f"{new_metrics['drafts']:,} drafts excluded")
+        
+        ok, warnings = compare_metrics(old_metrics, new_metrics, force=force)
+        if not ok:
+            print(f"\n❌ Embed aborted. Restoring from backup...")
+            shutil.copy2(backup_path, DASHBOARD)
+            sys.exit(1)
     
     # DSA Records
     dsa_path = os.path.join(data_dir, "dsa_records.json")
@@ -261,7 +502,7 @@ if __name__ == "__main__":
     if os.path.exists(spend_path):
         with open(spend_path) as f:
             spend = json.load(f)
-        for key in ["spendByPartner", "spendInvoicesByPartner", "spendMonthly", 
+        for key in ["spendByPartner", "spendInvoicesByPartner", "spendMonthly",
                      "spendByCurrency", "spendTotal", "spendInvoiceCount", "spendMonthlyByPartner"]:
             if key in spend:
                 val = json.dumps(spend[key], separators=(",", ":"))
@@ -276,7 +517,7 @@ if __name__ == "__main__":
     # Update refresh date
     content = update_refresh_date(content)
     
-    # Validate
+    # Final validation
     print("\n" + "=" * 60)
     print("Validation")
     print("=" * 60)
@@ -285,7 +526,8 @@ if __name__ == "__main__":
         print("❌ ERRORS FOUND:")
         for e in errors:
             print(f"  ❌ {e}")
-        print(f"\n⚠️ Dashboard NOT updated. Backup at: {backup_path}")
+        print(f"\n⚠️ Dashboard NOT updated. Restoring from backup...")
+        shutil.copy2(backup_path, DASHBOARD)
         sys.exit(1)
     else:
         print("✅ All validation checks passed")
@@ -296,5 +538,5 @@ if __name__ == "__main__":
     print(f"\n✅ Dashboard updated: {original_size/1024/1024:.1f} MB → {new_size/1024/1024:.1f} MB")
     print(f"   Backup at: {backup_path}")
     print("\nNext steps:")
-    print("  1. Upload to Blockcell: blockcell upload gso-dashboard .")
+    print("  1. Upload to Blockcell")
     print("  2. Git commit and push")
