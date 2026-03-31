@@ -54,6 +54,90 @@ instructions: |
   - Drafts: ~1,200-1,500
 
   ═══════════════════════════════════════════════════════════
+  STEP 0: Sync Snowflake → Airtable (new/modified DSRs)
+  ═══════════════════════════════════════════════════════════
+
+  This step brings Airtable up to date with Snowflake. Without it, Airtable stays frozen
+  at the last sync date and the dashboard shows stale data.
+
+  ### 0a. Set Snowflake config
+  Set Snowflake limit to 50000 and timeout to 300.
+
+  ### 0b. Query Snowflake for recently modified records
+  Query for all DSRs modified in the last 7 days:
+
+  ```sql
+  SELECT
+    d.ID AS SFDC_ID,
+    u.NAME AS REP_NAME,
+    d.STATUS_C AS STATUS,
+    d.SUB_STATUS_C AS SUB_STATUS,
+    d.ACCOUNT_NAME_C AS SELLER,
+    d.PURCHASED_IMPLEMENTATION_SERVICES_C AS WORK_TYPE,
+    d.COUNTRY_CODE_C AS COUNTRY,
+    d.CURRENCY_ISO_CODE AS CURRENCY,
+    d.TOTAL_ANNUAL_GPV_C AS GPV_ANNUAL,
+    d.OPPORTUNITY_OWNER_C AS OPP_OWNER,
+    d.OPPORTUNITY_OWNER_ROLE_C AS OPP_OWNER_ROLE,
+    TO_VARCHAR(d.CREATED_DATE, 'YYYY-MM-DD') AS CREATED_DATE,
+    TO_VARCHAR(d.DATE_COMPLETED_C, 'YYYY-MM-DD') AS COMPLETED_DATE,
+    DATEDIFF('day', d.CREATED_DATE, COALESCE(d.DATE_COMPLETED_C, d.DATE_TRANSITIONED_C)) AS DAYS_TO_COMPLETE,
+    DATEDIFF('day', d.CREATED_DATE, CURRENT_DATE()) AS DAYS_OPEN,
+    DATEDIFF('day', d.LAST_MODIFIED_DATE, CURRENT_DATE()) AS DAYS_STALE,
+    d.NUMBER_OF_LOCATIONS_C AS NUM_LOCATIONS,
+    d.COMPLEXITY_SCORE_C AS COMPLEXITY_SCORE,
+    d.COMPETITOR_POS_C AS COMPETITOR_POS,
+    d.MERCHANT_TOKEN_C AS MERCHANT_TOKEN
+  FROM FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C d
+  LEFT JOIN FIVETRAN.APP_SALES_SFDC."USER" u ON d.OWNER_ID = u.ID
+  WHERE d.RECORD_TYPE_NAME_C = 'GSO Global Seller Onboarding'
+    AND d.LAST_MODIFIED_DATE >= DATEADD('day', -7, CURRENT_DATE())
+  ORDER BY d.LAST_MODIFIED_DATE DESC
+  ```
+
+  Report: total records found, how many are new (created in last 7 days) vs existing (modified).
+  Expected: 300-800 records depending on activity.
+
+  ### 0c. Upsert to Airtable
+  For each Snowflake record, search Airtable DSR Facts (tblqfqKMvmdufvRjD) by:
+    filterByFormula: {SFDC ID} = "THE_SFDC_ID"
+
+  If found → UPDATE the existing record.
+  If not found → CREATE a new record.
+
+  Field mapping (Snowflake → Airtable):
+    SFDC_ID → SFDC ID
+    REP_NAME → Rep
+    STATUS → Status
+    SUB_STATUS → Sub Status
+    SELLER → Seller
+    COUNTRY → Country
+    CURRENCY → Currency
+    GPV_ANNUAL → GPV Annual
+    OPP_OWNER → Opp Owner
+    OPP_OWNER_ROLE → Opp Owner Role
+    CREATED_DATE → Created Date
+    COMPLETED_DATE → Completed Date
+    DAYS_TO_COMPLETE → Days to Complete
+    DAYS_OPEN → Days Open
+    DAYS_STALE → Days Stale
+    NUM_LOCATIONS → Num Locations
+    COMPLEXITY_SCORE → Complexity Score
+    COMPETITOR_POS → Competitor POS
+    MERCHANT_TOKEN → Merchant Token
+
+  **DO NOT push these fields** (risk of data corruption):
+    - Request Reason (Snowflake values don't match Airtable singleSelect options)
+    - Work Type (singleSelect — safer to skip)
+    - Team Lead (Airtable-only, manually maintained)
+    - Partner (Airtable-only singleSelect)
+    - Product Version, Language, Go Live Date, AE Desired Go Live (not in query)
+
+  Process records one at a time (search then update/create).
+  Report: total processed, updated count, created count, error count.
+  Expected: 0 errors. If errors > 5, STOP and report.
+
+  ═══════════════════════════════════════════════════════════
   STEP 1: Pull DSR Facts from Airtable
   ═══════════════════════════════════════════════════════════
 
@@ -204,10 +288,16 @@ instructions: |
   STEP 9: Deploy to Blockcell
   ═══════════════════════════════════════════════════════════
 
-  Upload to Blockcell:
-  - Use Blockcell manageSite tool: action=upload, site_name=gso-dashboard, directory_path=/Users/mhofer/gso-dashboard
+  Create a clean deploy directory and upload (avoids uploading large JSON files):
+  ```bash
+  mkdir -p /tmp/gso-deploy
+  cp /Users/mhofer/gso-dashboard/dashboard.html /tmp/gso-deploy/
+  cp /Users/mhofer/gso-dashboard/index.html /tmp/gso-deploy/
+  ```
+  - Use Blockcell manageSite tool: action=upload, site_name=gso-dashboard, directory_path=/tmp/gso-deploy
   - Verify with list_versions that the new version is current
   - Report the version ID
+  - Clean up: rm -rf /tmp/gso-deploy
 
   ═══════════════════════════════════════════════════════════
   STEP 10: Git commit and push
