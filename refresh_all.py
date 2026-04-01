@@ -597,10 +597,49 @@ if __name__ == "__main__":
                 content = replace_data_block(content, key, val)
                 print(f"  ✅ Embedded {key}")
     
-    # Goaling
+    # Goaling — dashboard expects a dict keyed by rep name, not a raw Airtable array
     goaling_path = os.path.join(data_dir, "goaling.json")
     if os.path.exists(goaling_path):
-        content = embed_json_file(content, "goaling", goaling_path)
+        try:
+            with open(goaling_path) as f:
+                goaling_raw = json.load(f)
+            # If it's a raw Airtable array, transform to dict format
+            if isinstance(goaling_raw, list) and goaling_raw and 'Rep Name' in goaling_raw[0]:
+                goaling_dict = {}
+                for r in goaling_raw:
+                    name = r.get('Rep Name', '')
+                    if not name:
+                        continue
+                    goaling_dict[name] = {
+                        'level': r.get('Level', 2),
+                        'country': r.get('Country', ''),
+                        'dsrGoal': r.get('DSR Goal', 0) or 0,
+                        'dsrPacingGoal': r.get('DSR Pacing Goal', 0) or 0,
+                        'dsrActual': r.get('DSR Actual', 0) or 0,
+                        'dsrPacingPct': round((r.get('DSR Pacing %', 0) or 0) * 100, 1),
+                        'dsrQuarterPct': round((r.get('DSR Quarter %', 0) or 0) * 100, 1),
+                        'ptsGoal': r.get('Points Goal', 0) or 0,
+                        'ptsPacingGoal': r.get('Points Pacing Goal', 0) or 0,
+                        'ptsActual': r.get('Points Actual', 0) or 0,
+                        'ptsPacingPct': round((r.get('Points Pacing %', 0) or 0) * 100, 1),
+                        'ptsQuarterPct': round((r.get('Points Quarter %', 0) or 0) * 100, 1),
+                        'daysGoal': r.get('Days Goal', 0) or 0,
+                        'status': r.get('Status', 'Off Track'),
+                    }
+                goaling_data = goaling_dict
+                print(f"  Transformed goaling: {len(goaling_raw)} Airtable records → {len(goaling_dict)} rep entries")
+            elif isinstance(goaling_raw, dict):
+                goaling_data = goaling_raw
+                print(f"  Goaling already in dict format: {len(goaling_data)} reps")
+            else:
+                print(f"  ⚠️ Unexpected goaling format: {type(goaling_raw).__name__}")
+                goaling_data = goaling_raw
+            goaling_json = json.dumps(goaling_data, separators=(',', ':'))
+            content = replace_data_block(content, "goaling", goaling_json)
+            print(f"  ✅ Embedded goaling ({len(goaling_json)/1024:.0f} KB)")
+        except Exception as e:
+            print(f"  ⚠️ Failed to embed goaling: {e}")
+            content = embed_json_file(content, "goaling", goaling_path)
     
     # Merge goal overrides (from Settings page exports)
     overrides_path = os.path.join(data_dir, "goal_overrides.json")
