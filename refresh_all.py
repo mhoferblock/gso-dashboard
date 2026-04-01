@@ -506,7 +506,39 @@ if __name__ == "__main__":
     # DSA Records
     dsa_path = os.path.join(data_dir, "dsa_records.json")
     if os.path.exists(dsa_path):
-        content = embed_json_file(content, "dsaRecords", dsa_path)
+        try:
+            with open(dsa_path) as f:
+                dsa_raw = json.load(f)
+            # Handle both {records:[], stats...} wrapper and flat array formats
+            if isinstance(dsa_raw, dict) and 'records' in dsa_raw:
+                dsa_records = dsa_raw['records']
+                dsa_stats = {k: v for k, v in dsa_raw.items() if k != 'records'}
+            else:
+                dsa_records = dsa_raw
+                dsa_stats = {}
+            # Embed the flat records array
+            dsa_json = json.dumps(dsa_records, separators=(',', ':'))
+            content = replace_data_block(content, "dsaRecords", dsa_json)
+            print(f"  ✅ Embedded dsaRecords ({len(dsa_records)} records, {len(dsa_json)/1024:.0f} KB)")
+            # Embed individual stats if present
+            for key in ['dsaTotal', 'dsaByPartner', 'dsaByActivity', 'dsaMonthly', 'dsaNormStatus', 'dsaPartnerPerf']:
+                if key in dsa_stats:
+                    val = json.dumps(dsa_stats[key], separators=(',', ':'))
+                    content = replace_data_block(content, key, val)
+                    print(f"  ✅ Embedded {key}")
+            # Also check for separate dsa_stats.json
+            dsa_stats_path = os.path.join(data_dir, "dsa_stats.json")
+            if os.path.exists(dsa_stats_path) and not dsa_stats:
+                with open(dsa_stats_path) as f:
+                    dsa_stats = json.load(f)
+                for key in ['dsaTotal', 'dsaByPartner', 'dsaByActivity', 'dsaMonthly', 'dsaNormStatus', 'dsaPartnerPerf']:
+                    if key in dsa_stats:
+                        val = json.dumps(dsa_stats[key], separators=(',', ':'))
+                        content = replace_data_block(content, key, val)
+                        print(f"  ✅ Embedded {key} (from dsa_stats.json)")
+        except Exception as e:
+            print(f"  ⚠️ Failed to embed dsaRecords: {e}")
+            content = embed_json_file(content, "dsaRecords", dsa_path)
     
     # BPO Activities (Deal Support Activities with Record Type = BPO Activity)
     # Slim the data before embedding to save ~50% file size
