@@ -1,6 +1,6 @@
-version: "2.1.0"
+version: "3.0.0"
 title: "Refresh GSO Dashboard"
-description: "Incremental refresh — merges 90-day Snowflake delta into local cache, pulls other sources in parallel, validates shapes, embeds, and deploys. ~3 min total."
+description: "Incremental refresh — merges 90-day Snowflake delta into local cache, pulls other sources in parallel, validates shapes, embeds, and deploys. ~3 min total. v3: vendor spend from PO Dashboard exports, multi-quarter goaling, forecast tab, HC planning."
 instructions: |
   You are refreshing the GSO Dashboard. Work in /Users/mhofer/gso-dashboard (the local working copy).
   The main file is **dashboard.html** (NOT index.html — that's just a redirect stub).
@@ -32,10 +32,20 @@ instructions: |
   | dsaRecords | **flat array** | p, sl, at, st, dr, cd | ⚠️ NOT a wrapper dict! |
   | bpoActivities | **flat array** | at, ow, cd, n, cpd, dr | Slimmed by refresh_all.py |
   | csatResponses | **flat array** | r, d, c, s, at, sl, di, sc | |
-  | goaling | **dict keyed by rep name** | level, ptsGoal, ptsPacingPct, ... | ⚠️ NOT a raw Airtable array! |
+  | goaling | **dict keyed by rep name** | level, country, ptsGoal, ptsPacingPct, ... | Current quarter (Q2 FY2026). ⚠️ NOT a raw Airtable array! |
+  | goalingMeta | dict | quarter, daysElapsed, daysInQuarter, status | status='current' for active quarter |
+  | goalingHistory | **dict keyed by quarter** | e.g. "Q1 FY2026": {meta:{...}, reps:{...}} | Past quarters with status='final'. Looker is source of truth for actuals. |
   | lateCancels | dict | total, byPartner, byMonth, byActivity | |
-  | lateCancelRecords | flat array | id, num, partner, seller, type, ... | |
+  | lateCancelRecords | flat array | DSA_ID, PARTNER, SELLER, SCHEDULED_DATE, ... | ⚠️ Raw Snowflake keys — normalized to short keys (sd, p, at, etc.) by IIFE on page load |
   | spendByPartner, spendTotal, etc. | individual blocks | | Embedded separately from vendor_spend.json |
+  | forecast | dict | months, actualMonths, regions, forecast[], actuals[] | From GSO Capacity Planning Model spreadsheet |
+  | hcPlanning | dict | benchmarks, currentHC, alerts[], top33Reps[] | HC alerts using top-33% productivity benchmark, 3-month lead time |
+
+  ## Key Definitions
+  - **Hands-On DSRs** = Premium + Onsite + Plus packages ONLY. This is the core implementation work that drives GSO workload and goaling. Does NOT include Optimization Call, Payroll, Tasks Only, In-Person Refresh, etc.
+  - **Top-33% Benchmark** = avg monthly hands-on DSRs of the top third of active reps. Used for HC capacity planning.
+  - **Goaling Source of Truth** = Looker dashboard 39926 for actuals; Fivetran Google Sheet (1BAtZ7MYkdUTUFce2Z4d8kJGzBv2-EQ5QO06gEliCI4o) for goals by level+country.
+  - **Forecast Model** = GSO Capacity Planning Model (Google Sheet 1CpgqA5QDCNzw8cv34z_rx4CDiKzfklxyat7jHeHMP7I). Projects DSR volume from AE headcount × create rates.
 
   ## Channel Classification (applied by refresh_all.py)
   - **BPO** (channel='bpo') — 31 reps under Jennifer Walker. Excluded from main GSO KPIs.
@@ -310,30 +320,73 @@ instructions: |
   Save summary to late_cancels.json: {total, byPartner, byMonth, byActivity, queryNote}
   Save detail to late_cancel_records.json as array.
 
-  ### 4c. Vendor Spend (Airtable)
-  Pull all records from tblgVXWTVTO9u1WxX in base appsnfWWzptN9cwD0.
+  ### 4c. Vendor Spend (PO Dashboard Excel Exports)
+  Source: PO Dashboard Report Excel files from /Users/mhofer/Downloads/
+  Files are named: Purchase Order Dashboard Report_Purchase Order Dashboard Report (NN).xlsx
+  Each file = one supplier's PO. Files 32-48 are the latest batch (one per partner).
+
+  Parsing rules:
+  - Headers are in rows 3-4 (section headers + column names). Data starts at row 6.
+  - Key columns: [10]=PO Number, [15]=Currency, [16]=Supplier Name, [17]=Invoice Number, [18]=Invoice Amount, [21]=Invoice Date
+  - Dedup by invoice_number across files (prefer highest file number). ⚠️ CRITICAL: within the same file, prefer the row with the HIGHER amount (some invoices appear twice — once with amt=0, once with real amount).
+  - Filter to invoice_amount > 0 only.
+
+  Supplier → Partner name mapping:
+  - Absolute POS LLC → Absolute POS
+  - Boomtown Network Inc. → Ovation
+  - Sora Partners, Inc. → Sora Partners
+  - F3 Technologies, Inc → F3 Technologies
+  - Ops Pantry Pty Ltd → Tech Pantry
+  - One world IT Rental Oceania pty ltd → One World Rental AU
+  - Alexander Ward Ltd → One World Rental UK
+  - Eposability Limited → Eposability
+  - AKAE Services → Akae
+  - SVO CONSULTORES ASOCIADOS S.L → SVO
+  - Postventa Digital Servicio10 SL → SVO
+  - Bright Business Company Connectivity Solutions → Khiron
+  - FiTech Consulting Services, LLC → FiTech
+  - Solio Marlow → Solio Marlow
+
+  Note: FiTech and Khiron will not submit further invoices.
+
   Compute: spendByPartner, spendInvoicesByPartner, spendMonthly, spendByCurrency,
            spendTotal, spendInvoiceCount, spendMonthlyByPartner
   Save to vendor_spend.json.
 
-  ### 4d. Goaling (Airtable)
-  Pull all records from tblB0NwaUmNv19B4c in base appsnfWWzptN9cwD0.
+  ### 4d. Goaling (Looker + Fivetran)
+  The dashboard has multi-quarter goaling:
+  - GSO_DATA.goaling = current quarter reps dict (Q2 FY2026)
+  - GSO_DATA.goalingMeta = {quarter, daysElapsed, daysInQuarter, updated, status:'current'}
+  - GSO_DATA.goalingHistory = {"Q4 FY2025": {meta, reps}, "Q1 FY2026": {meta, reps}}
 
-  ⚠️ CRITICAL: Save as **DICT keyed by rep name**, NOT a raw Airtable array.
-  The dashboard does `goaling["Takao Kinjo"].ptsPacingPct.toFixed()`.
+  **Source of truth for actuals:** Looker dashboard 39926
+    URL: https://square.cloud.looker.com/dashboards/39926
+    Filters: Sales Team Inferred=Sales - SPS, Date Quarter=this quarter (or explicit range)
+    Queries return: DSR count, Points, Median Days per rep
 
-  Transform:
-    "Rep Name" → dict key
-    "DSR Goal" → dsrGoal, "DSR Pacing Goal" → dsrPacingGoal, "DSR Actual" → dsrActual
-    "DSR Pacing %" → dsrPacingPct (× 100, round 1 decimal)
-    "DSR Quarter %" → dsrQuarterPct (× 100, round 1 decimal)
-    "Points Goal" → ptsGoal, "Points Pacing Goal" → ptsPacingGoal, "Points Actual" → ptsActual
-    "Points Pacing %" → ptsPacingPct (× 100, round 1 decimal)
-    "Points Quarter %" → ptsQuarterPct (× 100, round 1 decimal)
-    "Days Goal" → daysGoal, "Status" → status
-    "Level" → level (default 2), "Country" → country (default "")
+  **Source of truth for goals:** Fivetran Google Sheet
+    ID: 1BAtZ7MYkdUTUFce2Z4d8kJGzBv2-EQ5QO06gEliCI4o
+    Goals are set by level + country (not per rep). Three goal types:
+    - # Premium/Onsites/Plus Completed (DSR goal)
+    - # of Points (weighted points goal)
+    - Median Days to Complete (speed goal)
 
-  Save as goaling.json.
+  **Rep data shape** (dict keyed by rep name):
+    dsrGoal, dsrPacingGoal, dsrActual, dsrPacingPct, dsrQuarterPct,
+    ptsGoal, ptsPacingGoal, ptsActual, ptsPacingPct, ptsQuarterPct,
+    daysGoal, status (On Track/At Risk/Off Track), level (3 or 4), country (US/GB/IE/ES/MD/AU/JP/CA)
+
+  **At quarter boundaries:**
+  1. Move current goaling → goalingHistory as status='final'
+  2. Create new current quarter with actuals=0, goals from Fivetran sheet
+  3. Update goalingMeta with new quarter, daysElapsed=1, daysInQuarter, status='current'
+
+  **Pacing calculation:**
+    pacingGoal = goal × (daysElapsed ÷ daysInQuarter)
+    pacingPct = (actual ÷ pacingGoal) × 100
+    Status: ≥95% = On Track, 80-94% = At Risk, <80% = Off Track
+
+  Save as goaling.json (current quarter only; history is embedded directly).
 
   ═══════════════════════════════════════════════════════════
   STEP 5: Embed all data
@@ -363,12 +416,18 @@ instructions: |
   ═══════════════════════════════════════════════════════════
 
   ```bash
-  mkdir -p /tmp/gso-deploy
+  rm -rf /tmp/gso-deploy && mkdir -p /tmp/gso-deploy
   cp /Users/mhofer/gso-dashboard/dashboard.html /tmp/gso-deploy/
   cp /Users/mhofer/gso-dashboard/index.html /tmp/gso-deploy/
   ```
   Upload via Blockcell manageSite: action=upload, site_name=gso-dashboard, directory_path=/tmp/gso-deploy
-  Verify with list_versions that the new version is current.
+
+  ⚠️ CRITICAL: After upload, ALWAYS do these steps:
+  1. list_versions to get the new version_id
+  2. promote that version_id to make it the active/current version
+  3. Download and verify the deployed file has the expected content
+  Without the promote step, Blockcell may serve a cached/stale version.
+
   Clean up: rm -rf /tmp/gso-deploy
 
   ═══════════════════════════════════════════════════════════
@@ -417,6 +476,34 @@ instructions: |
   - dispatchPartners — partner config, only changes when partners are added/removed
   - dsaStatusMap — static status normalization map
   - stratPmMonthly — from Looker 41363, updated manually
-  - goalingMeta — quarter config, updated manually at quarter boundaries
+  - goalingMeta — quarter config, updated at quarter boundaries (see Goaling section above)
+  - goalingHistory — past quarter finals, added at quarter boundaries
+  - forecast — from GSO Capacity Planning Model spreadsheet, updated when model changes
+  - hcPlanning — HC alerts derived from forecast + top-33% benchmark, updated when forecast or roster changes
   - BPO_TEAM_LIST — in dashboard.html, update manually when BPO team changes
   - GSO_DATA.teams — in dashboard.html, update manually when roster changes
+
+  ═══════════════════════════════════════════════════════════
+  DASHBOARD TABS
+  ═══════════════════════════════════════════════════════════
+
+  1. 📊 Overview — KPI cards, CSAT, 12-month trends, weekly completions
+  2. 👥 Team Performance — team tables, rep leaderboards
+  3. 🔄 Active Pipeline — in-progress DSRs with stage, days open
+  4. 🗺️ Onboarding Journey — stage flow, timing benchmarks
+  5. ✅ Completed & Launched — completions with GPV
+  6. 🚫 Cancelled/Rejected — lost DSRs by reason
+  7. 🎯 GSO Goaling — quarterly pacing with quarter selector (Q2 current, Q1/Q4 history), filters: team/country/level/status
+  8. 📊 Partner Analytics — DSA data, vendor spend, cost per onboarding, late cancels. All sections filter-aware (partner/activity/status/time including custom date range). Spend uses month-matched DSA counts for cost-per-DSA.
+  9. 📈 Forecast — actual vs plan from capacity model, variance charts, cumulative YTD, regional breakdown, workload ratios. HC planning section with top-33% benchmark capacity alerts and 3-month hiring lead time.
+  10. ⚙️ Settings — roster management, scoring matrix, goals
+
+  ═══════════════════════════════════════════════════════════
+  LATE CANCEL RECORDS — KEY NOTE
+  ═══════════════════════════════════════════════════════════
+
+  Late cancel records are embedded with RAW Snowflake column names (SCHEDULED_DATE, PARTNER,
+  ACTIVITY_TYPE, etc.) but the dashboard filter/rendering code expects short keys (sd, p, at, etc.).
+  An IIFE (normalizeLcRecords) runs on page load to map the keys and normalize partner names
+  (e.g., "F3 (Vendor)" → "F3 Technologies", "Absolute POS (Vendor)" → "Absolute POS").
+  If late cancels appear broken (all zeros), check that this normalization is running.
