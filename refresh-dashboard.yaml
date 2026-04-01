@@ -86,15 +86,21 @@ instructions: |
 
   How it works:
   1. dsr_facts.json is the LOCAL CACHE (~40K records, persists between refreshes)
-  2. Query Snowflake for DSRs modified in the last 14 days (~1,000-2,000 records)
+  2. Query Snowflake for DSRs modified in the last 90 days (~3,000-4,000 records)
   3. Merge Snowflake updates INTO the local cache (upsert by SFDC ID)
   4. Embed the merged cache into dashboard.html
   5. All history is preserved because the cache is never truncated
 
+  Why 90 days (not 14, not all):
+  - 915 active DSRs are >90 days old — they can get status changes anytime
+  - 81 DSRs completed last month were created >90 days ago
+  - 90 days catches virtually all real modifications (~3-4K records vs 40K+)
+  - Still only ~40 Snowflake pages vs 407 Airtable pages = ~8x faster
+
   When to do a FULL pull (re-baseline):
   - First time setup
   - If dsr_facts.json is missing or corrupted
-  - Monthly (first refresh of the month) for data hygiene
+  - Quarterly (first refresh of the quarter) for data hygiene
   - If metrics look wrong after an incremental refresh
 
   ═══════════════════════════════════════════════════════════
@@ -108,7 +114,7 @@ instructions: |
   If dsr_facts.json exists and has >30,000 records → use INCREMENTAL mode.
   If missing or <30,000 records → use FULL PULL mode (go to Step 1-FULL below).
 
-  ### 1c. Query Snowflake for recently modified DSRs (last 14 days)
+  ### 1c. Query Snowflake for recently modified DSRs (last 90 days)
 
   ```sql
   SELECT
@@ -134,11 +140,11 @@ instructions: |
   FROM FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C d
   LEFT JOIN FIVETRAN.APP_SALES_SFDC."USER" u ON d.OWNER_ID = u.ID
   WHERE d.RECORD_TYPE_NAME_C = 'GSO Global Seller Onboarding'
-    AND d.LAST_MODIFIED_DATE >= DATEADD('day', -14, CURRENT_DATE())
+    AND d.LAST_MODIFIED_DATE >= DATEADD('day', -90, CURRENT_DATE())
   ORDER BY d.LAST_MODIFIED_DATE DESC
   ```
 
-  Expected: 1,000-3,000 records.
+  Expected: 3,000-5,000 records.
 
   ### 1d. Merge into local cache
   Read dsr_facts.json into memory. Build a lookup by `id` (SFDC ID).
