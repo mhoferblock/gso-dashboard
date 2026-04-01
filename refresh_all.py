@@ -484,9 +484,35 @@ if __name__ == "__main__":
         content = embed_json_file(content, "dsaRecords", dsa_path)
     
     # BPO Activities (Deal Support Activities with Record Type = BPO Activity)
+    # Slim the data before embedding to save ~50% file size
     bpo_act_path = os.path.join(data_dir, "bpo_activities.json")
     if os.path.exists(bpo_act_path):
-        content = embed_json_file(content, "bpoActivities", bpo_act_path)
+        try:
+            with open(bpo_act_path) as f:
+                bpo_raw = json.load(f)
+            # Handle both {records:[], summary:{}} and flat array formats
+            recs = bpo_raw.get('records', bpo_raw) if isinstance(bpo_raw, dict) else bpo_raw
+            # Slim: keep only fields used by the dashboard
+            slim = []
+            for r in recs:
+                entry = {
+                    'at': r.get('at', ''),      # activity type
+                    'ow': r.get('ow', ''),      # owner
+                    'cd': r.get('cd', ''),      # created date
+                    'n': r.get('n', ''),         # activity number
+                }
+                if r.get('cpd'): entry['cpd'] = r['cpd']     # completed date
+                if r.get('di'): entry['di'] = r['di']         # difficulty
+                if r.get('ttc') is not None: entry['ttc'] = r['ttc']  # time to complete
+                if r.get('ca'): entry['ca'] = True            # cancelled
+                if r.get('dr'): entry['dr'] = r['dr']         # DSR ID
+                slim.append(entry)
+            slim_json = json.dumps(slim, separators=(',', ':'))
+            content = replace_data_block(content, "bpoActivities", slim_json)
+            print(f"  ✅ Embedded bpoActivities ({len(slim)} records, {len(slim_json)/1024:.0f} KB slim)")
+        except Exception as e:
+            print(f"  ⚠️ Failed to embed bpoActivities: {e}")
+            content = embed_json_file(content, "bpoActivities", bpo_act_path)
     
     # CSAT
     csat_path = os.path.join(data_dir, "csat_data.json")

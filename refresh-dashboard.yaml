@@ -16,11 +16,18 @@ instructions: |
   8. If ANYTHING fails after modifying dashboard.html, restore from backup immediately.
 
   ## Data Architecture
-  - **dashboard.html** — single-file SPA (~12MB) with all data embedded as GSO_DATA.xxx = {...};
-  - **Airtable** base appsnfWWzptN9cwD0 — persistent data store (7 tables)
-  - **Snowflake** — source of truth for DSR and DSA records
+  - **dashboard.html** — single-file SPA (~14MB) with all data embedded as GSO_DATA.xxx = {...};
+  - **Airtable** base appsnfWWzptN9cwD0 — persistent data store (7 tables):
+    - DSR Facts (tblqfqKMvmdufvRjD) — ~40,611 records, 33 fields
+    - Team Roster (tbl0I2oNZdYPlJ5EH)
+    - Goaling (tblB0NwaUmNv19B4c)
+    - Sync Log (tbl4lnLHEmNyqpCjc)
+    - Partner DSAs (tblASw9K5OMq36YT4) — partner dispatch activities
+    - Vendor Spend (tblgVXWTVTO9u1WxX) — 926 invoices
+    - BPO Activities (tbl2jhvPGsV6Akdgv) — BPO team work items (NEW)
+  - **Snowflake** — source of truth for DSR, DSA, and BPO Activity records
   - **GetFeedback** — CSAT survey responses
-  - **refresh_all.py** — embed script with channel tagging, validation, and before/after comparison
+  - **refresh_all.py** — embed script with channel tagging, BPO activity slimming, goal override merge, validation, and before/after comparison
 
   ## Channel Classification (applied by refresh_all.py)
   - **BPO** (channel='bpo') — 31 reps under Jennifer Walker. Excluded from main GSO KPIs.
@@ -391,7 +398,7 @@ instructions: |
 
   ```bash
   cd /Users/mhofer/gso-dashboard
-  git add dashboard.html dsr_facts.json dsr_facts_slim.json refresh_all.py
+  git add dashboard.html dsr_facts.json dsr_facts_slim.json bpo_activities.json refresh_all.py refresh-dashboard.yaml
   git commit -m "Refresh dashboard data — $(date +%Y-%m-%d)"
   git push
   ```
@@ -407,9 +414,11 @@ instructions: |
   - Created this month / Completed this month
   - Pipeline count (roster only)
   - Total DSA records (should be ~6,000+)
+  - BPO Activities count (should be ~12,000+) and this month's count
   - Vendor Spend total and invoice count
   - CSAT response count and average rating
-  - Dashboard file size (should be 10-15 MB)
+  - Goal overrides merged (if goal_overrides.json exists)
+  - Dashboard file size (should be 12-16 MB)
   - Blockcell version ID
   - Git push status
 
