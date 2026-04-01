@@ -279,7 +279,17 @@ def write_dashboard(content):
 
 
 def replace_data_block(content, var_name, new_value_json):
-    """Replace GSO_DATA.varName = ...; with new value."""
+    """Replace GSO_DATA.varName = ...; with new value.
+    
+    Handles three cases:
+      1. Single-line assignment ending with ;  →  replace the line
+      2. Multi-line bracket-matched block      →  bracket-walk to find end
+      3. Simple value (number, string)         →  find next ;
+    
+    IMPORTANT: new_value_json should NOT include a trailing semicolon;
+    this function preserves the original semicolon from the content.
+    If the original block had no semicolon, one is appended.
+    """
     marker = f"GSO_DATA.{var_name} = "
     idx = content.find(marker)
     if idx == -1:
@@ -293,10 +303,12 @@ def replace_data_block(content, var_name, new_value_json):
     
     line_content = content[val_start:line_end]
     
+    # BRANCH 1: Single-line with semicolon (most common for embedded data)
     if line_content.rstrip().endswith(';'):
         semi = content.rfind(';', val_start, line_end + 1)
         return content[:idx] + marker + new_value_json + content[semi:]
     
+    # BRANCH 2: Value starts with [ or { — bracket-match to find the end
     if content[val_start] in '[{':
         bracket = 0
         i = val_start
@@ -304,18 +316,31 @@ def replace_data_block(content, var_name, new_value_json):
             if content[i] in '[{': bracket += 1
             if content[i] in ']}': bracket -= 1
             if bracket == 0:
-                end = content.find(';', i)
-                if end == -1:
-                    return content
-                return content[:idx] + marker + new_value_json + content[end:]
+                # Found the closing bracket at position i
+                block_end = i + 1  # position right after the closing ] or }
+                # Look for a semicolon, but ONLY on the same line (up to next newline)
+                next_nl = content.find('\n', block_end)
+                if next_nl == -1:
+                    next_nl = len(content)
+                remaining = content[block_end:next_nl]
+                semi_offset = remaining.find(';')
+                if semi_offset != -1:
+                    # Semicolon found on same line — keep it
+                    end = block_end + semi_offset
+                    return content[:idx] + marker + new_value_json + content[end:]
+                else:
+                    # No semicolon on this line — insert one and resume after the closing bracket
+                    return content[:idx] + marker + new_value_json + ";" + content[block_end:]
             i += 1
-    else:
-        end = content.find(';', val_start)
-        if end == -1:
-            return content
-        return content[:idx] + marker + new_value_json + content[end:]
     
-    return content
+    # BRANCH 3: Simple value — find next semicolon on same line
+    semi = line_content.find(';')
+    if semi != -1:
+        abs_semi = val_start + semi
+        return content[:idx] + marker + new_value_json + content[abs_semi:]
+    
+    # Fallback: no semicolon found at all — append one and replace to end of line
+    return content[:idx] + marker + new_value_json + ";" + content[line_end:]
 
 
 def embed_dsr_facts(content, facts_json_path):
