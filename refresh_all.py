@@ -9,11 +9,12 @@ Usage:
   python3 refresh_all.py --force   # Skip validation thresholds (use with caution)
 
 This script handles:
-  1. Channel tagging (BPO, Vendor Ops) — MUST be applied before embedding
-  2. Before/after metric comparison — refuses to embed if metrics shift too much
-  3. Slim format conversion for DSR facts
-  4. Embedding all data blocks into dashboard.html
-  5. Dashboard validation (syntax, size, data blocks)
+  1. Data format validation — catches wrong shapes BEFORE embedding
+  2. Channel tagging (BPO, Vendor Ops) — MUST be applied before embedding
+  3. Before/after metric comparison — refuses to embed if metrics shift too much
+  4. Slim format conversion for DSR facts
+  5. Embedding all data blocks into dashboard.html
+  6. Dashboard validation (syntax, size, data blocks)
 
 Data Sources (JSON files must exist in same directory):
   - dsr_facts.json      — DSR Facts from Airtable (~40K records)
@@ -23,6 +24,16 @@ Data Sources (JSON files must exist in same directory):
   - csat_data.json      — CSAT from GetFeedback (~170 responses)
   - vendor_spend.json   — Vendor Spend from Airtable
   - goaling.json        — Goaling from Airtable
+
+Expected data shapes (dashboard.html contract):
+  dsrFacts        — array of slim objects [{i, r, st, ch, cd, ...}]
+  dsaRecords      — FLAT array [{p, sl, at, st, dr, cd}]  (NOT a wrapper dict!)
+  bpoActivities   — array [{at, ow, cd, n, ...}]
+  csatResponses   — array [{r, d, c, s, at, sl, di, sc}]
+  goaling         — dict keyed by rep name {"Rep Name": {level, ptsGoal, ...}}
+  lateCancels     — dict {total, byPartner, byMonth, byActivity, ...}
+  lateCancelRecords — array [{id, num, partner, seller, ...}]
+  vendorSpend     — dict {spendByPartner, spendTotal, ...} (embedded as individual blocks)
 """
 
 import json, sys, os, re, shutil
@@ -415,6 +426,107 @@ def embed_json_file(content, var_name, json_path):
     return content
 
 
+def validate_data_shapes(data_dir):
+    """Pre-flight check: validate JSON files match the shapes dashboard.html expects.
+    
+    Catches format mismatches BEFORE we touch the dashboard, so we never embed
+    bad data and have to restore from backup.
+    
+    Returns (ok, errors) tuple.
+    """
+    errors = []
+    
+    def check_file(filename, expected_type, required_keys=None, min_records=0, label=None):
+        path = os.path.join(data_dir, filename)
+        if not os.path.exists(path):
+            return  # Missing files are warned about later, not an error here
+        try:
+            with open(path) as f:
+                data = json.load(f)
+        except json.JSONDecodeError as e:
+            errors.append(f"{filename}: invalid JSON — {e}")
+            return
+        
+        lbl = label or filename
+        
+        if expected_type == 'array':
+            if not isinstance(data, list):
+                if isinstance(data, dict) and 'records' in data:
+                    errors.append(f"{lbl}: expected flat array, got dict with 'records' key. "
+                                  f"The dashboard iterates this directly — unwrap the records array first.")
+                else:
+                    errors.append(f"{lbl}: expected array, got {type(data).__name__}")
+                return
+            if len(data) < min_records:
+                errors.append(f"{lbl}: only {len(data)} records (expected >= {min_records})")
+            if required_keys and data:
+                missing = [k for k in required_keys if k not in data[0]]
+                if missing:
+                    errors.append(f"{lbl}: first record missing keys {missing} (has: {list(data[0].keys())[:8]})")
+        
+        elif expected_type == 'dict':
+            if isinstance(data, list):
+                if data and 'Rep Name' in data[0]:
+                    errors.append(f"{lbl}: expected dict keyed by rep name, got raw Airtable array. "
+                                  f"Will auto-transform, but check the Airtable pull step.")
+                else:
+                    errors.append(f"{lbl}: expected dict, got array of {len(data)}")
+                return
+            if not isinstance(data, dict):
+                errors.append(f"{lbl}: expected dict, got {type(data).__name__}")
+                return
+            if required_keys:
+                missing = [k for k in required_keys if k not in data]
+                if missing:
+                    errors.append(f"{lbl}: missing top-level keys {missing}")
+    
+    # DSR Facts: must be array with expected slim or full keys
+    check_file('dsr_facts.json', 'array', 
+               required_keys=['id', 'status'],  # full format
+               min_records=30000, label='dsr_facts (DSR records)')
+    
+    # DSA Records: must be FLAT array (not {records: [...]})
+    check_file('dsa_records.json', 'array',
+               required_keys=['p', 'sl', 'at', 'st'],  # compact format
+               min_records=1000, label='dsa_records (DSA partner activities)')
+    
+    # BPO Activities: must be array or {records: [...]}
+    # (refresh_all.py handles the unwrap, but warn if unexpected)
+    bpo_path = os.path.join(data_dir, 'bpo_activities.json')
+    if os.path.exists(bpo_path):
+        with open(bpo_path) as f:
+            bpo = json.load(f)
+        if isinstance(bpo, dict) and 'records' in bpo:
+            pass  # OK, refresh_all.py unwraps this
+        elif isinstance(bpo, list):
+            pass  # OK, flat array
+        else:
+            errors.append(f"bpo_activities: unexpected format {type(bpo).__name__}")
+    
+    # CSAT: must be array
+    check_file('csat_data.json', 'array',
+               required_keys=['r', 'd'],  # rating, date
+               min_records=10, label='csat_data (CSAT responses)')
+    
+    # Goaling: must be dict keyed by rep name (or raw Airtable array that we auto-transform)
+    check_file('goaling.json', 'dict', label='goaling (rep goals)')
+    
+    # Vendor Spend: must be dict with spend stats
+    check_file('vendor_spend.json', 'dict',
+               required_keys=['spendTotal', 'spendInvoiceCount'],
+               label='vendor_spend')
+    
+    if errors:
+        print("\n❌ DATA SHAPE VALIDATION FAILED:")
+        for e in errors:
+            print(f"  ❌ {e}")
+        print("\nFix the data files before embedding. Dashboard NOT modified.")
+        return False, errors
+    else:
+        print("  ✅ All data shapes valid")
+        return True, []
+
+
 def validate_dashboard(content):
     """Validate the dashboard isn't broken."""
     errors = []
@@ -482,6 +594,15 @@ if __name__ == "__main__":
     data_dir = os.path.dirname(DASHBOARD)
     new_metrics = None
     
+    # Pre-flight: validate data shapes before touching dashboard
+    print("\n🔍 Validating data shapes...")
+    shapes_ok, shape_errors = validate_data_shapes(data_dir)
+    if not shapes_ok and not force:
+        print(f"\n❌ Aborting. Fix data files or use --force to override.")
+        sys.exit(1)
+    elif not shapes_ok:
+        print(f"\n⚠️ --force flag set, proceeding despite shape errors...")
+
     print("\n📦 Embedding data...")
     
     # DSR Facts (with channel tagging + validation)
