@@ -28,12 +28,17 @@ Data Sources (JSON files must exist in same directory):
 Expected data shapes (dashboard.html contract):
   dsrFacts        — array of slim objects [{i, r, st, ch, cd, ...}]
   dsaRecords      — FLAT array [{p, sl, at, st, dr, cd}]  (NOT a wrapper dict!)
-  bpoActivities   — array [{at, ow, cd, n, ...}]
+  bpoActivities   — array [{at, st, cd, dr, sl, cpd}]  (MUST include st=status, sl=seller)
   csatResponses   — array [{r, d, c, s, at, sl, di, sc}]
   goaling         — dict keyed by rep name {"Rep Name": {level, ptsGoal, ...}}
-  lateCancels     — dict {total, byPartner, byMonth, byActivity, ...}
-  lateCancelRecords — array [{id, num, partner, seller, ...}]
+                    level must be 3 or 4 (not 2), country must not be blank
+  lateCancels     — dict {total, late24h, late3d, lostHours, avgMins,
+                    byPartner: {name: {l, t}}, byActivity: {name: {l, t}}, byMonth}
+                    (enriched by enrich_late_cancels() before embedding)
+  lateCancelRecords — array [{partner, seller, activityType, scheduledDate, ...}]
+                    (camelCase keys — normalization IIFE in dashboard.html handles mapping)
   vendorSpend     — dict {spendByPartner, spendTotal, ...} (embedded as individual blocks)
+                    spendMonthlyByPartner must be pipe-delimited: {"YYYY-MM|Partner": amt}
 """
 
 import json, sys, os, re, shutil
@@ -566,6 +571,110 @@ def update_refresh_date(content):
     return content
 
 
+def enrich_late_cancels(lc_summary_path, lc_records_path):
+    """Enrich late_cancels.json with fields the dashboard and D&A Lite expect.
+    
+    The dashboard rendering code and D&A Lite chatbot reference these fields:
+      - late24h: count of cancellations within 24h of scheduled date
+      - late3d: count within 3 days
+      - lostHours: estimated lost productivity hours (90 min avg appointment)
+      - avgMins: average appointment duration estimate
+      - byActivity: {activityType: {l: lateCount, t: totalCount}}
+      - byPartner: must be {partner: {l: lateCount, t: totalCount}} (NOT simple counts)
+    
+    If these are missing, the Partner Analytics late cancel section shows zeros
+    and D&A Lite queries show NaN/undefined.
+    """
+    if not os.path.exists(lc_summary_path) or not os.path.exists(lc_records_path):
+        return
+    
+    with open(lc_summary_path) as f:
+        summary = json.load(f)
+    with open(lc_records_path) as f:
+        records = json.load(f)
+    
+    # Check if already enriched
+    if 'late24h' in summary and 'byActivity' in summary:
+        # Verify byPartner format is {l, t} objects
+        bp = summary.get('byPartner', {})
+        if bp and isinstance(list(bp.values())[0], dict):
+            print(f"  ✅ late_cancels.json already enriched ({summary.get('total', 0)} records)")
+            return
+    
+    total = len(records)
+    if total == 0:
+        return
+    
+    # All records in the file are late cancels (≤24h by query definition)
+    late24h = total
+    
+    # Compute late3d from hoursBeforeScheduled
+    late3d = 0
+    for r in records:
+        hrs = r.get('hoursBeforeScheduled', r.get('HOURS_BEFORE_SCHEDULED', 0)) or 0
+        if abs(hrs) <= 72:
+            late3d += 1
+    
+    # Lost productivity: 90 min avg appointment as proxy
+    avg_appt_mins = 90
+    lost_hours = round(total * avg_appt_mins / 60)
+    
+    # Average hours before scheduled
+    hours_vals = []
+    for r in records:
+        hrs = r.get('hoursBeforeScheduled', r.get('HOURS_BEFORE_SCHEDULED', None))
+        if hrs is not None:
+            hours_vals.append(hrs)
+    avg_hours = sum(hours_vals) / len(hours_vals) if hours_vals else 0
+    
+    # byPartner in {partner: {l: lateCount, t: totalCount}} format
+    by_partner = {}
+    for r in records:
+        p = r.get('partner', r.get('PARTNER', '')) or '(No Partner)'
+        if p not in by_partner:
+            by_partner[p] = {'l': 0, 't': 0}
+        by_partner[p]['l'] += 1
+        by_partner[p]['t'] += 1
+    
+    # byActivity in same format
+    by_activity = {}
+    for r in records:
+        at = r.get('activityType', r.get('ACTIVITY_TYPE', '')) or 'Unknown'
+        if at not in by_activity:
+            by_activity[at] = {'l': 0, 't': 0}
+        by_activity[at]['l'] += 1
+        by_activity[at]['t'] += 1
+    
+    # byMonth
+    by_month = {}
+    for r in records:
+        sd = r.get('scheduledDate', r.get('SCHEDULED_DATE', '')) or \
+             r.get('createdDate', r.get('CREATED_DATE', '')) or ''
+        if sd:
+            m = sd[:7]
+            by_month[m] = by_month.get(m, 0) + 1
+    
+    # Build enriched summary
+    enriched = {
+        'total': total,
+        'late24h': late24h,
+        'late3d': late3d,
+        'lostHours': lost_hours,
+        'avgMins': avg_appt_mins,
+        'avgHoursBeforeScheduled': round(avg_hours, 1),
+        'byPartner': by_partner,
+        'byActivity': dict(sorted(by_activity.items(), key=lambda x: x[1]['l'], reverse=True)),
+        'byMonth': dict(sorted(by_month.items(), reverse=True)),
+    }
+    
+    # Save enriched version back
+    with open(lc_summary_path, 'w') as f:
+        json.dump(enriched, f, indent=2)
+    
+    print(f"  ✅ Enriched late_cancels.json: {total} records, {len(by_partner)} partners, "
+          f"{len(by_activity)} activity types, {lost_hours}h lost productivity")
+
+
 # ══════════════════════════════════════════════════════════════
 # MAIN
 # ══════════════════════════════════════════════════════════════
@@ -670,20 +779,21 @@ if __name__ == "__main__":
                 bpo_raw = json.load(f)
             # Handle both {records:[], summary:{}} and flat array formats
             recs = bpo_raw.get('records', bpo_raw) if isinstance(bpo_raw, dict) else bpo_raw
-            # Slim: keep only fields used by the dashboard
+            # Slim: keep fields used by the dashboard
+            # MUST include st (status) and sl (seller) — the dashboard BPO
+            # Salesforce Activities section uses these for status classification
+            # and seller display. Without them, status is always derived from
+            # cpd presence and seller names are blank.
             slim = []
             for r in recs:
                 entry = {
                     'at': r.get('at', ''),      # activity type
-                    'ow': r.get('ow', ''),      # owner
+                    'st': r.get('st', ''),      # status (REQUIRED — used for status classification)
                     'cd': r.get('cd', ''),      # created date
-                    'n': r.get('n', ''),         # activity number
+                    'dr': r.get('dr', ''),      # DSR ID
                 }
+                if r.get('sl'): entry['sl'] = r['sl']         # seller (REQUIRED — displayed in BPO section)
                 if r.get('cpd'): entry['cpd'] = r['cpd']     # completed date
-                if r.get('di'): entry['di'] = r['di']         # difficulty
-                if r.get('ttc') is not None: entry['ttc'] = r['ttc']  # time to complete
-                if r.get('ca'): entry['ca'] = True            # cancelled
-                if r.get('dr'): entry['dr'] = r['dr']         # DSR ID
                 slim.append(entry)
             slim_json = json.dumps(slim, separators=(',', ':'))
             content = replace_data_block(content, "bpoActivities", slim_json)
@@ -697,12 +807,12 @@ if __name__ == "__main__":
     if os.path.exists(csat_path):
         content = embed_json_file(content, "csatResponses", csat_path)
     
-    # Late Cancels
+    # Late Cancels — enrich summary before embedding
     lc_path = os.path.join(data_dir, "late_cancels.json")
+    lc_detail_path = os.path.join(data_dir, "late_cancel_records.json")
+    enrich_late_cancels(lc_path, lc_detail_path)
     if os.path.exists(lc_path):
         content = embed_json_file(content, "lateCancels", lc_path)
-    
-    lc_detail_path = os.path.join(data_dir, "late_cancel_records.json")
     if os.path.exists(lc_detail_path):
         content = embed_json_file(content, "lateCancelRecords", lc_detail_path)
     
@@ -711,6 +821,23 @@ if __name__ == "__main__":
     if os.path.exists(spend_path):
         with open(spend_path) as f:
             spend = json.load(f)
+        
+        # Normalize spendMonthlyByPartner to pipe-delimited format if nested
+        # The dashboard JS expects {"YYYY-MM|Partner": amount} but the data source
+        # may produce {"YYYY-MM": {"Partner": amount}}. Convert here so the
+        # normalizer IIFE in dashboard.html doesn't have to.
+        smbp = spend.get("spendMonthlyByPartner", {})
+        if smbp:
+            first_key = next(iter(smbp), '')
+            if '|' not in first_key and isinstance(smbp.get(first_key), dict):
+                flat = {}
+                for month, partners in smbp.items():
+                    if isinstance(partners, dict):
+                        for partner, amt in partners.items():
+                            flat[f"{month}|{partner}"] = amt
+                spend["spendMonthlyByPartner"] = flat
+                print(f"  ✅ Normalized spendMonthlyByPartner: {len(smbp)} months → {len(flat)} pipe-delimited keys")
+        
         for key in ["spendByPartner", "spendInvoicesByPartner", "spendMonthly",
                      "spendByCurrency", "spendTotal", "spendInvoiceCount", "spendMonthlyByPartner"]:
             if key in spend:
@@ -719,6 +846,11 @@ if __name__ == "__main__":
                 print(f"  ✅ Embedded {key}")
     
     # Goaling — dashboard expects a dict keyed by rep name, not a raw Airtable array
+    # IMPORTANT: Validate goaling data before embedding to prevent corrupted quarter
+    # boundary data from overwriting good data. Key checks:
+    #   - level should be 3 or 4 (not 2)
+    #   - country should not be all blank
+    #   - actuals should be reasonable for the current point in the quarter
     goaling_path = os.path.join(data_dir, "goaling.json")
     if os.path.exists(goaling_path):
         try:
@@ -755,9 +887,31 @@ if __name__ == "__main__":
             else:
                 print(f"  ⚠️ Unexpected goaling format: {type(goaling_raw).__name__}")
                 goaling_data = goaling_raw
-            goaling_json = json.dumps(goaling_data, separators=(',', ':'))
-            content = replace_data_block(content, "goaling", goaling_json)
-            print(f"  ✅ Embedded goaling ({len(goaling_json)/1024:.0f} KB)")
+            
+            # Validate goaling data quality before embedding
+            if isinstance(goaling_data, dict) and goaling_data:
+                levels = [v.get('level', 0) for v in goaling_data.values()]
+                countries = [v.get('country', '') for v in goaling_data.values()]
+                all_level_2 = all(l == 2 for l in levels)
+                all_blank_country = all(c == '' for c in countries)
+                
+                goaling_warnings = []
+                if all_level_2 and len(goaling_data) > 10:
+                    goaling_warnings.append("all reps have level=2 (expected 3 or 4)")
+                if all_blank_country and len(goaling_data) > 10:
+                    goaling_warnings.append("all reps have blank country (expected US/GB/AU/etc.)")
+                
+                if goaling_warnings:
+                    print(f"  ⚠️ GOALING DATA QUALITY WARNING: {'; '.join(goaling_warnings)}")
+                    print(f"  ⚠️ This may indicate corrupted quarter boundary data.")
+                    print(f"  ⚠️ Skipping goaling embed to protect current dashboard data.")
+                    print(f"  ⚠️ To fix: update goaling.json with correct level/country from Looker, then re-run.")
+                    goaling_data = None  # Skip embedding
+            
+            if goaling_data is not None:
+                goaling_json = json.dumps(goaling_data, separators=(',', ':'))
+                content = replace_data_block(content, "goaling", goaling_json)
+                print(f"  ✅ Embedded goaling ({len(goaling_json)/1024:.0f} KB)")
         except Exception as e:
             print(f"  ⚠️ Failed to embed goaling: {e}")
             content = embed_json_file(content, "goaling", goaling_path)
