@@ -1,0 +1,114 @@
+version: "1.0.0"
+title: "GSO Quarterly Business Review"
+description: "Build a comprehensive quarterly business review document for GSO. Pulls data from Snowflake, Airtable, and the GSO Dashboard, then produces a full QBR Google Doc with inline spreadsheet citations, tables, and formatted sections."
+
+parameters:
+  - key: quarter
+    input_type: string
+    requirement: required
+    description: "Quarter to review, e.g. Q1 FY26"
+  - key: data_date
+    input_type: string
+    requirement: required
+    description: "Data-as-of date, e.g. April 2, 2026"
+  - key: output_doc_id
+    input_type: string
+    requirement: optional
+    default: "new"
+    description: "Google Doc ID to overwrite, or 'new' to create a fresh doc"
+
+instructions: |
+  You are building the GSO Quarterly Business Review for {{ quarter }}, data as of {{ data_date }}.
+  Work in /Users/mhofer/gso-dashboard. The Airtable base is appsnfWWzptN9cwD0.
+
+  ## PRINCIPLES
+  - Every number must come from a query. Never estimate or round from memory.
+  - No data changes. This is a read-only reporting pass.
+  - Every data claim gets an inline hyperlink citation to the source spreadsheet tab.
+  - Use median for lead time metrics (robust to outliers). Document this in methodology.
+  - The audience is senior leadership. Be direct, not verbose.
+
+  ## STRUCTURE (follow this exactly)
+
+  ### 1. Title Block
+  - Title: "GSO Operations Review — {{ quarter }}"
+  - Subtitle: "Data as of {{ data_date }}" (italic)
+  - CONFIDENTIAL tag
+
+  ### 2. Executive Summary (5 bullets max)
+  Write after all sections are complete. Summarize:
+  - Capacity ratio (completions/month divided by created/month)
+  - Pipeline state and trajectory
+  - Quality (CSAT)
+  - Attrition impact (if any)
+  - Path to closing the gap
+
+  ### 3. Section: Attrition & Headcount Context
+  Query Snowflake to identify reps who had significant volume in the prior quarter but are NOT on the current roster (from Airtable Team Roster tbl0I2oNZdYPlJ5EH).
+  For each departed rep, get: name, region, Q4 completions, last completion date, departure type if known.
+  Categorize by: Internal Mobility vs Attrition.
+  Show impact by region (reps lost, monthly capacity lost).
+  Connect to the throughput inflection point.
+
+  ### 4. Section: Lead Times
+  Query Airtable DSR Facts for completed DSRs. Calculate:
+  - Median, P75, P90, percent within 30 days (current month and quarter)
+  - By work type (Optimization Call, Plus, Payroll, Onsite, Premium)
+  - By region (NA, EMEA, APAC)
+  Key insight: what is the structural constraint on lead times.
+
+  ### 5. Section: Throughput
+  Query Airtable DSR Facts for monthly created/completed/net (last 6 months).
+  Build a table: Month | Created | Completed | Net | Note.
+  Regional throughput: Region | Reps | Completed | Per Rep/Month.
+  Identify the inflection point and explain it.
+
+  ### 6. Section: What We Did Well
+  From the rep performance data, identify:
+  - Project management model proof points (high vs low partner utilization)
+  - Top 10 leaderboard with completions, DSAs, DSAs/DSR
+  - Standout rep profile (highest completions with balanced work type mix)
+  - Leading indicators trending positive
+
+  ### 7. Section: Bottlenecks
+  Query for active pipeline (Active + On Hold, roster reps only).
+  Break down by: work type, region, country, age bucket, GPV.
+  Identify: stale DSRs (30+ days no modification), legacy (180+ days), blocked (missing info, seller non-responsive, etc.).
+  Call out the biggest regional gap.
+
+  ### 8. Section: Quality Metrics
+  Pull CSAT data. Report: average, percent 4+, detractor count.
+  Pull late cancellation data. Break into bullets: count, timing, cost impact, root cause.
+  Recommendation for seller-readiness validation.
+
+  ### 9. Section: How Hiring & 3P Changes the Math
+  Current structural deficit: demand, supply, gap, producing reps, per-rep capacity.
+  Hiring pipeline table: Cohort | Status | Incremental capacity.
+  New hire ramp detail for each region.
+  3P partner scaling: current volume, turnaround speed by activity type, partner speed ranking.
+  Combined path timeline table: Timeline | Projected Capacity | What's Happening.
+
+  ### 10. Section: Recommendations
+  Numbered list. Each item: bold action, one-line rationale, status tag (In Progress Already / Completed Already / Will Look Into).
+
+  ### 11. Appendix: Methodology & Data Notes
+  Key metric definitions (capacity ratio, completions/month, structural deficit, per-rep capacity).
+  What's included, what's excluded, data sources with links.
+
+  ## CREATING THE DOCUMENT
+  1. Build the full document as markdown with all inline citation links.
+  2. Save to /tmp/gso_qbr_{{ quarter }}.md as backup.
+  3. If output_doc_id is 'new', use Googledrive.upsert to create a new Google Doc.
+     Otherwise, use Googledrive.upsert with file_id to overwrite the existing doc.
+  4. Apply formatting via Googledrive.docsTool format_existing_text:
+     - Status tags: "In Progress Already" and "Completed Already" in green (#34a853)
+     - Status tags: "Will Look Into" in amber (#f9ab00)
+     - "CONFIDENTIAL" in bold
+  5. Report the final doc URL.
+
+  ## SUPPORTING SPREADSHEETS
+  If source spreadsheets already exist in /Users/mhofer/gso-dashboard/doc_rewrite_plan.md, use those IDs.
+  Otherwise, create new spreadsheets from the queried data and link them.
+  Every section header should have an italic "Source:" line linking to the relevant spreadsheet tabs.
+
+prompt: "Build the GSO Quarterly Business Review for {{ quarter }} with data as of {{ data_date }}. Output doc: {{ output_doc_id }}. Follow the structure in the instructions exactly. Query all data fresh, do not use cached numbers."

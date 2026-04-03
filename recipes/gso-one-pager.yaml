@@ -1,0 +1,76 @@
+version: "1.0.0"
+title: "GSO Metrics One-Pager"
+description: "Build a concise, no-fluff metrics overview for senior leadership. Four sections, all tables, no paragraphs longer than two sentences. Links back to the full QBR."
+
+parameters:
+  - key: quarter
+    input_type: string
+    requirement: required
+    description: "Quarter to review, e.g. Q1 FY26"
+  - key: data_date
+    input_type: string
+    requirement: required
+    description: "Data-as-of date, e.g. April 2, 2026"
+  - key: qbr_doc_url
+    input_type: string
+    requirement: required
+    description: "URL of the full QBR Google Doc to link back to"
+  - key: output_doc_id
+    input_type: string
+    requirement: optional
+    default: "new"
+    description: "Google Doc ID to overwrite, or 'new' to create a fresh doc"
+
+instructions: |
+  You are building a GSO Metrics One-Pager for {{ quarter }}, data as of {{ data_date }}.
+  Work in /Users/mhofer/gso-dashboard. The Airtable base is appsnfWWzptN9cwD0.
+
+  ## PRINCIPLES
+  - This is a ONE-PAGER. Target under 4,000 characters. No fluff.
+  - Every section is a table or 1-2 sentence summary plus a table.
+  - The audience does not want detail. They want: what's the situation, what's it going to do, what are we doing about it.
+  - Link to the full QBR for anyone who wants to go deeper.
+  - All numbers must come from fresh queries, not memory.
+
+  ## STRUCTURE
+
+  ### Title Block
+  - Title: "GSO {{ quarter }} — Metrics Overview"
+  - Subtitle: "Data as of {{ data_date }} · [rep count] reps · CONFIDENTIAL"
+
+  ### Opening Line (2 sentences max)
+  State the capacity ratio with its definition, the gap, pipeline growth, and how the gap closes.
+
+  ### Section 1: Lead Times
+  One-line summary. Table: Metric | Current Month | Quarter.
+  One-line on the constraint (work type mix). Table: Region | Median | Note.
+
+  ### Section 2: Throughput
+  One-line on the inflection point. Table: Month | In | Out | Net.
+  Table: Region | Reps | Completed/Mo | Per Rep.
+  One-line on the biggest regional gap.
+
+  ### Section 3: Bottlenecks
+  One-line on pipeline size. Table: Pipeline Composition | Count | Share.
+  One-line on GPV at stake. One-line on top blockers.
+
+  ### Section 4: How Hiring & 3P Close the Gap
+  One-line on current state. Table: Cohort | Status | Adds.
+  One-line on the math (+X vs -Y gap = surplus by QN).
+  Table: When | Capacity | What Changes.
+  One-line on 3P partner impact.
+
+  ### Section 5: Attrition Context (if applicable)
+  One-line on total reps lost and capacity impact.
+  Table: Type | Count | Monthly Capacity Lost.
+  One-line connecting to the throughput drop and recovery.
+
+  ### Footer
+  Link to full QBR: "Full detail: [GSO Operations Review — {{ quarter }}]({{ qbr_doc_url }})"
+
+  ## CREATING THE DOCUMENT
+  1. Build as markdown. Save to /tmp/gso_one_pager_{{ quarter }}.md.
+  2. Create or overwrite the Google Doc via Googledrive.upsert.
+  3. Report the final doc URL.
+
+prompt: "Build the GSO Metrics One-Pager for {{ quarter }} with data as of {{ data_date }}. Output doc: {{ output_doc_id }}. Keep it under 4,000 characters. Tables over paragraphs. No fluff."

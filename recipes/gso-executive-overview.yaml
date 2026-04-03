@@ -1,0 +1,104 @@
+version: "1.0.0"
+title: "GSO Executive Overview"
+description: "Build a synthesis document for executive leadership that tells one clear story: what is driving lead time today, where the biggest opportunities are, what actions are underway, what impact we expect, and what that means for overall lead time."
+
+parameters:
+  - key: quarter
+    input_type: string
+    requirement: required
+    description: "Quarter to review, e.g. Q1 FY26"
+  - key: data_date
+    input_type: string
+    requirement: required
+    description: "Data-as-of date, e.g. April 2, 2026"
+  - key: qbr_doc_url
+    input_type: string
+    requirement: required
+    description: "URL of the full QBR Google Doc to link back to"
+  - key: output_doc_id
+    input_type: string
+    requirement: optional
+    default: "new"
+    description: "Google Doc ID to overwrite, or 'new' to create a fresh doc"
+
+instructions: |
+  You are building a GSO Executive Overview for {{ quarter }}, data as of {{ data_date }}.
+  Work in /Users/mhofer/gso-dashboard. The Airtable base is appsnfWWzptN9cwD0.
+
+  ## PRINCIPLES
+  - This document tells ONE STORY with a clear through-line. It is not a data dump.
+  - The audience is senior leadership who will read this in 3 minutes.
+  - The structure follows: root cause, opportunity, action, expected impact, projected outcome.
+  - Every claim is backed by a specific number. No hand-waving.
+  - The takeaway should be obvious without the reader connecting dots themselves.
+  - Use Slack-friendly formatting (bold for emphasis, bullets, simple tables).
+
+  ## THE STORY STRUCTURE (follow this exactly)
+
+  ### Title Block
+  - Title: "GSO {{ quarter }} — Executive Overview"
+  - Subtitle: "Data as of {{ data_date }} · CONFIDENTIAL"
+
+  ### 1. What Is Driving Lead Time Today
+  State the current blended median DTC and trend.
+  Then list the three root causes IN ORDER OF IMPACT, each with:
+  - A bold label
+  - The specific metric showing the problem
+  - The root cause behind the metric
+
+  The three root causes are typically:
+  a) Queue depth (DSRs per rep, wait time before pickup)
+  b) Work type mix (what percentage is high-complexity, what are their lead times)
+  c) External blockers (percentage blocked, top blocker categories)
+
+  Query Airtable DSR Facts for all numbers. Do not use cached data.
+
+  ### 2. Where the Biggest Opportunities Are
+  For each root cause from section 1, state:
+  - Current state (the metric today)
+  - Target state (what it should be)
+  - The gap between them
+
+  Present as a table: Opportunity | Current State | Target.
+
+  ### 3. What Actions Are Underway Against Each
+  For each opportunity, state:
+  - The specific action being taken
+  - Current status of that action
+
+  Present as a table: Opportunity | Action | Status.
+
+  ### 4. What Impact We Expect From Each Action
+  For each action, state:
+  - Expected lead time impact (in days or percentage)
+  - Expected throughput impact (in completions/month)
+
+  Present as a table: Action | Lead Time Impact | Throughput Impact.
+
+  Use top performer data as the proof point. Query rep performance data to find:
+  - Reps who already use the PM model and their median DTC
+  - The throughput advantage of high partner utilization vs low
+
+  ### 5. What That Means for Overall Lead Time
+  Timeline table: Quarter | Projected Median DTC | What's Changed.
+  State the floor (the minimum achievable, constrained by external factors).
+  Close with the validation line: X reps already operate at this level today with the same work, same sellers, same partners.
+
+  ### Footer
+  Link to full QBR: "Full detail: [GSO Operations Review — {{ quarter }}]({{ qbr_doc_url }})"
+
+  ## CREATING THE DOCUMENT
+  1. Build as markdown. Save to /tmp/gso_exec_overview_{{ quarter }}.md.
+  2. Create or overwrite the Google Doc via Googledrive.upsert.
+  3. Apply bold formatting to section headers and key numbers.
+  4. Report the final doc URL.
+
+  ## QUALITY CHECK
+  Before finalizing, re-read the document and ask:
+  - Can a reader who knows nothing about GSO follow the story from start to finish?
+  - Is the takeaway obvious without connecting dots?
+  - Does every section flow into the next (cause, opportunity, action, impact, outcome)?
+  - Are there any paragraphs longer than 3 sentences? If so, break them up.
+  - Is it under 2 pages? If not, cut.
+
+prompt: "Build the GSO Executive Overview for {{ quarter }} with data as of {{ data_date }}. Output doc: {{ output_doc_id }}. Tell one clear story: what's driving lead time, where the opportunities are, what we're doing, what impact we expect, and what it means for overall lead time. Make the takeaway obvious."
