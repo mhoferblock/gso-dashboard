@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GSO 14-Day Go-Live Playbook</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; }
+  
+  .page { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+  
+  /* Header */
+  .header { text-align: center; margin-bottom: 48px; }
+  .header-badge { display: inline-block; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 16px; border-radius: 20px; margin-bottom: 16px; }
+  .header h1 { font-size: 2.2rem; font-weight: 900; color: #0f172a; margin-bottom: 8px; }
+  .header p { font-size: 1rem; color: #64748b; max-width: 600px; margin: 0 auto; }
+  .header-stat { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 8px 16px; }
+  .header-stat strong { font-size: 1.5rem; color: #16a34a; }
+  .header-stat span { font-size: 0.85rem; color: #166534; }
+
+  /* Principle cards */
+  .principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 48px; }
+  .principle { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center; }
+  .principle-icon { font-size: 2rem; margin-bottom: 8px; }
+  .principle-title { font-size: 0.85rem; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .principle-desc { font-size: 0.8rem; color: #64748b; }
+
+  /* Phase sections */
+  .phase { margin-bottom: 40px; position: relative; }
+  .phase-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .phase-number { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; color: #fff; flex-shrink: 0; }
+  .phase-number.sales { background: linear-gradient(135deg, #f59e0b, #d97706); }
+  .phase-number.day0 { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+  .phase-number.exec { background: linear-gradient(135deg, #22c55e, #16a34a); }
+  .phase-number.live { background: linear-gradient(135deg, #ec4899, #db2777); }
+  .phase-title-group { flex: 1; }
+  .phase-title { font-size: 1.3rem; font-weight: 800; color: #0f172a; }
+  .phase-subtitle { font-size: 0.85rem; color: #64748b; }
+  .phase-timing { background: #f1f5f9; border-radius: 8px; padding: 4px 12px; font-size: 0.75rem; font-weight: 700; color: #475569; white-space: nowrap; }
+
+  /* Step cards */
+  .steps { display: flex; flex-direction: column; gap: 12px; }
+  .step { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; display: flex; gap: 16px; align-items: flex-start; transition: box-shadow 0.15s; }
+  .step:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .step-check { width: 24px; height: 24px; border-radius: 6px; border: 2px solid #d1d5db; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; font-size: 12px; color: #fff; }
+  .step-check.ae { border-color: #f59e0b; background: #fef3c7; color: #92400e; }
+  .step-check.gso { border-color: #6366f1; background: #eef2ff; color: #4338ca; }
+  .step-check.partner { border-color: #22c55e; background: #f0fdf4; color: #166534; }
+  .step-check.seller { border-color: #ec4899; background: #fdf2f8; color: #be185d; }
+  .step-body { flex: 1; }
+  .step-title { font-size: 0.9rem; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+  .step-owner { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .step-owner.ae { color: #d97706; }
+  .step-owner.gso { color: #4f46e5; }
+  .step-owner.partner { color: #16a34a; }
+  .step-owner.seller { color: #db2777; }
+  .step-desc { font-size: 0.8rem; color: #64748b; }
+  .step-checklist { list-style: none; margin-top: 8px; }
+  .step-checklist li { font-size: 0.8rem; color: #475569; padding: 2px 0; padding-left: 20px; position: relative; }
+  .step-checklist li::before { content: '☐'; position: absolute; left: 0; color: #94a3b8; }
+  .step-sla { display: inline-block; background: #fef2f8; border: 1px solid #fbcfe8; border-radius: 5px; padding: 2px 8px; font-size: 0.7rem; font-weight: 600; color: #be185d; margin-top: 6px; }
+
+  /* Work type cards */
+  .wt-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 24px 0; }
+  .wt-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
+  .wt-name { font-size: 0.9rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+  .wt-target { font-size: 0.75rem; font-weight: 600; color: #16a34a; margin-bottom: 8px; }
+  .wt-timeline { font-size: 0.75rem; color: #64748b; line-height: 1.7; }
+  .wt-timeline strong { color: #475569; }
+
+  /* Escalation */
+  .escalation { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 20px; margin: 32px 0; }
+  .escalation-title { font-size: 0.9rem; font-weight: 800; color: #9a3412; margin-bottom: 12px; }
+  .esc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .esc-item { text-align: center; }
+  .esc-trigger { font-size: 0.75rem; font-weight: 700; color: #c2410c; }
+  .esc-action { font-size: 0.7rem; color: #9a3412; margin-top: 2px; }
+
+  /* Metrics */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 32px 0; }
+  .metric { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; text-align: center; }
+  .metric-val { font-size: 1.5rem; font-weight: 800; }
+  .metric-val.green { color: #16a34a; }
+  .metric-val.blue { color: #4f46e5; }
+  .metric-val.amber { color: #d97706; }
+  .metric-val.red { color: #dc2626; }
+  .metric-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
+  .metric-sub { font-size: 0.65rem; color: #94a3b8; }
+
+  /* Visual timeline */
+  .timeline-visual { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; }
+  .tv-row { display: flex; align-items: center; margin-bottom: 6px; min-width: 700px; }
+  .tv-label { width: 120px; font-size: 0.7rem; font-weight: 600; color: #475569; flex-shrink: 0; text-align: right; padding-right: 12px; }
+  .tv-bar-area { flex: 1; display: flex; height: 24px; position: relative; }
+  .tv-bar { height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 600; color: #fff; position: absolute; }
+  .tv-day-markers { display: flex; margin-left: 120px; min-width: 700px; }
+  .tv-day { flex: 1; text-align: center; font-size: 0.65rem; color: #94a3b8; border-left: 1px dashed #e2e8f0; padding-top: 4px; }
+
+  /* Owner legend */
+  .legend { display: flex; gap: 16px; justify-content: center; margin: 16px 0; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #475569; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* Divider */
+  .divider { height: 1px; background: linear-gradient(to right, transparent, #cbd5e1, transparent); margin: 40px 0; }
+
+  /* Footer */
+  .footer { text-align: center; padding: 32px 0; color: #94a3b8; font-size: 0.75rem; }
+
+  /* Print */
+  @media print {
+    body { background: #fff; }
+    .page { padding: 20px; }
+    .step:hover { box-shadow: none; }
+    .phase { page-break-inside: avoid; }
+  }
+  @media (max-width: 768px) {
+    .principles { grid-template-columns: 1fr; }
+    .wt-grid { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .esc-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge">GSO Onboarding Playbook</div>
+    <h1>14-Day Go-Live Guide</h1>
+    <p>A step-by-step framework to take any seller from DSR creation to live on Square in 14 days or less.</p>
+    <div class="header-stat">
+      <strong>44d → 10d</strong>
+      <span>Onsite median with this model</span>
+    </div>
+  </div>
+
+  <!-- THREE PRINCIPLES -->
+  <div class="principles">
+    <div class="principle">
+      <div class="principle-icon">📅</div>
+      <div class="principle-title">Book Everything Once</div>
+      <div class="principle-desc">Schedule all appointments on the kickoff call. Never go back to the seller to book the next step.</div>
+    </div>
+    <div class="principle">
+      <div class="principle-icon">⚡</div>
+      <div class="principle-title">Parallel, Not Sequential</div>
+      <div class="principle-desc">Remote training and partner field work happen at the same time, not one after another.</div>
+    </div>
+    <div class="principle">
+      <div class="principle-icon">🏗️</div>
+      <div class="principle-title">Survey Before Close</div>
+      <div class="principle-desc">Site survey moves into the sales motion. Day 0 starts with infrastructure already assessed.</div>
+    </div>
+  </div>
+
+  <!-- CURRENT vs NEW METRICS -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-val red">44d</div>
+      <div class="metric-label">Current Onsite Median</div>
+      <div class="metric-sub">P75: 66 days</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val green">10d</div>
+      <div class="metric-label">Target Onsite</div>
+      <div class="metric-sub">78% time reduction</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val red">46d</div>
+      <div class="metric-label">Current Premium Median</div>
+      <div class="metric-sub">P75: 70 days</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val green">8d</div>
+      <div class="metric-label">Target Premium</div>
+      <div class="metric-sub">83% time reduction</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============================================ -->
+  <!-- PHASE 1: PRE-SALES -->
+  <!-- ============================================ -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-number sales">1</div>
+      <div class="phase-title-group">
+        <div class="phase-title">Pre-Sales: Site Readiness</div>
+        <div class="phase-subtitle">AE owns — happens during the sales cycle, before DSR creation</div>
+      </div>
+      <div class="phase-timing">Before Day 0</div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-check ae">AE</div>
+        <div class="step-body">
+          <div class="step-owner ae">Account Executive</div>
+          <div class="step-title">Trigger Site Survey During Proposal Stage</div>
+          <div class="step-desc">Once deal confidence is >70%, dispatch a site survey through the partner network. This runs in parallel with contract negotiation — no time added to the sales cycle.</div>
+          <ul class="step-checklist">
+            <li>Request site survey via partner dispatch (Sora Partners, Absolute POS, Tech Pantry, Solio Marlow)</li>
+            <li>Share seller contact info + business address with partner</li>
+            <li>Target: survey completed 1-2 weeks before expected close</li>
+          </ul>
+          <div class="step-sla">⏱ Survey must be complete before DSR creation</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-check ae">AE</div>
+        <div class="step-body">
+          <div class="step-owner ae">Account Executive</div>
+          <div class="step-title">Capture Site Readiness Checklist</div>
+          <div class="step-desc">During your on-site visit or seller conversations, collect the information GSO needs to plan the full onboarding. This takes 5 minutes and saves 10+ days.</div>
+          <ul class="step-checklist">
+            <li>Number of POS stations and locations for each</li>
+            <li>Ethernet available at each station? Or WiFi only?</li>
+            <li>Current POS system (for data migration planning)</li>
+            <li>Preferred install date and time window</li>
+            <li>Any construction, renovation, or opening date constraints</li>
+            <li>Key contact name + phone for scheduling</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-check partner">P</div>
+        <div class="step-body">
+          <div class="step-owner partner">Implementation Partner</div>
+          <div class="step-title">Complete Site Survey + Flag Cabling Needs</div>
+          <div class="step-desc">Partner conducts the physical site assessment. If cabling is needed (5% of sites), schedule it immediately — don't wait for post-close.</div>
+          <ul class="step-checklist">
+            <li>Assess network infrastructure (drops, WiFi, router capacity)</li>
+            <li>Map terminal placement and cable run lengths</li>
+            <li>Confirm power outlet availability</li>
+            <li>If cabling needed → schedule pre-close (saves 8 additional days)</li>
+            <li>Upload survey results to DSR/deal record</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============================================ -->
+  <!-- PHASE 2: DAY 0-1 KICKOFF -->
+  <!-- ============================================ -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-number day0">2</div>
+      <div class="phase-title-group">
+        <div class="phase-title">Day 0–1: Kickoff & Schedule Everything</div>
+        <div class="phase-subtitle">GSO Rep owns — single call that sets the entire timeline</div>
+      </div>
+      <div class="phase-timing">Day 0–1</div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-check gso">G</div>
+        <div class="step-body">
+          <div class="step-owner gso">GSO Rep</div>
+          <div class="step-title">Same-Day Seller Outreach</div>
+          <div class="step-desc">Contact the seller within hours of DSR assignment — not days. Use the contact info the AE captured. Goal: schedule the kickoff call for today or tomorrow.</div>
+          <ul class="step-checklist">
+            <li>Call or text seller within 4 hours of assignment</li>
+            <li>Introduce yourself and confirm you have their site survey results</li>
+            <li>Book kickoff call for same day or next business day</li>
+          </ul>
+          <div class="step-sla">⏱ Outreach within 4 hours · Kickoff booked within 24 hours</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-check gso">G</div>
+        <div class="step-body">
+          <div class="step-owner gso">GSO Rep</div>
+          <div class="step-title">Kickoff Call — Book ALL Appointments (30 min)</div>
+          <div class="step-desc">This is the most important call in the process. In 30 minutes, you set the entire onboarding timeline. The seller leaves this call knowing exactly what happens and when.</div>
+          <ul class="step-checklist">
+            <li>Review site survey results with seller — confirm layout and hardware plan</li>
+            <li>Walk through the onboarding timeline: "Here's what the next 10 days look like"</li>
+            <li>Book Menu Review Call (Day 2-3)</li>
+            <li>Book Dashboard Training (Day 3-4)</li>
+            <li>Book Installation date (Day 5-7) — dispatch partner DSA immediately</li>
+            <li>Book POS Training (Day 7-8, in-person for Onsite, remote for Premium)</li>
+            <li>Book SO Training Call (Day 8-9)</li>
+            <li>Book Go-Live Support if applicable (Day 9-10)</li>
+            <li>Confirm hardware shipping address and expected delivery</li>
+            <li>Send seller a calendar summary of all booked sessions</li>
+          </ul>
+          <div class="step-sla">⏱ All appointments booked before hanging up · Partner DSA dispatched same day</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-check gso">G</div>
+        <div class="step-body">
+          <div class="step-owner gso">GSO Rep</div>
+          <div class="step-title">Dispatch All Partner Activities Immediately</div>
+          <div class="step-desc">Don't wait for training stages to complete before dispatching partner work. Send all DSAs now so partners can schedule around the seller's confirmed availability.</div>
+          <ul class="step-checklist">
+            <li>Dispatch Installation DSA with confirmed date from kickoff call</li>
+            <li>Dispatch Go-Live Support DSA if applicable</li>
+            <li>Dispatch any remaining field service DSAs</li>
+            <li>Include site survey results in dispatch notes</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============================================ -->
+  <!-- PHASE 3: EXECUTION -->
+  <!-- ============================================ -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-number exec">3</div>
+      <div class="phase-title-group">
+        <div class="phase-title">Days 2–10: Parallel Execution</div>
+        <div class="phase-subtitle">GSO Rep + Partners — remote training and field work run simultaneously</div>
+      </div>
+      <div class="phase-timing">Day 2–10</div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-check gso">G</div>
+        <div class="step-body">
+          <div class="step-owner gso">GSO Rep</div>
+          <div class="step-title">Day 2–3: Menu Review Call</div>
+          <div class="step-desc">Review and finalize the seller's menu configuration in Square. This is remote and can happen while the partner is preparing for installation.</div>
+          <ul class="step-checklist">
+            <li>Review menu items, categories, modifiers</li>
+            <li>Set up pricing and tax configuration</li>
+            <li>Configure discounts and service charges if needed</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-check gso">G</div>
+        <div class="step-body">
+          <div class="step-owner gso">GSO Rep</div>
+          <div class="step-title">Day 3–4: Dashboard Training</div>
+          <div class="step-desc">Remote session walking the seller through the Square Dashboard — reports, team management, settings.</div>
+          <ul class="step-checklist">
+            <li>Dashboard overview: sales, reports, team management</li>
+            <li>Device management and settings</li>
+            <li>Online ordering setup if applicable</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-check partner">P</div>
+        <div class="step-body">
+          <div class="step-owner partner">Implementation Partner</div>
+          <div class="step-title">Day 5–7: Hardware Installation</div>
+          <div class="step-desc">Partner arrives on-site for hardware installation. Site survey is already done, cabling is already complete, hardware has been shipped — this is pure execution.</div>
+          <ul class="step-checklist">
+            <li>Install all POS terminals at surveyed locations</li>
+            <li>Connect to network (ethernet or WiFi per survey)</li>
+            <li>Configure kitchen printers and receipt printers</li>
+            <li>Test all hardware connections</li>
+            <li>Brief walkthrough with seller on hardware basics</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-check gso">G</div>
+        <div class="step-body">
+          <div class="step-owner gso">GSO Rep</div>
+          <div class="step-title">Day 7–8: POS Training</div>
+          <div class="step-desc">Hands-on POS training — in-person for Onsite (day after install), remote for Premium/Plus. Seller and staff learn to use the system with their actual menu and hardware.</div>
+          <ul class="step-checklist">
+            <li>Order entry, payment processing, refunds</li>
+            <li>Table management (if restaurant)</li>
+            <li>End-of-day procedures</li>
+            <li>Staff training on daily operations</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-check gso">G</div>
+        <div class="step-body">
+          <div class="step-owner gso">GSO Rep</div>
+          <div class="step-title">Day 8–9: SO Training Call</div>
+          <div class="step-desc">Square Online training — website setup, online ordering configuration, marketing tools.</div>
+          <ul class="step-checklist">
+            <li>Square Online store setup</li>
+            <li>Online ordering configuration</li>
+            <li>Marketing and loyalty tools overview</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-check partner">P</div>
+        <div class="step-body">
+          <div class="step-owner partner">Implementation Partner</div>
+          <div class="step-title">Day 9–10: Go-Live Support (if applicable)</div>
+          <div class="step-desc">Partner on-site for the seller's first live service day. Troubleshoot any issues in real-time, ensure smooth transition from old POS.</div>
+          <ul class="step-checklist">
+            <li>On-site support during first live service</li>
+            <li>Real-time troubleshooting</li>
+            <li>Final hardware adjustments</li>
+            <li>Confirm seller confidence before departing</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============================================ -->
+  <!-- PHASE 4: GO LIVE -->
+  <!-- ============================================ -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-number live">4</div>
+      <div class="phase-title-group">
+        <div class="phase-title">Day 10–14: Go-Live & Close Out</div>
+        <div class="phase-subtitle">GSO Rep owns — confirm success and mark complete</div>
+      </div>
+      <div class="phase-timing">Day 10–14</div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-check gso">G</div>
+        <div class="step-body">
+          <div class="step-owner gso">GSO Rep</div>
+          <div class="step-title">Post-Go-Live Check-In</div>
+          <div class="step-desc">Quick call or text 1-2 days after go-live. Confirm the seller is processing transactions successfully and address any remaining questions.</div>
+          <ul class="step-checklist">
+            <li>Verify transactions are processing</li>
+            <li>Check for any hardware or connectivity issues</li>
+            <li>Answer remaining questions</li>
+            <li>Confirm seller is confident operating independently</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-check gso">G</div>
+        <div class="step-body">
+          <div class="step-owner gso">GSO Rep</div>
+          <div class="step-title">Mark Implementation Complete</div>
+          <div class="step-desc">Update the DSR status to Implementation Complete. Ensure all DSA activities are marked as completed. Trigger CSAT survey.</div>
+          <ul class="step-checklist">
+            <li>Update DSR status → Implementation Complete</li>
+            <li>Verify all partner DSAs are closed</li>
+            <li>CSAT survey triggered automatically</li>
+            <li>Handoff to post-implementation support if needed</li>
+          </ul>
+          <div class="step-sla">⏱ DSR closed within 14 days of creation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============================================ -->
+  <!-- VISUAL TIMELINE -->
+  <!-- ============================================ -->
+  <h2 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:16px;">📊 Visual Timeline — Parallel Execution</h2>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div> AE (Pre-Sales)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6366f1;"></div> GSO Rep</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#22c55e;"></div> Partner</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ec4899;"></div> Seller</div>
+  </div>
+
+  <div class="timeline-visual">
+    <div class="tv-day-markers">
+      <div class="tv-day" style="flex:2;">Pre-Close</div>
+      <div class="tv-day">D0</div>
+      <div class="tv-day">D1</div>
+      <div class="tv-day">D2</div>
+      <div class="tv-day">D3</div>
+      <div class="tv-day">D4</div>
+      <div class="tv-day">D5</div>
+      <div class="tv-day">D6</div>
+      <div class="tv-day">D7</div>
+      <div class="tv-day">D8</div>
+      <div class="tv-day">D9</div>
+      <div class="tv-day">D10</div>
+      <div class="tv-day">D11-14</div>
+    </div>
+
+    <div class="tv-row">
+      <div class="tv-label">Site Survey</div>
+      <div class="tv-bar-area">
+        <div class="tv-bar" style="left:0%;width:13.3%;background:#f59e0b;border-radius:4px;">AE + Partner</div>
+      </div>
+    </div>
+    <div class="tv-row">
+      <div class="tv-label">Cabling (if needed)</div>
+      <div class="tv-bar-area">
+        <div class="tv-bar" style="left:6.7%;width:6.7%;background:#22c55e;opacity:0.6;border-radius:4px;">Partner</div>
+      </div>
+    </div>
+    <div class="tv-row">
+      <div class="tv-label">Kickoff Call</div>
+      <div class="tv-bar-area">
+        <div class="tv-bar" style="left:16.7%;width:6.7%;background:#6366f1;border-radius:4px;">GSO + Seller</div>
+      </div>
+    </div>
+    <div class="tv-row">
+      <div class="tv-label">Menu Review</div>
+      <div class="tv-bar-area">
+        <div class="tv-bar" style="left:26.7%;width:6.7%;background:#6366f1;border-radius:4px;">GSO</div>
+      </div>
+    </div>
+    <div class="tv-row">
+      <div class="tv-label">Dash Training</div>
+      <div class="tv-bar-area">
+        <div class="tv-bar" style="left:33.3%;width:6.7%;background:#6366f1;border-radius:4px;">GSO</div>
+      </div>
+    </div>
+    <div class="tv-row">
+      <div class="tv-label">Installation</div>
+      <div class="tv-bar-area">
+        <div class="tv-bar" style="left:43.3%;width:13.3%;background:#22c55e;border-radius:4px;">Partner</div>
+      </div>
+    </div>
+    <div class="tv-row">
+      <div class="tv-label">POS Training</div>
+      <div class="tv-bar-area">
+        <div class="tv-bar" style="left:56.7%;width:6.7%;background:#6366f1;border-radius:4px;">GSO</div>
+      </div>
+    </div>
+    <div class="tv-row">
+      <div class="tv-label">SO Training</div>
+      <div class="tv-bar-area">
+        <div class="tv-bar" style="left:63.3%;width:6.7%;background:#6366f1;border-radius:4px;">GSO</div>
+      </div>
+    </div>
+    <div class="tv-row">
+      <div class="tv-label">Go-Live Support</div>
+      <div class="tv-bar-area">
+        <div class="tv-bar" style="left:70%;width:6.7%;background:#22c55e;border-radius:4px;">Partner</div>
+      </div>
+    </div>
+    <div class="tv-row">
+      <div class="tv-label">Close Out</div>
+      <div class="tv-bar-area">
+        <div class="tv-bar" style="left:80%;width:20%;background:#ec4899;opacity:0.7;border-radius:4px;">Check-in + Complete</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============================================ -->
+  <!-- WORK TYPE QUICK REFERENCE -->
+  <!-- ============================================ -->
+  <h2 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:16px;">⚡ Quick Reference by Work Type</h2>
+
+  <div class="wt-grid">
+    <div class="wt-card">
+      <div class="wt-name">🟢 Optimization Call</div>
+      <div class="wt-target">Target: 1–3 days</div>
+      <div class="wt-timeline">
+        <strong>Day 0:</strong> Kickoff + optimization call combined<br>
+        <strong>Day 1:</strong> Complete ✓<br>
+        <em>No partner activities needed</em>
+      </div>
+    </div>
+    <div class="wt-card">
+      <div class="wt-name">🟢 Plus</div>
+      <div class="wt-target">Target: 5 days</div>
+      <div class="wt-timeline">
+        <strong>Day 0:</strong> Kickoff — book 2 sessions<br>
+        <strong>Day 2:</strong> Dashboard Training (remote)<br>
+        <strong>Day 4:</strong> POS Training (remote)<br>
+        <strong>Day 5:</strong> Complete ✓
+      </div>
+    </div>
+    <div class="wt-card">
+      <div class="wt-name">🟡 Premium</div>
+      <div class="wt-target">Target: 8 days</div>
+      <div class="wt-timeline">
+        <strong>Day 0:</strong> Kickoff — book 4 sessions<br>
+        <strong>Day 1:</strong> Menu Review Call<br>
+        <strong>Day 3:</strong> Dashboard Training<br>
+        <strong>Day 5:</strong> POS Training (remote)<br>
+        <strong>Day 7:</strong> SO Training Call<br>
+        <strong>Day 8:</strong> Complete ✓
+      </div>
+    </div>
+    <div class="wt-card">
+      <div class="wt-name">🔴 Onsite</div>
+      <div class="wt-target">Target: 10 days</div>
+      <div class="wt-timeline">
+        <strong>Pre-close:</strong> Site survey + cabling ✓<br>
+        <strong>Day 0:</strong> Kickoff — book all + dispatch partner<br>
+        <strong>Day 2:</strong> Menu Review (remote)<br>
+        <strong>Day 3:</strong> Dashboard Training (remote)<br>
+        <strong>Day 5–6:</strong> Installation (partner)<br>
+        <strong>Day 7:</strong> POS Training (in-person)<br>
+        <strong>Day 8:</strong> SO Training + Go-Live Support<br>
+        <strong>Day 10:</strong> Complete ✓
+      </div>
+    </div>
+    <div class="wt-card">
+      <div class="wt-name">🟡 Payroll</div>
+      <div class="wt-target">Target: 5 days</div>
+      <div class="wt-timeline">
+        <strong>Day 0:</strong> Kickoff — book training<br>
+        <strong>Day 2:</strong> Dashboard + Payroll Training<br>
+        <strong>Day 4:</strong> First payroll run support<br>
+        <strong>Day 5:</strong> Complete ✓
+      </div>
+    </div>
+    <div class="wt-card">
+      <div class="wt-name">🔴 3P Vendor Install</div>
+      <div class="wt-target">Target: 10–14 days</div>
+      <div class="wt-timeline">
+        <strong>Pre-close:</strong> Site survey ✓<br>
+        <strong>Day 0:</strong> Kickoff — dispatch all DSAs<br>
+        <strong>Day 2–3:</strong> Remote training (parallel)<br>
+        <strong>Day 5–8:</strong> Vendor installation<br>
+        <strong>Day 9:</strong> POS Training + Go-Live<br>
+        <strong>Day 10–14:</strong> Complete ✓
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============================================ -->
+  <!-- ESCALATION FRAMEWORK -->
+  <!-- ============================================ -->
+  <div class="escalation">
+    <div class="escalation-title">🚨 Escalation Triggers — Don't Let It Slip</div>
+    <div class="esc-grid">
+      <div class="esc-item">
+        <div class="esc-trigger">No outreach by Day 0 EOD</div>
+        <div class="esc-action">Auto-alert to Team Lead.<br>Rep must contact seller within 4 hours.</div>
+      </div>
+      <div class="esc-item">
+        <div class="esc-trigger">No kickoff by Day 2</div>
+        <div class="esc-action">Team Lead intervenes.<br>Reassign if rep is at capacity.</div>
+      </div>
+      <div class="esc-item">
+        <div class="esc-trigger">No partner dispatch by Day 1</div>
+        <div class="esc-action">DSAs must be dispatched on kickoff day.<br>Flag if partner availability is blocking.</div>
+      </div>
+      <div class="esc-item">
+        <div class="esc-trigger">Seller no-show on training</div>
+        <div class="esc-action">Rebook within 24 hours.<br>2nd no-show → AE re-engages seller.</div>
+      </div>
+      <div class="esc-item">
+        <div class="esc-trigger">Partner DSA rejected/cancelled</div>
+        <div class="esc-action">Re-dispatch immediately.<br>Escalate to partner manager if 2nd failure.</div>
+      </div>
+      <div class="esc-item">
+        <div class="esc-trigger">Day 10 and not complete</div>
+        <div class="esc-action">Manager review.<br>Identify blocker and resolve within 48h.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============================================ -->
+  <!-- SLA SUMMARY -->
+  <!-- ============================================ -->
+  <h2 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:16px;">📋 SLA Summary</h2>
+
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+      <thead>
+        <tr style="background:#f8fafc;">
+          <th style="text-align:left;padding:12px 16px;font-weight:700;color:#475569;border-bottom:1px solid #e2e8f0;">Milestone</th>
+          <th style="text-align:center;padding:12px 16px;font-weight:700;color:#475569;border-bottom:1px solid #e2e8f0;">Owner</th>
+          <th style="text-align:center;padding:12px 16px;font-weight:700;color:#475569;border-bottom:1px solid #e2e8f0;">SLA</th>
+          <th style="text-align:center;padding:12px 16px;font-weight:700;color:#475569;border-bottom:1px solid #e2e8f0;">Escalation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;">Site survey complete</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;color:#d97706;font-weight:600;">AE + Partner</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Before DSR creation</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Sales Manager</td></tr>
+        <tr><td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;">First seller outreach</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;color:#4f46e5;font-weight:600;">GSO Rep</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">4 hours</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Team Lead</td></tr>
+        <tr><td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;">Kickoff call completed</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;color:#4f46e5;font-weight:600;">GSO Rep</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Day 1</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Team Lead</td></tr>
+        <tr><td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;">All appointments booked</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;color:#4f46e5;font-weight:600;">GSO Rep</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Day 1 (on kickoff call)</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Team Lead</td></tr>
+        <tr><td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;">Partner DSAs dispatched</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;color:#4f46e5;font-weight:600;">GSO Rep</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Day 1</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Team Lead</td></tr>
+        <tr><td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;">All training complete</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;color:#4f46e5;font-weight:600;">GSO Rep</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Day 8</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Team Lead</td></tr>
+        <tr><td style="padding:10px 16px;border-bottom:1px solid #f1f5f9;">Installation complete</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;color:#16a34a;font-weight:600;">Partner</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Day 7</td><td style="text-align:center;padding:10px;border-bottom:1px solid #f1f5f9;">Partner Manager</td></tr>
+        <tr style="background:#f0fdf4;"><td style="padding:10px 16px;font-weight:700;">Implementation Complete</td><td style="text-align:center;padding:10px;color:#4f46e5;font-weight:600;">GSO Rep</td><td style="text-align:center;padding:10px;font-weight:700;color:#16a34a;">Day 14</td><td style="text-align:center;padding:10px;">Manager</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============================================ -->
+  <!-- KEY METRICS -->
+  <!-- ============================================ -->
+  <h2 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:16px;">📈 Success Metrics — How to Know It's Working</h2>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-val blue">≤1d</div>
+      <div class="metric-label">Time to First Outreach</div>
+      <div class="metric-sub">Currently: 3 days</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val blue">≤1d</div>
+      <div class="metric-label">Time to Kickoff</div>
+      <div class="metric-sub">Currently: 10 days</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val green">90%+</div>
+      <div class="metric-label">Appts Booked on Kickoff</div>
+      <div class="metric-sub">Currently: sequential</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val green">≤14d</div>
+      <div class="metric-label">Median Days to Complete</div>
+      <div class="metric-sub">Currently: 29 days</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    GSO 14-Day Go-Live Playbook · Generated from live pipeline data · April 2026<br>
+    Based on analysis of 2,914 completed DSRs, 5,145 partner activities, and 192 CSAT responses
+  </div>
+
+</div>
+</body>
+</html>

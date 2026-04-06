@@ -1,0 +1,422 @@
+version: "2.1.0"
+title: "Refresh GSO Dashboard"
+description: "Incremental refresh — merges 90-day Snowflake delta into local cache, pulls other sources in parallel, validates shapes, embeds, and deploys. ~3 min total."
+instructions: |
+  You are refreshing the GSO Dashboard. Work in /Users/mhofer/gso-dashboard (the local working copy).
+  The main file is **dashboard.html** (NOT index.html — that's just a redirect stub).
+
+  ## CRITICAL RULES
+  1. **NEVER deploy without validating numbers.** After embedding, check key KPIs match expected ranges.
+  2. **Channel tagging is mandatory.** refresh_all.py handles this automatically. NEVER bypass it.
+  3. **Compare before/after.** refresh_all.py does this. If it aborts, DO NOT use --force without Matt's approval.
+  4. **Draft DSRs are excluded** from all active metrics (category = 'draft'). Don't count them.
+  5. **Rejected DSRs** go to Cancelled tab only. They are NOT "projects worked."
+  6. **Pipeline = roster reps only.** Departed reps' active/onHold DSRs are zombies — excluded from pipeline.
+  7. Set Snowflake row limit to at least 50000 before running queries.
+  8. If ANYTHING fails after modifying dashboard.html, restore from backup immediately.
+
+  ## Data Architecture
+  - **dashboard.html** — single-file SPA (~14MB) with all data embedded as GSO_DATA.xxx = {...};
+  - **dsr_facts.json** — LOCAL CACHE of all DSR records (~40K+). Persists between refreshes. Never truncated.
+  - **Airtable** base appsnfWWzptN9cwD0 — Goaling (tblB0NwaUmNv19B4c), Vendor Spend (tblgVXWTVTO9u1WxX)
+  - **Snowflake** — source of truth for DSR, DSA, and BPO Activity records
+  - **GetFeedback** — CSAT survey responses
+  - **refresh_all.py** — embed script with shape validation, channel tagging, format transforms, before/after comparison
+
+  ## EXPECTED DATA SHAPES — dashboard.html contract
+  Getting these wrong = JS crash = stuck at pin screen. refresh_all.py validates before embedding.
+
+  | Variable | Type | Keys | Notes |
+  |---|---|---|---|
+  | dsrFacts | **flat array** | i, r, st, ch, cd, cpd, co, g, ... | Slim format built by refresh_all.py |
+  | dsaRecords | **flat array** | p, sl, at, st, dr, cd | ⚠️ NOT a wrapper dict! |
+  | bpoActivities | **flat array** | at, ow, cd, n, cpd, dr | Slimmed by refresh_all.py |
+  | csatResponses | **flat array** | r, d, c, s, at, sl, di, sc | |
+  | goaling | **dict keyed by rep name** | level, ptsGoal, ptsPacingPct, ... | ⚠️ NOT a raw Airtable array! |
+  | lateCancels | dict | total, byPartner, byMonth, byActivity | |
+  | lateCancelRecords | flat array | id, num, partner, seller, type, ... | |
+  | spendByPartner, spendTotal, etc. | individual blocks | | Embedded separately from vendor_spend.json |
+
+  ## Channel Classification (applied by refresh_all.py)
+  - **BPO** (channel='bpo') — 31 reps under Jennifer Walker. Excluded from main GSO KPIs.
+  - **Vendor Ops** (channel='vendorops') — 4 reps (Megan Martchink, Kyle Rominger, Jean- Arthur, Meri Fakraufon).
+  - **GSO** (channel='') — Everyone else. This is what the main dashboard shows.
+
+  ## Current Roster (as of April 2026)
+  - US East (Meaghan Biederman): 13 reps
+  - US West (Ben Pomeroy): 12 reps
+  - EMEA (Caleb Cunningham): 10 reps
+  - APAC (Kamilla Schou Warr): 9 reps
+  - Vendor Ops (Matt): 4 reps
+  - BPO (Jennifer Walker): 31 reps
+  Total: 44 GSO + 4 Vendor Ops + 31 BPO = 79 active
+
+  ## Name Mappings (roster name → DSR data name)
+  - Josephine Vogt → Josie Vogt
+  - Jean-Christophe Arthur → Jean- Arthur
+  - Josh Stoffels → Josh stoffels
+  - Jamahl → Jamahl G
+  - maryh@squareup.com → Mary Hirata McJilton
+
+  ## Expected Metric Ranges (April 2026 baseline)
+  - Total DSR records: ~40,000-42,000
+  - BPO records: ~3,000-3,500
+  - Vendor Ops records: ~2,300-2,600
+  - GSO records: ~34,000-36,000
+  - Created this month: ~700-1,000 (mid-month); ~10-50 (start of month)
+  - Completed this month: ~400-700 (mid-month); ~1-20 (start of month)
+  - Active pipeline (roster only): ~800-1,200
+  - Drafts: ~1,200-1,500
+
+  ═══════════════════════════════════════════════════════════
+  HOW THE INCREMENTAL REFRESH WORKS
+  ═══════════════════════════════════════════════════════════
+
+  dsr_facts.json is a persistent local cache with ALL ~40K+ records going back to 2021.
+  Each refresh queries Snowflake for records modified in the last 90 days (~3-5K)
+  and merges them into the cache. All history is retained — the cache is never truncated.
+
+  Why 90 days: 915 active DSRs are >90 days old and can get status changes anytime.
+  90 days catches virtually all real modifications while pulling ~8x fewer records than a full pull.
+
+  When to do a FULL re-baseline (Step 1-FULL):
+  - dsr_facts.json is missing or has <30,000 records
+  - Quarterly data hygiene (first refresh of the quarter)
+  - Metrics look wrong after an incremental refresh
+
+  ═══════════════════════════════════════════════════════════
+  EXECUTION PLAN — 4 parallel delegates + embed + deploy
+  ═══════════════════════════════════════════════════════════
+
+  Total time: ~3 minutes (vs ~15 min with old full-pull approach).
+
+  ┌─────────────────────────────────────────────────────────┐
+  │ STEP 0: Set Snowflake config (limit=50000, timeout=300) │
+  │         Check dsr_facts.json cache (>30K = incremental) │
+  └────────────────────┬────────────────────────────────────┘
+                       │
+       ┌───────────────┼───────────────┬───────────────┐
+       ▼               ▼               ▼               ▼
+  ┌─────────┐   ┌───────────┐   ┌───────────┐   ┌───────────┐
+  │Delegate 1│   │Delegate 2 │   │Delegate 3 │   │Delegate 4 │
+  │DSR merge │   │DSA records│   │BPO activs │   │Small srcs │
+  │(90-day   │   │(Snowflake)│   │(Snowflake)│   │CSAT+Late  │
+  │ delta)   │   │           │   │           │   │Cancel+    │
+  │          │   │           │   │           │   │VendorSpend│
+  │          │   │           │   │           │   │+Goaling   │
+  └────┬─────┘   └─────┬─────┘   └─────┬─────┘   └─────┬─────┘
+       │               │               │               │
+       └───────────────┴───────────────┴───────────────┘
+                       │
+              ┌────────▼────────┐
+              │ STEP 5: Embed   │
+              │ python3         │
+              │ refresh_all.py  │
+              │ (validates →    │
+              │  tags channels →│
+              │  embeds →       │
+              │  compares)      │
+              └────────┬────────┘
+                       │
+              ┌────────▼────────┐
+              │ STEP 6: Deploy  │
+              │ Blockcell upload│
+              └────────┬────────┘
+                       │
+              ┌────────▼────────┐
+              │ STEP 7: Git     │
+              │ commit + push   │
+              └────────┬────────┘
+                       │
+              ┌────────▼────────┐
+              │ STEP 8: Report  │
+              └─────────────────┘
+
+  ═══════════════════════════════════════════════════════════
+  STEP 0: Setup
+  ═══════════════════════════════════════════════════════════
+
+  Set Snowflake config: limit=50000, timeout=300.
+  Check dsr_facts.json exists and has >30,000 records.
+  If yes → INCREMENTAL mode (Steps 1-4 below).
+  If no → FULL PULL mode (Step 1-FULL below, then Steps 2-4).
+
+  ═══════════════════════════════════════════════════════════
+  STEP 1: DSR Facts — 90-day incremental merge
+  ═══════════════════════════════════════════════════════════
+  Run as: **async delegate**
+
+  ### What to do:
+  1. Query Snowflake for DSRs modified in the last 90 days:
+     ```sql
+     SELECT
+       d.ID AS SFDC_ID, u.NAME AS REP_NAME,
+       d.STATUS_C AS STATUS, d.SUB_STATUS_C AS SUB_STATUS,
+       d.ACCOUNT_NAME_C AS SELLER, d.COUNTRY_CODE_C AS COUNTRY,
+       d.CURRENCY_ISO_CODE AS CURRENCY, d.TOTAL_ANNUAL_GPV_C AS GPV_ANNUAL,
+       d.OPPORTUNITY_OWNER_C AS OPP_OWNER, d.OPPORTUNITY_OWNER_ROLE_C AS OPP_OWNER_ROLE,
+       TO_VARCHAR(d.CREATED_DATE, 'YYYY-MM-DD') AS CREATED_DATE,
+       TO_VARCHAR(d.DATE_COMPLETED_C, 'YYYY-MM-DD') AS COMPLETED_DATE,
+       DATEDIFF('day', d.CREATED_DATE, COALESCE(d.DATE_COMPLETED_C, d.DATE_TRANSITIONED_C)) AS DAYS_TO_COMPLETE,
+       DATEDIFF('day', d.CREATED_DATE, CURRENT_DATE()) AS DAYS_OPEN,
+       DATEDIFF('day', d.LAST_MODIFIED_DATE, CURRENT_DATE()) AS DAYS_STALE,
+       d.NUMBER_OF_LOCATIONS_C AS NUM_LOCATIONS, d.COMPLEXITY_SCORE_C AS COMPLEXITY_SCORE,
+       d.COMPETITOR_POS_C AS COMPETITOR_POS, d.MERCHANT_TOKEN_C AS MERCHANT_TOKEN
+     FROM FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C d
+     LEFT JOIN FIVETRAN.APP_SALES_SFDC."USER" u ON d.OWNER_ID = u.ID
+     WHERE d.RECORD_TYPE_NAME_C = 'GSO Global Seller Onboarding'
+       AND d.LAST_MODIFIED_DATE >= DATEADD('day', -90, CURRENT_DATE())
+     ORDER BY d.LAST_MODIFIED_DATE DESC
+     ```
+     Expected: 3,000-5,000 records (but can be up to 27K if many bulk updates happened).
+
+  2. Read dsr_facts.json (the local cache, ~40K records).
+
+  3. Build lookup: { id → array_index } from the cache.
+
+  4. For each Snowflake record, map to camelCase and merge into cache:
+     SFDC_ID→id, REP_NAME→rep, STATUS→status, SUB_STATUS→subStatus,
+     SELLER→seller, COUNTRY→country, CURRENCY→currency, GPV_ANNUAL→gpvUsd,
+     OPP_OWNER→oppOwner, OPP_OWNER_ROLE→oppOwnerRole, CREATED_DATE→createdDate,
+     COMPLETED_DATE→completedDate, DAYS_TO_COMPLETE→daysToComplete,
+     DAYS_OPEN→daysOpen, DAYS_STALE→daysStale, NUM_LOCATIONS→numLocations,
+     COMPLEXITY_SCORE→complexityScore, COMPETITOR_POS→competitorPos,
+     MERCHANT_TOKEN→merchantToken
+
+     If id exists → UPDATE (but preserve: teamLead, partner, requestReason, workType, goLiveDate, implServicesPrice)
+     If id doesn't exist → ADD as new record.
+
+  5. Write merged cache back to dsr_facts.json.
+
+  Report: Snowflake count, cache before, updated, added, cache after.
+
+  ═══════════════════════════════════════════════════════════
+  STEP 1-FULL: Full DSR pull from Airtable (only if cache missing)
+  ═══════════════════════════════════════════════════════════
+
+  Only use this if dsr_facts.json is missing, corrupted, or has <30K records.
+
+  Pull ALL records from Airtable table tblqfqKMvmdufvRjD in base appsnfWWzptN9cwD0.
+  Page through all records (100 per page, use offset). Map to camelCase.
+  Save as dsr_facts.json. Expected: ~40K records, ~10 min.
+
+  ═══════════════════════════════════════════════════════════
+  STEP 2: DSA Records (Snowflake)
+  ═══════════════════════════════════════════════════════════
+  Run as: **async delegate** (parallel with Steps 1, 3, 4)
+
+  Query Snowflake for partner DSA records (last 24 months).
+  ```sql
+  SELECT
+    pa.NAME as PARTNER, d.CUSTOMER_BUSINESS_NAME_C as SELLER,
+    d.ACTIVITY_TYPE_C as ACTIVITY_TYPE, d.STATUS_C as STATUS,
+    d.DEAL_SUPPORT_REQUEST_C as DSR_ID,
+    TO_VARCHAR(d.CREATED_DATE, 'YYYY-MM-DD') as CREATED_DATE
+  FROM FIVETRAN.APP_PARTNERSHIPS.DEAL_SUPPORT_ACTIVITY_C d
+  LEFT JOIN FIVETRAN.APP_PARTNERSHIPS.ACCOUNT pa ON d.PARTNER_ACCOUNT_C = pa.ID
+  WHERE d.PARTNER_ACCOUNT_C IS NOT NULL
+    AND pa.NAME IN ('Absolute POS','Absolute POS LLC','Absolute POS (Vendor)',
+      'Boomtown','Ovation (Vendor)','Sora Partners','Sora Partners (Vendor)',
+      'Solio Marlow','Solio Marlow (Vendor)','F3 Technologies','F3 (Vendor)',
+      'Tech Pantry','Tech Pantry (Vendor)','One World Rental UK','One World Rental UK (Vendor)',
+      'One World Rental Oceania (Vendor)','Eposability','Eposability (Vendor)',
+      'Akae','Akae (Vendor)','SVO','SVO (Vendor)','Khiron','Khiron (Vendor)',
+      'FiTech','Bright')
+    AND d.CREATED_DATE >= DATEADD('month', -24, CURRENT_DATE())
+  ORDER BY d.CREATED_DATE DESC
+  ```
+
+  Normalize partner names:
+  - "Absolute POS (Vendor)", "Absolute POS LLC" → "Absolute POS"
+  - "Boomtown", "Ovation (Vendor)" → "Ovation"
+  - "Sora Partners (Vendor)" → "Sora Partners"
+  - "F3 (Vendor)" → "F3 Technologies"
+  - "Solio Marlow (Vendor)" → "Solio Marlow"
+  - "Tech Pantry (Vendor)" → "Tech Pantry"
+  - "One World Rental Oceania (Vendor)" → "One World Rental AU"
+  - "One World Rental UK (Vendor)" → "One World Rental UK"
+  - "Eposability (Vendor)" → "Eposability"
+  - "Akae (Vendor)" → "Akae"
+  - "SVO (Vendor)" → "SVO"
+  - "Bright", "Khiron (Vendor)" → "Khiron"
+
+  ⚠️ Save as **FLAT ARRAY** to dsa_records.json: [{p, sl, at, st, dr, cd}, ...]
+  Do NOT wrap in {records: [...]}. The dashboard does `for (const r of dsaRecords)`.
+
+  Save stats to dsa_stats.json: {dsaTotal, dsaByPartner, dsaByActivity, dsaMonthly, dsaNormStatus, dsaPartnerPerf}.
+
+  ═══════════════════════════════════════════════════════════
+  STEP 3: BPO Activities (Snowflake)
+  ═══════════════════════════════════════════════════════════
+  Run as: **async delegate** (parallel with Steps 1, 2, 4)
+
+  ```sql
+  SELECT
+    d.ID AS DSA_ID, d.NAME AS DSA_NUMBER,
+    d.ACTIVITY_TYPE_C AS ACTIVITY_TYPE, d.STATUS_C AS STATUS,
+    d.DEAL_SUPPORT_REQUEST_C AS DSR_ID, dsr.NAME AS DSR_NAME,
+    dsr.ACCOUNT_NAME_C AS SELLER, u.NAME AS ASSIGNED_TO,
+    d.CUSTOMER_BUSINESS_NAME_C AS CUSTOMER_NAME,
+    TO_VARCHAR(d.CREATED_DATE, 'YYYY-MM-DD') AS CREATED_DATE,
+    TO_VARCHAR(d.LAST_MODIFIED_DATE, 'YYYY-MM-DD') AS LAST_MODIFIED,
+    TO_VARCHAR(d.COMPLETED_DATE_C, 'YYYY-MM-DD') AS COMPLETED_DATE
+  FROM FIVETRAN.APP_PARTNERSHIPS.DEAL_SUPPORT_ACTIVITY_C d
+  LEFT JOIN FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C dsr ON d.DEAL_SUPPORT_REQUEST_C = dsr.ID
+  LEFT JOIN FIVETRAN.APP_SALES_SFDC."USER" u ON d.OWNER_ID = u.ID
+  WHERE d.RECORD_TYPE_ID IN (
+    SELECT ID FROM FIVETRAN.APP_PARTNERSHIPS.RECORD_TYPE
+    WHERE NAME = 'BPO Activity' OR DEVELOPER_NAME = 'BPO_Activity'
+  )
+    AND d.CREATED_DATE >= DATEADD('month', -12, CURRENT_DATE())
+  ORDER BY d.CREATED_DATE DESC
+  ```
+
+  Save to bpo_activities.json as {records: [...], summary: {...}}.
+  Short keys: at=ACTIVITY_TYPE, ow=ASSIGNED_TO, cd=CREATED_DATE, n=DSA_NUMBER,
+              cpd=COMPLETED_DATE, dr=DSR_ID
+  refresh_all.py handles slimming and embedding.
+  Expected: 10,000-13,000 records.
+
+  ═══════════════════════════════════════════════════════════
+  STEP 4: Small data sources
+  ═══════════════════════════════════════════════════════════
+  Run as: **single async delegate** that does all 4 (parallel with Steps 1, 2, 3)
+
+  ### 4a. CSAT (GetFeedback API)
+  ```bash
+  curl -s "https://sc.getfeedback.com/data?token=eJyrViouLSpLrYzPTFGyMjQyMzA3MNdRSsvMKUktUrKqVkpSslJKzEtRAoopWUXH1tYCAIIbDv8.3sL7BRMf74hpIzAX7meFAWjVcwJebrYbG-hosMJMgpQ&limit=500" -o /tmp/csat_raw.json
+  ```
+  Transform to compact format: {r=rating, d=date, c=comment, s=sentiment, at=activityType, sl=seller, di=dsaId, sc=contact}
+  Save as csat_data.json.
+
+  ### 4b. Late Cancellations (Snowflake)
+  ```sql
+  SELECT
+    d.ID AS DSA_ID, d.NAME AS DSA_NUMBER, pa.NAME AS PARTNER,
+    d.CUSTOMER_BUSINESS_NAME_C AS SELLER, d.ACTIVITY_TYPE_C AS ACTIVITY_TYPE,
+    d.STATUS_C AS STATUS,
+    TO_VARCHAR(d.CREATED_DATE, 'YYYY-MM-DD') AS CREATED_DATE,
+    TO_VARCHAR(d.LAST_MODIFIED_DATE, 'YYYY-MM-DD') AS MODIFIED_DATE,
+    TO_VARCHAR(d.SCHEDULED_DATE_C, 'YYYY-MM-DD') AS SCHEDULED_DATE,
+    DATEDIFF('hour', d.LAST_MODIFIED_DATE, d.SCHEDULED_DATE_C) AS HOURS_BEFORE_SCHEDULED
+  FROM FIVETRAN.APP_PARTNERSHIPS.DEAL_SUPPORT_ACTIVITY_C d
+  LEFT JOIN FIVETRAN.APP_PARTNERSHIPS.ACCOUNT pa ON d.PARTNER_ACCOUNT_C = pa.ID
+  WHERE d.STATUS_C IN ('Cancelled', 'Canceled')
+    AND d.SCHEDULED_DATE_C IS NOT NULL
+    AND ABS(DATEDIFF('hour', d.LAST_MODIFIED_DATE, d.SCHEDULED_DATE_C)) <= 24
+    AND d.CREATED_DATE >= DATEADD('month', -12, CURRENT_DATE())
+  ORDER BY d.CREATED_DATE DESC
+  ```
+  Save summary to late_cancels.json: {total, byPartner, byMonth, byActivity, queryNote}
+  Save detail to late_cancel_records.json as array.
+
+  ### 4c. Vendor Spend (Airtable)
+  Pull all records from tblgVXWTVTO9u1WxX in base appsnfWWzptN9cwD0.
+  Compute: spendByPartner, spendInvoicesByPartner, spendMonthly, spendByCurrency,
+           spendTotal, spendInvoiceCount, spendMonthlyByPartner
+  Save to vendor_spend.json.
+
+  ### 4d. Goaling (Airtable)
+  Pull all records from tblB0NwaUmNv19B4c in base appsnfWWzptN9cwD0.
+
+  ⚠️ CRITICAL: Save as **DICT keyed by rep name**, NOT a raw Airtable array.
+  The dashboard does `goaling["Takao Kinjo"].ptsPacingPct.toFixed()`.
+
+  Transform:
+    "Rep Name" → dict key
+    "DSR Goal" → dsrGoal, "DSR Pacing Goal" → dsrPacingGoal, "DSR Actual" → dsrActual
+    "DSR Pacing %" → dsrPacingPct (× 100, round 1 decimal)
+    "DSR Quarter %" → dsrQuarterPct (× 100, round 1 decimal)
+    "Points Goal" → ptsGoal, "Points Pacing Goal" → ptsPacingGoal, "Points Actual" → ptsActual
+    "Points Pacing %" → ptsPacingPct (× 100, round 1 decimal)
+    "Points Quarter %" → ptsQuarterPct (× 100, round 1 decimal)
+    "Days Goal" → daysGoal, "Status" → status
+    "Level" → level (default 2), "Country" → country (default "")
+
+  Save as goaling.json.
+
+  ═══════════════════════════════════════════════════════════
+  STEP 5: Embed all data
+  ═══════════════════════════════════════════════════════════
+  Wait for ALL 4 delegates to complete. Then:
+
+  ```bash
+  cd /Users/mhofer/gso-dashboard
+  python3 refresh_all.py
+  ```
+
+  The script:
+  1. Validates data shapes (aborts if wrong — dashboard NOT touched)
+  2. Backs up dashboard.html
+  3. Extracts current metrics for comparison
+  4. Applies channel tagging (BPO, Vendor Ops)
+  5. Embeds all JSON files
+  6. Compares before/after metrics (aborts + restores if thresholds exceeded)
+  7. Validates dashboard structure
+  8. Updates refresh date
+
+  If it aborts on metric comparison, check if the shift is expected (e.g., start of month = low created/completed counts).
+  Use `python3 refresh_all.py --force` only if you understand why metrics shifted.
+
+  ═══════════════════════════════════════════════════════════
+  STEP 6: Deploy to Blockcell
+  ═══════════════════════════════════════════════════════════
+
+  ```bash
+  mkdir -p /tmp/gso-deploy
+  cp /Users/mhofer/gso-dashboard/dashboard.html /tmp/gso-deploy/
+  cp /Users/mhofer/gso-dashboard/index.html /tmp/gso-deploy/
+  ```
+  Upload via Blockcell manageSite: action=upload, site_name=gso-dashboard, directory_path=/tmp/gso-deploy
+  Verify with list_versions that the new version is current.
+  Clean up: rm -rf /tmp/gso-deploy
+
+  ═══════════════════════════════════════════════════════════
+  STEP 7: Git commit and push
+  ═══════════════════════════════════════════════════════════
+
+  ```bash
+  cd /Users/mhofer/gso-dashboard
+  git add dashboard.html refresh_all.py refresh-dashboard.yaml
+  git commit -m "Refresh dashboard data — $(date +%Y-%m-%d)"
+  git push
+  ```
+
+  ═══════════════════════════════════════════════════════════
+  STEP 8: Report results
+  ═══════════════════════════════════════════════════════════
+
+  Report:
+  - DSR cache: total records, delta (updated/added), channel breakdown (GSO/BPO/VO)
+  - Status breakdown: Completed / Active / On Hold / Cancelled / Draft
+  - Created this month / Completed this month
+  - Pipeline count (roster only)
+  - DSA records count
+  - BPO Activities count
+  - Vendor Spend total and invoice count
+  - CSAT response count and average rating
+  - Late cancellations count
+  - Dashboard file size (should be 12-16 MB)
+  - Blockcell version ID
+  - Git commit hash
+
+  ═══════════════════════════════════════════════════════════
+  ERROR RECOVERY
+  ═══════════════════════════════════════════════════════════
+
+  If ANY step fails after modifying dashboard.html:
+  1. ls -lt /Users/mhofer/gso-dashboard/.backups/ | head -5
+  2. cp .backups/dashboard_LATEST.html dashboard.html
+  3. Re-upload to Blockcell
+  4. Report what failed and why
+
+  ═══════════════════════════════════════════════════════════
+  WHAT NOT TO REFRESH (static/manual data)
+  ═══════════════════════════════════════════════════════════
+
+  - dispatchPartners — partner config, only changes when partners are added/removed
+  - dsaStatusMap — static status normalization map
+  - stratPmMonthly — from Looker 41363, updated manually
+  - goalingMeta — quarter config, updated manually at quarter boundaries
+  - BPO_TEAM_LIST — in dashboard.html, update manually when BPO team changes
+  - GSO_DATA.teams — in dashboard.html, update manually when roster changes

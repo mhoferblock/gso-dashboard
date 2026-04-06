@@ -1,1 +1,146 @@
-{"stats":{"dsaTotal":5034,"dsaByPartner":{"Absolute POS":1295,"F3 Technologies":633,"One World Rental UK":207,"Eposability":116,"Sora Partners":1115,"Solio Marlow":898,"One World Rental AU":141,"Tech Pantry":561,"SVO":5,"FiTech":32,"Akae":7,"Ovation":24},"dsaByActivity":{"Dashboard Training":542,"POS Training (remote)":341,"Installation":1245,"Site Survey":763,"Post Live Service (in person)":195,"POS Training (in person)":321,"Post Live Service (remote)":22,"Cabling (Square pays)":59,"Go Live Support":220,"Optimization call":165,"Menu Review Call":200,"SO Training Call":154,"Q&A Call":15,"Misc/Not Listed":94,"Unknown":31,"Hardware Refresh":30,"Networking Equipment Installation":14,"SO Training":1,"Cabling (seller pays)":4,"Onsite Installation (Small) + POS Training":134,"Networking Only Site Survey":154,"POS Training":79,"Post Live (Break/Fix Service Call)":25,"Onsite Installation (Medium) + POS Training":86,"Onsite Installation (Medium)":25,"Onsite Installation (Large) + POS Training":37,"Onsite Installation (Small)":46,"Networking Only Equipment Installation":8,"Onsite Installation (Large)":21,"Menu Build":2,"Low Voltage Cabling Request (Square Pays)":1},"dsaMonthly":{"2025-01":1,"2025-02":11,"2025-03":73,"2025-04":106,"2025-05":83,"2025-06":67,"2025-07":84,"2025-08":76,"2025-09":83,"2025-10":195,"2025-11":269,"2025-12":264,"2026-01":698,"2026-02":1046,"2026-03":1827,"2026-04":151},"dsaNormStatus":{"Dispatch Submitted":446,"Received Seller Availability":35,"Unknown":87,"Tech Scheduled":730,"Dispatch Acknowledged":54,"Dispatch Rejected":225,"Appointment Completed":2520,"Completed":195,"Kickoff Call Pending":11,"Appointment Cannot Complete":206,"Pending Seller Availability":7,"Cancelled":261,"Appointment Cancelled":203,"In Progress":46,"Dispatch Accepted":8},"dsaPartnerPerf":{"Absolute POS":{"total":1295,"completed":700,"active":465,"cancelled":130},"F3 Technologies":{"total":633,"completed":374,"active":149,"cancelled":110},"One World Rental UK":{"total":207,"completed":66,"active":130,"cancelled":11},"Eposability":{"total":116,"completed":54,"active":56,"cancelled":6},"Sora Partners":{"total":1115,"completed":655,"active":358,"cancelled":102},"Solio Marlow":{"total":898,"completed":634,"active":198,"cancelled":66},"One World Rental AU":{"total":141,"completed":81,"active":48,"cancelled":12},"Tech Pantry":{"total":561,"completed":311,"active":228,"cancelled":22},"SVO":{"total":5,"completed":2,"active":3,"cancelled":0},"FiTech":{"total":32,"completed":25,"active":5,"cancelled":2},"Akae":{"total":7,"completed":4,"active":2,"cancelled":1},"Ovation":{"total":24,"completed":15,"active":7,"cancelled":2}}}}
+{
+  "dsaTotal": 5145,
+  "dsaByPartner": {
+    "Absolute POS": 1342,
+    "Sora Partners": 1134,
+    "Solio Marlow": 908,
+    "F3 Technologies": 678,
+    "Tech Pantry": 561,
+    "One World Rental UK": 208,
+    "One World Rental AU": 141,
+    "Eposability": 120,
+    "FiTech": 32,
+    "Akae": 9,
+    "Ovation": 7,
+    "SVO": 5
+  },
+  "dsaByActivity": {
+    "Go Live Support": 228,
+    "Installation": 1301,
+    "POS Training (remote)": 355,
+    "POS Training (in person)": 325,
+    "Menu Review Call": 206,
+    "Dashboard Training": 555,
+    "Optimization call": 169,
+    "Site Survey": 770,
+    "SO Training Call": 159,
+    "Cabling (Square pays)": 61,
+    "Networking Equipment Installation": 14,
+    "Post Live Service (in person)": 196,
+    "Menu Build": 3,
+    "Unknown": 32,
+    "Post Live Service (remote)": 22,
+    "Q&A Call": 15,
+    "Misc/Not Listed": 94,
+    "Hardware Refresh": 29,
+    "SO Training": 1,
+    "Cabling (seller pays)": 4,
+    "Onsite Installation (Small) + POS Training": 134,
+    "Networking Only Site Survey": 146,
+    "POS Training": 79,
+    "Post Live (Break/Fix Service Call)": 25,
+    "Onsite Installation (Medium) + POS Training": 86,
+    "Onsite Installation (Medium)": 25,
+    "Onsite Installation (Large) + POS Training": 37,
+    "Onsite Installation (Small)": 46,
+    "Networking Only Equipment Installation": 7,
+    "Onsite Installation (Large)": 21
+  },
+  "dsaMonthly": {
+    "2025-01": 1,
+    "2025-02": 11,
+    "2025-03": 73,
+    "2025-04": 106,
+    "2025-05": 81,
+    "2025-06": 67,
+    "2025-07": 78,
+    "2025-08": 73,
+    "2025-09": 83,
+    "2025-10": 189,
+    "2025-11": 269,
+    "2025-12": 264,
+    "2026-01": 698,
+    "2026-02": 1046,
+    "2026-03": 1832,
+    "2026-04": 274
+  },
+  "dsaNormStatus": {
+    "Tech Scheduled": 751,
+    "Dispatch Submitted": 463,
+    "Received Seller Availability": 37,
+    "Unknown": 89,
+    "Dispatch Acknowledged": 60,
+    "Appointment Cannot Complete": 215,
+    "Dispatch Rejected": 226,
+    "In Progress": 49,
+    "Appointment Completed": 2563,
+    "Completed": 195,
+    "Cancelled": 268,
+    "Kickoff Call Pending": 11,
+    "Appointment Cancelled": 203,
+    "Pending Seller Availability": 7,
+    "Dispatch Accepted": 8
+  },
+  "dsaPartnerPerf": {
+    "F3 Technologies": {
+      "total": 678,
+      "completed": 384,
+      "cancelled": 112
+    },
+    "Solio Marlow": {
+      "total": 908,
+      "completed": 650,
+      "cancelled": 68
+    },
+    "Absolute POS": {
+      "total": 1342,
+      "completed": 722,
+      "cancelled": 131
+    },
+    "Sora Partners": {
+      "total": 1134,
+      "completed": 668,
+      "cancelled": 106
+    },
+    "One World Rental UK": {
+      "total": 208,
+      "completed": 66,
+      "cancelled": 11
+    },
+    "Akae": {
+      "total": 9,
+      "completed": 4,
+      "cancelled": 1
+    },
+    "Eposability": {
+      "total": 120,
+      "completed": 54,
+      "cancelled": 6
+    },
+    "One World Rental AU": {
+      "total": 141,
+      "completed": 81,
+      "cancelled": 12
+    },
+    "Tech Pantry": {
+      "total": 561,
+      "completed": 311,
+      "cancelled": 22
+    },
+    "SVO": {
+      "total": 5,
+      "completed": 2,
+      "cancelled": 0
+    },
+    "FiTech": {
+      "total": 32,
+      "completed": 25,
+      "cancelled": 2
+    },
+    "Ovation": {
+      "total": 7,
+      "completed": 6,
+      "cancelled": 0
+    }
+  }
+}

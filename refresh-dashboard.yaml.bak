@@ -1,0 +1,446 @@
+version: "1.0.0"
+title: "Refresh GSO Dashboard"
+description: "Pull latest data from all sources, validate, rebuild dashboard.html, and deploy to Blockcell."
+instructions: |
+  You are refreshing the GSO Dashboard. Work in /Users/mhofer/gso-dashboard (the local working copy).
+  The main file is **dashboard.html** (NOT index.html — that's just a redirect stub).
+
+  ## CRITICAL RULES — READ BEFORE DOING ANYTHING
+  1. **NEVER deploy without validating numbers.** After embedding, check key KPIs match expected ranges.
+  2. **Channel tagging is mandatory.** refresh_all.py handles this automatically. NEVER bypass it.
+  3. **Compare before/after.** refresh_all.py does this. If it aborts, DO NOT use --force without Matt's approval.
+  4. **Draft DSRs are excluded** from all active metrics (category = 'draft'). Don't count them.
+  5. **Rejected DSRs** go to Cancelled tab only. They are NOT "projects worked."
+  6. **Pipeline = roster reps only.** Departed reps' active/onHold DSRs are zombies — excluded from pipeline.
+  7. Set Snowflake row limit to at least 50000 before running queries.
+  8. If ANYTHING fails after modifying dashboard.html, restore from backup immediately.
+
+  ## Data Architecture
+  - **dashboard.html** — single-file SPA (~14MB) with all data embedded as GSO_DATA.xxx = {...};
+  - **Airtable** base appsnfWWzptN9cwD0 — persistent data store (7 tables):
+    - DSR Facts (tblqfqKMvmdufvRjD) — ~40,611 records, 33 fields
+    - Team Roster (tbl0I2oNZdYPlJ5EH)
+    - Goaling (tblB0NwaUmNv19B4c)
+    - Sync Log (tbl4lnLHEmNyqpCjc)
+    - Partner DSAs (tblASw9K5OMq36YT4) — partner dispatch activities
+    - Vendor Spend (tblgVXWTVTO9u1WxX) — 926 invoices
+    - BPO Activities (tbl2jhvPGsV6Akdgv) — BPO team work items (NEW)
+  - **Snowflake** — source of truth for DSR, DSA, and BPO Activity records
+  - **GetFeedback** — CSAT survey responses
+  - **refresh_all.py** — embed script with channel tagging, BPO activity slimming, goal override merge, validation, and before/after comparison
+
+  ## Channel Classification (applied by refresh_all.py)
+  - **BPO** (channel='bpo') — 31 reps under Jennifer Walker. Excluded from main GSO KPIs.
+  - **Vendor Ops** (channel='vendorops') — 4 reps (Megan Martchink, Kyle Rominger, Jean- Arthur, Meri Fakraufon). Excluded from main GSO KPIs.
+  - **GSO** (channel='') — Everyone else. This is what the main dashboard shows.
+
+  ## Current Roster (as of March 2026)
+  - US East (Meaghan Biederman): 13 reps
+  - US West (Ben Pomeroy): 12 reps
+  - EMEA (Caleb Cunningham): 10 reps
+  - APAC (Kamilla Schou Warr): 9 reps
+  - Vendor Ops (Matt): 4 reps
+  - BPO (Jennifer Walker): 31 reps
+  Total: 44 GSO + 4 Vendor Ops + 31 BPO = 79 active
+
+  ## Name Mappings (roster name → DSR data name)
+  - Josephine Vogt → Josie Vogt
+  - Jean-Christophe Arthur → Jean- Arthur
+  - Josh Stoffels → Josh stoffels
+  - Jamahl → Jamahl G
+  - maryh@squareup.com → Mary Hirata McJilton
+
+  ## Expected Metric Ranges (March 2026 baseline)
+  - Total DSR records: ~40,000-42,000
+  - BPO records: ~3,000-3,500
+  - Vendor Ops records: ~2,300-2,600
+  - GSO records: ~34,000-36,000
+  - Created this month: ~700-1,000
+  - Completed this month: ~400-700
+  - Active pipeline (roster only): ~800-1,200
+  - Drafts: ~1,200-1,500
+
+  ═══════════════════════════════════════════════════════════
+  STEP 0: Sync Snowflake → Airtable (new/modified DSRs)
+  ═══════════════════════════════════════════════════════════
+
+  This step brings Airtable up to date with Snowflake. Without it, Airtable stays frozen
+  at the last sync date and the dashboard shows stale data.
+
+  ### 0a. Set Snowflake config
+  Set Snowflake limit to 50000 and timeout to 300.
+
+  ### 0b. Query Snowflake for recently modified records
+  Query for all DSRs modified in the last 7 days:
+
+  ```sql
+  SELECT
+    d.ID AS SFDC_ID,
+    u.NAME AS REP_NAME,
+    d.STATUS_C AS STATUS,
+    d.SUB_STATUS_C AS SUB_STATUS,
+    d.ACCOUNT_NAME_C AS SELLER,
+    d.PURCHASED_IMPLEMENTATION_SERVICES_C AS WORK_TYPE,
+    d.COUNTRY_CODE_C AS COUNTRY,
+    d.CURRENCY_ISO_CODE AS CURRENCY,
+    d.TOTAL_ANNUAL_GPV_C AS GPV_ANNUAL,
+    d.OPPORTUNITY_OWNER_C AS OPP_OWNER,
+    d.OPPORTUNITY_OWNER_ROLE_C AS OPP_OWNER_ROLE,
+    TO_VARCHAR(d.CREATED_DATE, 'YYYY-MM-DD') AS CREATED_DATE,
+    TO_VARCHAR(d.DATE_COMPLETED_C, 'YYYY-MM-DD') AS COMPLETED_DATE,
+    DATEDIFF('day', d.CREATED_DATE, COALESCE(d.DATE_COMPLETED_C, d.DATE_TRANSITIONED_C)) AS DAYS_TO_COMPLETE,
+    DATEDIFF('day', d.CREATED_DATE, CURRENT_DATE()) AS DAYS_OPEN,
+    DATEDIFF('day', d.LAST_MODIFIED_DATE, CURRENT_DATE()) AS DAYS_STALE,
+    d.NUMBER_OF_LOCATIONS_C AS NUM_LOCATIONS,
+    d.COMPLEXITY_SCORE_C AS COMPLEXITY_SCORE,
+    d.COMPETITOR_POS_C AS COMPETITOR_POS,
+    d.MERCHANT_TOKEN_C AS MERCHANT_TOKEN
+  FROM FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C d
+  LEFT JOIN FIVETRAN.APP_SALES_SFDC."USER" u ON d.OWNER_ID = u.ID
+  WHERE d.RECORD_TYPE_NAME_C = 'GSO Global Seller Onboarding'
+    AND d.LAST_MODIFIED_DATE >= DATEADD('day', -7, CURRENT_DATE())
+  ORDER BY d.LAST_MODIFIED_DATE DESC
+  ```
+
+  Report: total records found, how many are new (created in last 7 days) vs existing (modified).
+  Expected: 300-800 records depending on activity.
+
+  ### 0c. Upsert to Airtable
+  For each Snowflake record, search Airtable DSR Facts (tblqfqKMvmdufvRjD) by:
+    filterByFormula: {SFDC ID} = "THE_SFDC_ID"
+
+  If found → UPDATE the existing record.
+  If not found → CREATE a new record.
+
+  Field mapping (Snowflake → Airtable):
+    SFDC_ID → SFDC ID
+    REP_NAME → Rep
+    STATUS → Status
+    SUB_STATUS → Sub Status
+    SELLER → Seller
+    COUNTRY → Country
+    CURRENCY → Currency
+    GPV_ANNUAL → GPV Annual
+    OPP_OWNER → Opp Owner
+    OPP_OWNER_ROLE → Opp Owner Role
+    CREATED_DATE → Created Date
+    COMPLETED_DATE → Completed Date
+    DAYS_TO_COMPLETE → Days to Complete
+    DAYS_OPEN → Days Open
+    DAYS_STALE → Days Stale
+    NUM_LOCATIONS → Num Locations
+    COMPLEXITY_SCORE → Complexity Score
+    COMPETITOR_POS → Competitor POS
+    MERCHANT_TOKEN → Merchant Token
+
+  **DO NOT push these fields** (risk of data corruption):
+    - Request Reason (Snowflake values don't match Airtable singleSelect options)
+    - Work Type (singleSelect — safer to skip)
+    - Team Lead (Airtable-only, manually maintained)
+    - Partner (Airtable-only singleSelect)
+    - Product Version, Language, Go Live Date, AE Desired Go Live (not in query)
+
+  Process records one at a time (search then update/create).
+  Report: total processed, updated count, created count, error count.
+  Expected: 0 errors. If errors > 5, STOP and report.
+
+  ═══════════════════════════════════════════════════════════
+  STEP 1: Pull DSR Facts from Airtable
+  ═══════════════════════════════════════════════════════════
+
+  Pull ALL records from Airtable base appsnfWWzptN9cwD0, table tblqfqKMvmdufvRjD (DSR Facts).
+  Page through all records (100 per page, use offset for pagination).
+
+  Fields to extract from each record:
+    SFDC ID, Rep, Team Lead, Seller, Work Type, Status, Sub Status,
+    Request Reason, Product Version, Country, Currency, GPV Annual, GPV USD,
+    Created Date, Completed Date, Go Live Date, Last Modified,
+    Days to Complete, Days Open, Days Stale,
+    Opp Owner, Opp Owner Role, Num Locations, Competitor POS,
+    Merchant Token, Complexity Score, Impl Services Price, Partner
+
+  Save as /Users/mhofer/gso-dashboard/dsr_facts.json as an array of objects with camelCase keys:
+    id (from SFDC ID), rep, teamLead, seller, workType, status, subStatus,
+    requestReason, country, currency, gpvUsd (from GPV Annual), gpvUsdConverted (from GPV USD),
+    createdDate, completedDate, goLiveDate,
+    daysToComplete, daysOpen, daysStale,
+    oppOwner, oppOwnerRole, numLocations, competitorPos,
+    merchantToken, complexityScore, implServicesPrice, partner
+
+  **DO NOT set the channel field manually.** refresh_all.py will compute it from the BPO/Vendor Ops lists.
+
+  After saving, verify:
+  - Record count should be ~40,000-42,000
+  - Records should have rep, status, createdDate populated for most rows
+  - Print status breakdown to confirm data looks reasonable
+
+  ═══════════════════════════════════════════════════════════
+  STEP 2: DSA Records (Snowflake)
+  ═══════════════════════════════════════════════════════════
+
+  Set Snowflake limit to 50000 and timeout to 300.
+
+  ```sql
+  SELECT
+    pa.NAME as PARTNER, d.CUSTOMER_BUSINESS_NAME_C as SELLER,
+    d.ACTIVITY_TYPE_C as ACTIVITY_TYPE, d.STATUS_C as STATUS,
+    d.DEAL_SUPPORT_REQUEST_C as DSR_ID,
+    TO_VARCHAR(d.CREATED_DATE, 'YYYY-MM-DD') as CREATED_DATE
+  FROM FIVETRAN.APP_PARTNERSHIPS.DEAL_SUPPORT_ACTIVITY_C d
+  LEFT JOIN FIVETRAN.APP_PARTNERSHIPS.ACCOUNT pa ON d.PARTNER_ACCOUNT_C = pa.ID
+  WHERE d.PARTNER_ACCOUNT_C IS NOT NULL
+    AND pa.NAME IN ('Absolute POS','Absolute POS LLC','Absolute POS (Vendor)',
+      'Boomtown','Ovation (Vendor)','Sora Partners','Sora Partners (Vendor)',
+      'Solio Marlow','Solio Marlow (Vendor)','F3 Technologies','F3 (Vendor)',
+      'Tech Pantry','Tech Pantry (Vendor)','One World Rental UK','One World Rental UK (Vendor)',
+      'One World Rental Oceania (Vendor)','Eposability','Eposability (Vendor)',
+      'Akae','Akae (Vendor)','SVO','SVO (Vendor)','Khiron','Khiron (Vendor)',
+      'FiTech','Bright')
+    AND d.CREATED_DATE >= DATEADD('month', -24, CURRENT_DATE())
+  ORDER BY d.CREATED_DATE DESC
+  ```
+
+  Normalize partner names:
+  - Absolute POS (Vendor), Absolute POS LLC, APOS → Absolute POS
+  - Boomtown, Ovation (Vendor) → Ovation
+  - Sora Partners (Vendor), sora partners, SORA PARTNERS → Sora Partners
+  - F3 (Vendor), F3 Technologies (Vendor), F3 Tech, F3 → F3 Technologies
+  - Solio Marlow (Vendor) → Solio Marlow
+  - Tech Pantry (Vendor) → Tech Pantry
+  - One World Rental Oceania (Vendor), OneWorld Rental → One World Rental AU
+  - One World Rental UK (Vendor), OWR Ltd → One World Rental UK
+  - Eposability (Vendor) → Eposability
+  - Akae (Vendor), AKAE → Akae
+  - SVO (Vendor) → SVO
+  - Bright, Khiron (Vendor) → Khiron
+  - FiTech → FiTech
+
+  Save as compact JSON to /Users/mhofer/gso-dashboard/dsa_records.json with short keys:
+    p=partner, sl=seller, at=activityType, st=status, dr=dsrId, cd=createdDate
+
+  Also compute and embed these summary stats (save in same file or separate):
+    dsaTotal, dsaByPartner, dsaByActivity, dsaMonthly, dsaNormStatus, dsaPartnerPerf
+
+  ═══════════════════════════════════════════════════════════
+  STEP 2b: BPO Activities (Snowflake → Airtable → JSON)
+  ═══════════════════════════════════════════════════════════
+
+  ### 2b-i. Query Snowflake for BPO Activities
+
+  Set Snowflake limit to 50000 and timeout to 300.
+
+  Query for all Deal Support Activities with Record Type = 'BPO Activity':
+
+  ```sql
+  SELECT
+    d.ID AS DSA_ID,
+    d.NAME AS DSA_NUMBER,
+    d.ACTIVITY_TYPE_C AS ACTIVITY_TYPE,
+    d.STATUS_C AS STATUS,
+    d.DEAL_SUPPORT_REQUEST_C AS DSR_ID,
+    dsr.NAME AS DSR_NAME,
+    dsr.ACCOUNT_NAME_C AS SELLER,
+    u.NAME AS ASSIGNED_TO,
+    d.CUSTOMER_BUSINESS_NAME_C AS CUSTOMER_NAME,
+    TO_VARCHAR(d.CREATED_DATE, 'YYYY-MM-DD') AS CREATED_DATE,
+    TO_VARCHAR(d.LAST_MODIFIED_DATE, 'YYYY-MM-DD') AS LAST_MODIFIED,
+    TO_VARCHAR(d.COMPLETED_DATE_C, 'YYYY-MM-DD') AS COMPLETED_DATE
+  FROM FIVETRAN.APP_PARTNERSHIPS.DEAL_SUPPORT_ACTIVITY_C d
+  LEFT JOIN FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C dsr ON d.DEAL_SUPPORT_REQUEST_C = dsr.ID
+  LEFT JOIN FIVETRAN.APP_SALES_SFDC."USER" u ON d.OWNER_ID = u.ID
+  WHERE d.RECORD_TYPE_ID IN (
+    SELECT ID FROM FIVETRAN.APP_PARTNERSHIPS.RECORD_TYPE
+    WHERE NAME = 'BPO Activity' OR DEVELOPER_NAME = 'BPO_Activity'
+  )
+    AND d.CREATED_DATE >= DATEADD('month', -12, CURRENT_DATE())
+  ORDER BY d.CREATED_DATE DESC
+  ```
+
+  If the RECORD_TYPE subquery doesn't work, try filtering by name pattern:
+  ```sql
+  WHERE d.RECORD_TYPE_C = 'BPO Activity'
+  ```
+  Or check available record types first:
+  ```sql
+  SELECT DISTINCT d.RECORD_TYPE_C, d.RECORD_TYPE_ID
+  FROM FIVETRAN.APP_PARTNERSHIPS.DEAL_SUPPORT_ACTIVITY_C d
+  LIMIT 100
+  ```
+
+  Expected: 500-12,000 records (12 months of BPO activity).
+
+  ### 2b-ii. Upsert to Airtable BPO Activities table
+
+  For each Snowflake record, search Airtable BPO Activities (tbl2jhvPGsV6Akdgv) in base appsnfWWzptN9cwD0 by:
+    filterByFormula: {DSA ID} = "THE_DSA_ID"
+
+  If found → UPDATE the existing record.
+  If not found → CREATE a new record.
+
+  Field mapping (Snowflake → Airtable):
+    DSA_ID → DSA ID
+    DSA_NUMBER → Activity Number
+    ACTIVITY_TYPE → Activity Type
+    STATUS → Status
+    DSR_ID → DSR ID
+    DSR_NAME → DSR Name
+    SELLER → Seller
+    ASSIGNED_TO → Assigned To
+    CUSTOMER_NAME → Customer Name
+    CREATED_DATE → Created Date
+    LAST_MODIFIED → Last Modified
+    COMPLETED_DATE → Completed Date
+
+  Process records one at a time (search then update/create).
+  Report: total processed, updated count, created count, error count.
+  Expected: 0 errors. If errors > 5, STOP and report.
+
+  ### 2b-iii. Pull from Airtable → JSON
+
+  Pull ALL records from BPO Activities table (tbl2jhvPGsV6Akdgv) in base appsnfWWzptN9cwD0.
+  Page through all records (100 per page, use offset for pagination).
+
+  Save as compact JSON to /Users/mhofer/gso-dashboard/bpo_activities.json with short keys:
+    id=DSA ID, n=Activity Number, at=Activity Type, st=Status,
+    dr=DSR ID, dn=DSR Name, sl=Seller, as=Assigned To,
+    cn=Customer Name, cd=Created Date, lm=Last Modified, cpd=Completed Date
+
+  Report: total records saved.
+
+  ═══════════════════════════════════════════════════════════
+  STEP 3: Late Cancellations (Snowflake)
+  ═══════════════════════════════════════════════════════════
+
+  Query for cancelled DSAs where cancellation was within 24h of scheduled date.
+  Save summary as /Users/mhofer/gso-dashboard/late_cancels.json
+  Save detail records as /Users/mhofer/gso-dashboard/late_cancel_records.json
+
+  ═══════════════════════════════════════════════════════════
+  STEP 4: CSAT (GetFeedback API)
+  ═══════════════════════════════════════════════════════════
+
+  ```bash
+  curl -s "https://sc.getfeedback.com/data?token=eJyrViouLSpLrYzPTFGyMjQyMzA3MNdRSsvMKUktUrKqVkpSslJKzEtRAoopWUXH1tYCAIIbDv8.3sL7BRMf74hpIzAX7meFAWjVcwJebrYbG-hosMJMgpQ&limit=500" -o /tmp/csat_raw.json
+  ```
+  Transform to compact format: {r:rating, d:date, c:comment, s:sentiment, at:activity, sl:seller, di:dsaId, sc:contact}
+  Save as /Users/mhofer/gso-dashboard/csat_data.json
+
+  ═══════════════════════════════════════════════════════════
+  STEP 5: Vendor Spend (Airtable)
+  ═══════════════════════════════════════════════════════════
+
+  Pull all records from Vendor Spend table (tblgVXWTVTO9u1WxX) in base appsnfWWzptN9cwD0.
+  Compute and save to /Users/mhofer/gso-dashboard/vendor_spend.json:
+    spendByPartner, spendInvoicesByPartner, spendMonthly,
+    spendByCurrency, spendTotal, spendInvoiceCount, spendMonthlyByPartner
+
+  ═══════════════════════════════════════════════════════════
+  STEP 6: Goaling (Airtable)
+  ═══════════════════════════════════════════════════════════
+
+  Pull all records from Goaling table (tblB0NwaUmNv19B4c) in base appsnfWWzptN9cwD0.
+  Save as /Users/mhofer/gso-dashboard/goaling.json
+
+  ═══════════════════════════════════════════════════════════
+  STEP 7: Embed all data (with validation)
+  ═══════════════════════════════════════════════════════════
+
+  ```bash
+  cd /Users/mhofer/gso-dashboard
+  python3 refresh_all.py
+  ```
+
+  This script will:
+  1. Create a backup of dashboard.html
+  2. Extract current metrics from the embedded data
+  3. Apply channel tagging (BPO, Vendor Ops) to dsr_facts.json
+  4. Embed all JSON files into dashboard.html
+  5. Compare before/after metrics — ABORT if thresholds exceeded
+  6. Validate dashboard structure (script tags, data blocks, file size)
+  7. Update the "Last refreshed" date in the footer
+
+  **If the script aborts**, it will restore from backup automatically.
+  **If you need to force**, run: python3 refresh_all.py --force
+  Only use --force if you understand why the metrics shifted and it's expected.
+
+  ═══════════════════════════════════════════════════════════
+  STEP 8: Post-embed verification
+  ═══════════════════════════════════════════════════════════
+
+  BEFORE deploying, verify these numbers from the script output:
+  - BPO records > 0 (should be ~3,000+)
+  - Vendor Ops records > 0 (should be ~2,300+)
+  - Pipeline (roster) is reasonable (~800-1,200)
+  - Created this month > 0
+  - Completed this month > 0
+  - No validation errors
+
+  If anything looks wrong, STOP and investigate. Do NOT deploy broken data.
+
+  ═══════════════════════════════════════════════════════════
+  STEP 9: Deploy to Blockcell
+  ═══════════════════════════════════════════════════════════
+
+  Create a clean deploy directory and upload (avoids uploading large JSON files):
+  ```bash
+  mkdir -p /tmp/gso-deploy
+  cp /Users/mhofer/gso-dashboard/dashboard.html /tmp/gso-deploy/
+  cp /Users/mhofer/gso-dashboard/index.html /tmp/gso-deploy/
+  ```
+  - Use Blockcell manageSite tool: action=upload, site_name=gso-dashboard, directory_path=/tmp/gso-deploy
+  - Verify with list_versions that the new version is current
+  - Report the version ID
+  - Clean up: rm -rf /tmp/gso-deploy
+
+  ═══════════════════════════════════════════════════════════
+  STEP 10: Git commit and push
+  ═══════════════════════════════════════════════════════════
+
+  ```bash
+  cd /Users/mhofer/gso-dashboard
+  git add dashboard.html dsr_facts.json dsr_facts_slim.json bpo_activities.json refresh_all.py refresh-dashboard.yaml
+  git commit -m "Refresh dashboard data — $(date +%Y-%m-%d)"
+  git push
+  ```
+
+  ═══════════════════════════════════════════════════════════
+  STEP 11: Report results
+  ═══════════════════════════════════════════════════════════
+
+  After completing all steps, report:
+  - Total DSR records pulled (should be ~40,000-42,000)
+  - Channel breakdown: BPO / Vendor Ops / GSO
+  - Status breakdown: Completed / Active / On Hold / Cancelled / Draft
+  - Created this month / Completed this month
+  - Pipeline count (roster only)
+  - Total DSA records (should be ~6,000+)
+  - BPO Activities count (should be ~12,000+) and this month's count
+  - Vendor Spend total and invoice count
+  - CSAT response count and average rating
+  - Goal overrides merged (if goal_overrides.json exists)
+  - Dashboard file size (should be 12-16 MB)
+  - Blockcell version ID
+  - Git push status
+
+  ═══════════════════════════════════════════════════════════
+  ERROR RECOVERY
+  ═══════════════════════════════════════════════════════════
+
+  If ANY step fails after modifying dashboard.html:
+  1. List backups: ls -lt /Users/mhofer/gso-dashboard/.backups/ | head -5
+  2. Restore: cp .backups/dashboard_LATEST.html dashboard.html
+  3. Re-upload to Blockcell
+  4. Report what failed and why
+
+  ═══════════════════════════════════════════════════════════
+  WHAT NOT TO REFRESH (static/manual data)
+  ═══════════════════════════════════════════════════════════
+
+  - dispatchPartners — partner config, only changes when partners are added/removed
+  - dsaStatusMap — static status normalization map
+  - stratPmMonthly — from Looker 41363, updated manually
+  - goalingMeta — quarter config, updated manually at quarter boundaries
+  - BPO_TEAM_LIST — in dashboard.html, update manually when BPO team changes
+  - GSO_DATA.teams — in dashboard.html, update manually when roster changes
+
+prompt: "Refresh the GSO Dashboard with the latest data from all sources. Follow every step carefully and validate before deploying."

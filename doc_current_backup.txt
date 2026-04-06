@@ -1,0 +1,353 @@
+GSO Operations Review — Q1 FY26
+Data as of April 2, 2026 | 40,781 DSR records | 44 GSO reps
+
+
+The Headline
+GSO is operating at 74% of demand capacity. The team completes ~612 DSRs/month against ~824 inbound, creating a structural deficit of ~212 DSRs/month. This has caused the active pipeline to balloon from 148 in January to 997 today — a 6.7x increase in one quarter. Quality remains excellent (4.73/5 CSAT), but without intervention, the pipeline will exceed 2,200 by end of Q2 and lead times will begin degrading.
+
+
+1. Lead Times
+📊 Supporting data: "Lead Time Detail" spreadsheet — Tab 1
+
+Summary (GSO channel only, drafts excluded):
+
+Median: 29 days (March) / 32 days (Q1) / 26 days (all-time)
+P75 (75% of DSRs completed within): 48d (March) / 56d (Q1)
+P90 (90% of DSRs completed within): 80d (March) / 90d (Q1)
+≤30 days: 52% (March) / 48% (Q1)
+>90 days: 9% (March) / 10% (Q1)
+
+By Work Type (Q1):
+
+Optimization Call: 8 day median (143/month — high volume, low complexity)
+Plus: 27 day median
+Payroll: 41 day median
+Onsite: 46 day median
+Premium: 48 day median (largest pipeline share at 34%)
+
+Key Insight: Lead times are stable — the median has held at 29-32 days for 6 months despite the pipeline surge. This is because the team is prioritizing throughput on completable work. But the P90 at 88-90 days signals a growing tail of complex DSRs that are getting pushed. Premium + Onsite make up 66% of the pipeline and have 3-6x the lead time of Optimization Calls. This is the structural constraint.
+
+By Region (Q1):
+
+APAC: 27d median
+US East: 28d median
+EMEA: 29d median
+US West: 36d median (29% slower than US East — driven by new-hire ramp)
+
+
+2. Throughput
+📊 Supporting data: "Throughput & Pipeline" spreadsheet — Tabs 1-3
+
+Monthly Trend (Last 6 Months):
+
+Nov 2025: Created 812 / Completed 692 / Net -9
+Dec 2025: Created 681 / Completed 677 / Net -139
+Jan 2026: Created 747 / Completed 468 / Net +142 ← inflection point
+Feb 2026: Created 809 / Completed 688 / Net +1
+Mar 2026: Created 916 / Completed 680 / Net +122 ← highest inbound in 12mo
+Apr (2 days): Created 67 / Completed 45 / Net +16
+
+What's driving the inbound: Q1's 2,472 created DSRs break down as Onsite 25%, Optimization Calls 23%, Premium 19%, Plus 17%, Tasks Only / Payroll / Other 16%. The Onsite + Premium mix (45% of inbound) is significant because these carry 46-48 day median lead times vs. 8 days for Opt Calls — so the pipeline isn't just growing, it's growing with heavier work.
+
+The inflection point was January. Completions dropped to 468 (from ~680 avg) while inbound held steady. This coincides with Q1 ramp-up and new hire onboarding. February recovered but March inbound surged to 916 — the highest in 12 months — widening the gap.
+
+Regional Throughput (Q1):
+
+US East (13 reps): 639 completed, 19.4/rep/month — the engine
+US West (12 reps): 293 completed, 16.3/rep/month — 6 reps still ramping
+EMEA (10 reps): 389 completed, 13.0/rep/month
+APAC (9 reps): 268 completed, 9.9/rep/month — higher complexity mix
+
+
+What We Did Well
+Before diving into bottlenecks and gaps, it is worth calling out what is working — because Q1 had real, measurable wins that validate the direction GSO is heading.
+
+The Project Management Model Is Proving Out
+The biggest story of Q1 is not the pipeline growth — it is the emergence of a new operating model. The top-performing reps adopted a project management approach: instead of personally executing every training, installation, and site survey, they dispatched the majority of hands-on work to 3P partners and focused their time on seller relationship management, scheduling, and driving DSRs to completion.
+
+The data is unambiguous. Reps who dispatched more partner DSAs per DSR completed more DSRs and did it faster:
+
+High partner utilization (1.28+ DSAs per DSR): 15 reps averaging 19.1 completions/month
+Low partner utilization (below 1.28 DSAs per DSR): 14 reps averaging 16.1 completions/month
+
+That is a 19% throughput advantage for reps who leaned into the partner model. They are not working harder — they are working differently.
+
+Austin Crittenden: The Model in Action
+Austin had a Q1 for the record books and is the clearest proof point for the project management model:
+
+76 DSRs completed (25.3/month) — 49% above the team average of 17/month
+19-day median lead time — 42% faster than the GSO Q1 median of 32 days
+68% of his DSRs closed within 30 days
+$107M in GPV onboarded across his Q1 portfolio
+109 partner DSAs dispatched in Q1 (1.43 per DSR) — he gave nearly every installation, training, and site survey to a partner
+
+His work type mix was perfectly balanced: 20 Premium, 20 Optimization Calls, 20 Plus, 7 Onsite, 4 Payroll. He did not cherry-pick easy work — he ran the full complexity spectrum and still posted the fastest lead times on the team.
+
+His partner dispatch breakdown: 43 to Absolute POS, 35 to F3 Technologies, 20 to Solio Marlow, 11 to Sora Partners. He used all four major partners and kept them fully loaded.
+
+March was his breakout month: 42 completions against 50 created — nearly 1:1 throughput-to-inbound while managing a 35-DSR active pipeline. That is elite-level pipeline management.
+
+The Top 10 Tell the Same Story
+The Q1 leaderboard reinforces the pattern:
+
+1. Griffin Ulsh — 78 completed (26.0/mo), 110 DSAs dispatched (1.41/DSR)
+2. Austin Crittenden — 76 completed (25.3/mo), 117 DSAs dispatched (1.54/DSR)
+3. Meven Le Corre — 69 completed (23.0/mo), 39 DSAs (0.57/DSR) — EMEA-style self-execution
+4. Michael Bavaro — 69 completed (23.0/mo), 193 DSAs (2.80/DSR) — heaviest partner user
+5. Miles McMillin — 66 completed (22.0/mo), 65 DSAs (0.98/DSR)
+6. Moussa Kamakate — 65 completed (21.7/mo), 184 DSAs (2.83/DSR)
+7. Travis Castroman — 63 completed (21.0/mo), 255 DSAs (4.05/DSR) — most DSAs on the team
+8. Ben Braun — 62 completed (20.7/mo), 53 DSAs (0.85/DSR) — APAC, limited partner coverage
+9. Livia Horn-Scarpulla — 62 completed (20.7/mo), 271 DSAs (4.37/DSR)
+10. Lee Williamson — 59 completed (19.7/mo), 105 DSAs (1.78/DSR)
+
+7 of the top 10 had above-median partner utilization. The exceptions (Meven, Ben) operate in regions with less partner coverage — proving they can still perform, but also showing the ceiling is higher with partners.
+
+Trends Moving in the Right Direction
+Several leading indicators confirm GSO is on the right trajectory:
+
+March completions recovered to 680 after the January dip (468) — the team absorbed 10 new hires and got back to near-peak output in 8 weeks
+
+March lead time hit 29-day median — the best in 6 months, down from the 37-day January spike during new hire onboarding
+
+Partner DSA volume tripled: 264/month in December to 1,827 in March. The partner model is not a pilot anymore — it is scaling
+
+BPO activities doubled: 926 in December to 2,294 in March. The operational backbone is keeping pace
+
+CSAT held at 4.73/5.0 through all of this. Quality did not slip despite the throughput push and new hire integration
+
+8 of 10 NA new hires are already producing completions within their first 4-8 weeks — the fastest onboarding cohort in GSO history
+
+The bottom line: GSO is not just growing headcount — it is changing how it operates. The project management model, powered by 3P partners, is producing measurably better outcomes. The reps who adopted it earliest are the ones at the top of the leaderboard. The task now is making this the default, not the exception.
+
+
+3. Bottlenecks
+📊 Supporting data: "Pipeline & Bottlenecks" spreadsheet — Tabs 1-4
+3a. The Pipeline Problem
+The pipeline is now at 997 DSRs (777 active + 220 on hold). At current completion rates, that is 1.6 months of backlog — and it is growing by ~212/month.
+
+What the 997 consists of:
+
+By Work Type: Onsite 344 (35%) | Premium 341 (34%) | Plus 135 (14%) | Unclassified 92 (9%) | Payroll 43 (4%) | Optimization Call 22 (2%) | Other 20 (2%). Onsite + Premium = 69% of the pipeline and carry the longest lead times (46-48 day median).
+
+By Region: US East 358 (36%) | US West 261 (26%) | EMEA 228 (23%) | APAC 150 (15%)
+
+By Country: US 563 (56%) | GB 135 (14%) | AU 128 (13%) | CA 53 (5%) | ES 48 (5%) | Other 70 (7%)
+
+When Created: 59% entered the pipeline in March 2026 alone. Only 10% predates July 2025 — these are the legacy items discussed below.
+
+GPV at Stake: $6.0B total GPV across 938 DSRs with GPV data. Median $1.0M per DSR.
+
+Pipeline Freshness: 77% of DSRs were modified in the last 7 days. 9% have had no activity in 60+ days.
+
+Pipeline Aging:
+
+0-14 days: 274 (35%) — fresh inbound
+15-30 days: 228 (29%)
+31-60 days: 133 (17%)
+61-90 days: 20 (3%)
+91-180 days: 19 (3%)
+180+ days: 103 (13%) — legacy items to audit
+
+64% of the pipeline is less than 30 days old. The 103 DSRs at 180+ days are legacy items that should be audited for cancellation or re-assignment.
+
+110 DSRs (14%) are stale 30+ days — no modification at all. These are stuck.
+3b. The US West Gap
+📊 Supporting data: "US West Deep Dive" spreadsheet
+
+US West has 12 roster slots but only 6 producing reps. The other 6 are recent hires (first DSR dates in March 2026):
+
+Producing reps: Michael Bavaro (69), Travis Castroman (63), Ashley McDonald (56), Olignne Diaz (53), Ruben Reynoso (51), John Tudhope (1 — just started)
+
+Ramping (March 2026 start): Janayra Rivera Algarin, Jasmine Johnson, Kalani Cuaresma, Taylar Jones
+
+Not yet active: Kat Gleason, Paul Kim (zero DSRs assigned)
+
+US West is effectively running at 50% capacity right now, but should see significant uplift in Q2 as these reps ramp.
+3c. Rejected DSRs 
+Missing Info: 102 DSRs (13%) — #1 tagged blocker
+Seller Pushed Live Date: 43 (6%)
+Seller Non-Responsive: 24 (3%)
+Waiting on AE: 19 (2%)
+Site/Premise Work Needed: 17 (2%)
+
+18% of the pipeline is blocked on external dependencies. Tightening intake requirements and AE handoff quality could free ~140 DSRs.
+
+
+4. Quality Metrics
+📊 Supporting data: "CSAT & Quality" tab in Throughput spreadsheet
+
+Despite the capacity pressure, quality is holding:
+
+CSAT: 4.73/5.0 — 94% rate 4+ stars, only 4% detractors (7 of 187)
+BPO: 1,529 activities/month, 91% completion rate
+Late cancellations: 11/month (~132/year). A late cancellation is a partner-dispatched appointment (training, installation, or site visit) that is cancelled within 24 hours of the scheduled time. Absolute POS and Sora Partners account for ~50% of these, but the root cause is typically on the GSO/seller side — sellers cancel or go dark because expectations were not set properly during the onboarding handoff. This is a GSO process issue, not a partner performance issue.
+
+Productivity impact: Of the 132 late cancellations over the past 12 months, 88 (67%) were cancelled after the scheduled time — meaning the partner tech was already deployed or waiting and the seller was a no-show. On average, these cancellations occurred 15 hours past the appointment time. Only 43 (33%) were cancelled before the scheduled time with any notice at all. At an average cost of ~$720 per partner activity, an estimated 85% of late-cancelled appointments cannot be rescheduled to another seller on the same day. That puts the annual wasted partner spend at ~$81,000 and ~560 lost tech-hours per year (equivalent to ~0.3 FTE of partner capacity sitting idle). 54 of the 132 were onsite appointments involving travel and physical prep — these carry the highest per-cancel cost.
+
+Tighter seller-readiness validation before scheduling partner appointments would reduce these significantly. A simple pre-appointment confirmation 48 hours out — verifying the seller has hardware, network access, and a confirmed point of contact — could eliminate the majority of no-shows
+
+The team is protecting quality by letting the pipeline grow rather than rushing work. Right trade-off for now, but not sustainable past Q2.
+
+
+5. How Hiring & 3P Changes the Math
+📊 Supporting data: "Capacity Model" spreadsheet
+Current Structural Deficit
+Monthly demand: 824 DSRs
+Monthly supply: 612 DSRs
+Gap: -212 DSRs/month accumulating
+Active producing reps: 36 of 44 roster
+Per-rep capacity: 17 completions/month (veterans avg 20.2/month)
+Reps needed to close gap: ~13 FTE
+
+Critical context: The 36-of-44 number already reflects 10 new NA hires onboarded in Q1. Of those 10, 5 are already producing at or above veteran levels (Griffin Ulsh 26/mo, Miles McMillin 22/mo, Travis Castroman 21/mo, Livia Horn-Scarpulla 21/mo, Ashley McDonald 19/mo). The remaining 5 started in mid-March and are ramping with DSRs assigned. An additional 2 NA hires (Joe Pharaon, John Tudhope) have their first completions. The gap is not a staffing shortfall — it is a ramp timing issue. The capacity is hired; it has not yet fully come online.
+
+Hiring pipeline closing the gap:
+10 NA new hires (onboarded Q1): 8 of 10 producing, 5 at full velocity. Incremental gain as remaining 5 ramp to full: +100/month
+2 AU offers out now: +40/month at full productivity
+2 additional US offers out: +40/month at full productivity
+3 additional AU hires (Q2): +60/month at full productivity
+Total incremental when fully ramped: +240/month — more than closes the 212 gap
+The NA New Hire Ramp (10 Onboarded, 8 Producing)
+We onboarded 10 new hires across NA in Q1. Five are already at or above veteran output levels: Griffin Ulsh (26/mo), Miles McMillin (22/mo), Travis Castroman (21/mo), Livia Horn-Scarpulla (21/mo), and Ashley McDonald (19/mo). Two more (Joe Pharaon, John Tudhope) have their first completions. The remaining 5 started mid-March and have DSRs assigned — Jasmine Johnson, Kalani Cuaresma, Paige Benik, Chelsea Falato, and Janayra Rivera Algarin. Kat Gleason and Paul Kim have not yet started.
+
+As the remaining 5 ramping reps reach 70% productivity by June:
+
+Additional capacity: +71 DSRs/month
+Revised gap: 212 → ~141 DSRs/month
+
+This is the single biggest near-term lever and it is already underway. Combined with the 2 US offers out, NA will have 12 new hires contributing by Q2 — the largest regional investment in GSO history.
+Australia: 2 Offers Out + 3 Additional Q2 Hires
+Australia is GSO's third-largest market by volume and currently the most capacity-constrained region per rep.
+
+Current state (6 AU reps):
+Q1 demand: 334 DSRs created (111/month)
+Q1 supply: 292 completed (97/month)
+Monthly gap: +14 DSRs accumulating
+Current AU pipeline: 128 DSRs (99 active + 29 on hold) — 1.3 months of backlog
+Pipeline mix: 46% Onsite, 30% Premium — the heaviest work types
+Q1 lead time: 33 day median, but P90 at 108 days — worst of any region
+GPV at stake: $240M across the AU pipeline
+
+The 6 reps handling AU today are running at 16.2 completions/rep/month on average, but the distribution is uneven: Ben Braun (62 Q1 completions) and Kristian Bojsen-Moller (49) carry the load, while Josh Stoffels (11) and Jamahl G (15) are still ramping. Chandreyee Bose sits at 34 completions with the largest individual pipeline (32 DSRs).
+
+2 hires with offers out now (starting Q2):
+These two reps will add ~34 completions/month at full productivity (17/rep). During ramp:
+Months 1-2: +12/month (35% productivity) — gap narrows from +14 to +2
+Month 3: +24/month (70% productivity) — AU reaches equilibrium, pipeline stops growing
+Month 4+: +34/month (full productivity) — AU begins drawing down the 128-DSR backlog
+Projected AU pipeline by end of Q2: ~110 (down from 128)
+
+3 additional hires in Q2 (for Q3 impact):
+With 3 more AU reps starting mid-Q2 and reaching 70% by Q3:
+Q3 capacity: 97 current + 34 (first 2 hires at full) + 36 (3 new at 70%) = ~167/month
+Q3 demand (projected): ~115/month (based on trailing trend)
+Q3 surplus: +52 DSRs/month — active pipeline drawdown
+Projected AU pipeline by end of Q3: ~50-60 DSRs — a healthy 2-3 week backlog
+AU lead time impact: With pipeline pressure relieved, median should drop from 33d toward 25d as reps are no longer triaging a 20+ DSR queue each
+
+The 5 new AU hires combined represent a 83% increase in AU headcount (6 to 11 reps). This transforms Australia from the most constrained region to one with capacity headroom — critical as AU inbound has been volatile (ranging from 65 to 166 DSRs/month over the last 12 months).
+3P Partner Scaling
+Current 3P partners handle ~1,190 DSAs/month. This is the equivalent of ~24-29 FTE in offloaded work.
+
+Partner Turnaround Speed by Activity Type
+Partners are fast. Across 2,812 completed partner-dispatched activities, the overall median turnaround from dispatch to DSR completion is 24 days. But the speed varies dramatically by activity type:
+
+Fastest activities (under 2 weeks median):
+Optimization Call: 6 day median (P90: 13d) — 101 completed. Fastest activity in the partner portfolio.
+Post Live Service (remote): 7d median — break/fix follow-ups
+Post Live Service (in person): 10d median — on-site follow-ups
+Post Live (Break/Fix): 12d median
+
+Mid-range activities (2-4 weeks median):
+POS Training (remote): 17d median (P90: 36d) — 176 completed
+Dashboard Training: 18d median (P90: 44d) — 292 completed
+Hardware Refresh: 14d median
+Go Live Support: 17d median
+SO Training Call: 19d median
+Menu Review Call: 23d median
+POS Training (in person): 23d median (P90: 43d) — 177 completed
+
+Longest activities (4+ weeks median):
+Site Survey: 26d median (P90: 51d) — 385 completed
+Installation: 27d median (P90: 57d) — 615 completed. Highest volume activity.
+Onsite Installation (Small): 29d median
+Onsite Installation (Small) + POS Training: 32d median (P90: 75d)
+Onsite Installation (Medium) + POS Training: 34d median (P90: 79d)
+Networking Only Site Survey: 34d median (P90: 80d)
+Onsite Installation (Large) + POS Training: 35d median (P90: 69d)
+
+Partner Speed Ranking (median days, dispatch to DSR close):
+Tech Pantry: 18 day median — fastest partner, 335 activities
+One World Rental AU: 19d — 82 activities
+Solio Marlow: 22d — 565 activities
+Absolute POS: 24d — 711 activities (highest volume)
+One World Rental UK: 24d — 74 activities
+Sora Partners: 25d — 657 activities
+F3 Technologies: 27d — 319 activities
+Eposability: 24d — 28 activities
+Ovation: 30d — 22 activities
+FiTech: 36d — 30 activities (slowest, but small sample)
+
+BPO Team Internal Speed (for comparison):
+The BPO team handles data migration and menu build tasks with actual created-to-completed tracking. Their turnaround is significantly faster because these are back-office tasks, not field appointments:
+Floor Plan Build: 1 day median (83% done in 3 days or less)
+Team/Customer/Gift Card Migration: 1-2 day median (75-83% in 3 days)
+Item Import: 2 day median
+Menu Build: 3 day median (86% in 7 days)
+Menu Build + Ordering Page: 4 day median
+Overall BPO: 2 day median, 91% completed within 7 days, 98% within 14 days
+
+Key takeaway: Partners complete field activities (installations, training, site surveys) in a 17-27 day median window. The bottleneck is not partner execution speed — it is the scheduling lead time driven by seller availability and readiness. This reinforces the case for tighter seller-readiness validation before dispatch.
+
+Highest-ROI 3P play: Shift Optimization Calls to partners. At 6-day median lead time and ~143/month, this frees ~7 FTE-equivalents for Premium/Onsite work. - Completed Already
+Combined Path: 10 NA Onboarded + 4 Offers Out (2 AU, 2 US) + 3 AU Q2 Hires + 3P Growth
+Now (Apr): 612/mo — 10 NA onboarded (8 producing, 5 at full velocity), 4 offers out (2 AU + 2 US), 3 more AU hires approved
+May-Jun: ~700-720/mo — remaining 5 NA ramp to full, AU + US offers start onboarding
+Q2 (Jul-Sep): ~780-810/mo — NA at full velocity, new AU/US hires ramping, 3 more AU start
+Q3 (Oct-Dec): ~850-900/mo — all 17 new hires at 70%+ productivity, gap closes to zero
+Q4 (Jan-Mar): ~940+/mo — full productivity, +28 surplus, pipeline draws down to <800 target
+
+17 total hires (10 NA + 2 AU offers + 2 US offers + 3 AU Q2) deliver +240/month incremental — converting the -212 gap into a surplus. The gap closes in Q3, not Q4, because the NA hires are further along than originally modeled.
+
+
+6. Recommendations
+Accelerate US West ramp — pair each new hire with a high-output mentor (Bavaro, Castroman, Reynoso). Target first solo completion by week 4. - In Progress Already
+
+Audit the 103 legacy DSRs (180+ days) — likely dead. Cancelling even half frees 50 slots and improves pipeline optics. - Will Look Into
+
+Attack "Missing Info" at intake Rejected DSRs — 102 DSRs blocked. Tightening AE handoff checklist could prevent 30-40% from entering incomplete. In Progress Already
+
+Explore shifting Optimization Calls to 3P — 143/month at 6-day median. Freeing ~7 FTE-equivalents is the highest-ROI 3P play. Completed Already
+
+Plan for 4 additional hires in Q2 (2 US, 1 EMEA, 1 APAC) to close remaining gap. Target July start for full productivity by Q4. In Progress Already. Note: Australia specifically has 2 offers out now plus 3 additional Q2 headcount approved — see the Australia section above for the projected impact on AU pipeline and lead times
+
+
+
+
+Methodology & Data Notes
+
+What's included in all metrics above:
+GSO channel Deal Support Requests (DSRs) with Record Type = "GSO Global Seller Onboarding"
+All work types: Onsite (25%), Optimization Call (23%), Premium (19%), Plus (17%), Payroll (4%), Tasks Only (4%), In-Person Refresh (1%), Appointments Migration (<1%), 3P Vendor Install (<1%)
+"Created" = DSR created date falls in that month, regardless of current status
+"Completed" = DSR reached a terminal status (Implementation Complete, Completed, or Transitioned) with completion date in that month — these DSRs may have been created in any prior period (64% were created same quarter, 32% prior quarter)
+"Cancelled" = DSR reached Rejected, Lost - No Seller Contact, Lost - Churn, or Lost
+"Net" = Created minus Completed minus Cancelled (represents pipeline growth/shrinkage)
+"Pipeline" = Active + On Hold DSRs assigned to current roster reps only (excludes departed reps' orphaned DSRs)
+
+What's excluded from all metrics above:
+BPO channel (31 reps under Jennifer Walker) — 3,197 total records, 903 created in Q1. These are tracked separately in the BPO Activities tab.
+Vendor Ops channel (4 reps: Megan Martchink, Kyle Rominger, Jean-Christophe Arthur, Meri Fakraufon) — 2,405 total records, 323 created in Q1.
+Draft DSRs — 1,357 records. Drafts are incomplete submissions that haven't entered the workflow.
+Combined: 6,959 records excluded from the 40,781 total in the system.
+
+Data sources:
+DSR records: Salesforce (via Snowflake FIVETRAN.APP_SALES_SFDC.DEAL_SUPPORT_REQUEST_C) → Airtable → Dashboard
+Partner DSA records: Salesforce Partnerships (via Snowflake FIVETRAN.APP_PARTNERSHIPS.DEAL_SUPPORT_ACTIVITY_C)
+BPO Activities: Salesforce Partnerships (Record Type = BPO Activity)
+CSAT: GetFeedback survey responses (last ~5 months)
+Vendor Spend: Airtable invoice tracking (929 invoices, 17 months)
+Goaling: Airtable goal tracking table
+
+Last refreshed: April 2, 2026

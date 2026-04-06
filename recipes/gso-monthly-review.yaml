@@ -1,0 +1,115 @@
+version: "1.0.0"
+title: "GSO Monthly Review"
+description: "Build a monthly operations review for GSO. Focused on the single month's performance with MoM and YoY comparisons, rep-level detail, and near-term action items. Lighter than the QBR but more granular on the current month."
+
+parameters:
+  - key: month
+    input_type: string
+    requirement: required
+    description: "Month to review, e.g. March 2026"
+  - key: data_date
+    input_type: string
+    requirement: required
+    description: "Data-as-of date, e.g. April 2, 2026"
+  - key: output_doc_id
+    input_type: string
+    requirement: optional
+    default: "new"
+    description: "Google Doc ID to overwrite, or 'new' to create a fresh doc"
+
+instructions: |
+  You are building the GSO Monthly Review for {{ month }}, data as of {{ data_date }}.
+  Work in /Users/mhofer/gso-dashboard. The Airtable base is appsnfWWzptN9cwD0.
+
+  ## PRINCIPLES
+  - Monthly reviews are tighter than QBRs. Target 3-4 pages max.
+  - Focus on the single month with MoM and YoY context.
+  - Every number comes from a fresh query. No cached data.
+  - The audience wants: what happened this month, how it compares, what's next.
+  - Use median for lead time metrics. Document in methodology.
+  - Inline hyperlink citations to source spreadsheets where available.
+
+  ## STRUCTURE
+
+  ### 1. Title Block
+  - Title: "GSO Monthly Review — {{ month }}"
+  - Subtitle: "Data as of {{ data_date }}" (italic)
+  - CONFIDENTIAL tag
+
+  ### 2. Month at a Glance (single table)
+  Query Airtable DSR Facts for the review month, prior month, and same month last year.
+  Build one summary table:
+
+  | Metric | This Month | Prior Month | MoM Change | Same Month Last Year | YoY Change |
+  |---|---|---|---|---|---|
+  | DSRs Created | | | | | |
+  | DSRs Completed | | | | | |
+  | Net (pipeline change) | | | | | |
+  | Median Lead Time | | | | | |
+  | Active Pipeline | | | | | |
+  | Producing Reps | | | | | |
+  | Completions per Rep | | | | | |
+  | CSAT | | | | | |
+
+  ### 3. Throughput Detail
+  Monthly trend table (last 4 months): Month | Created | Completed | Cancelled | Net.
+  One paragraph on what drove the month's numbers (volume spike, seasonal pattern, hiring impact).
+
+  Regional breakdown table: Region | Reps | Created | Completed | Per Rep | MoM Change.
+  Call out the strongest and weakest region with one line each.
+
+  ### 4. Lead Times
+  Summary table: Metric | This Month | Prior Month | MoM Change.
+  Metrics: Median, P75, P90, percent within 30 days, percent over 90 days.
+
+  By work type table: Work Type | Median | Volume | Share of Pipeline.
+  One line on the structural constraint.
+
+  By region table: Region | Median | MoM Change.
+
+  ### 5. Pipeline Health
+  Current pipeline: total, active vs on hold, MoM change.
+  Pipeline composition table: Work Type | Count | Share.
+  Aging snapshot: Age Bucket | Count | Share.
+  Blocked DSRs: Blocker | Count.
+  One line on GPV at stake.
+
+  ### 6. Rep Performance
+  Top 5 reps this month: Rep | Completed | Lead Time | DSAs Dispatched.
+  Bottom 5 producing reps (1+ completions): Rep | Completed | Pipeline Size | Note.
+  New hire ramp status: Rep | Start Date | This Month Completions | Cumulative.
+  One line on PM model adoption (high vs low partner utilization throughput).
+
+  ### 7. Partner & 3P Activity
+  Partner volume this month vs prior month.
+  Partner speed table (top 5 by volume): Partner | Volume | Median Days.
+  Late cancellations this month: count, cost, root cause.
+  BPO activity summary: volume, completion rate, avg turnaround.
+
+  ### 8. Headcount & Capacity
+  Current roster: Region | Roster | Producing | Ramping | Vacant.
+  Departures this month (if any): Name | Region | Type | Capacity Lost.
+  New hires this month (if any): Name | Region | Status | First Completions.
+  Capacity math: current supply vs demand, gap, projected next month.
+
+  ### 9. Actions & Focus for Next Month
+  Bulleted list of 3-5 specific actions for the coming month.
+  Each item: bold action, one-line rationale, owner or status.
+  These should be concrete and time-bound, not strategic platitudes.
+
+  ### 10. Methodology Note (brief)
+  Two lines: what's included (GSO channel, no drafts), what metric definitions are used (median DTC, throughput-to-demand ratio).
+  Link to full methodology in the QBR if one exists.
+
+  ## CREATING THE DOCUMENT
+  1. Build as markdown with all tables and inline citations.
+  2. Save to /tmp/gso_monthly_{{ month }}.md as backup.
+  3. If output_doc_id is 'new', create a new Google Doc via Googledrive.upsert.
+     Otherwise, overwrite the existing doc.
+  4. Apply formatting:
+     - Bold key numbers in the Month at a Glance table
+     - Green (#34a853) for positive MoM/YoY changes
+     - Red (#ea4335) for negative MoM/YoY changes
+  5. Report the final doc URL.
+
+prompt: "Build the GSO Monthly Review for {{ month }} with data as of {{ data_date }}. Output doc: {{ output_doc_id }}. Focus on what happened this month, how it compares MoM and YoY, and what's next. Keep it to 3-4 pages."
