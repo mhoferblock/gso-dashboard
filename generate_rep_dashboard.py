@@ -240,9 +240,14 @@ body{{font-family:'Inter',-apple-system,sans-serif;background:#f8fafc;color:#1e2
 .sd-csat-comment{{font-size:0.8rem;color:#475569;margin-top:4px;font-style:italic;}}
 .sd-csat-meta{{font-size:0.65rem;color:#94a3b8;margin-top:2px;}}
 
-/* Export button */
-.export-btn{{font-size:0.7rem;padding:5px 12px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#475569;cursor:pointer;}}
+/* Export */
+.export-group{{position:relative;display:inline-block;}}
+.export-btn{{font-size:0.7rem;padding:5px 12px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#475569;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}}
 .export-btn:hover{{background:#f1f5f9;}}
+.export-menu{{display:none;position:absolute;right:0;bottom:100%;margin-bottom:4px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:50;min-width:140px;overflow:hidden;}}
+.export-menu.show{{display:block;}}
+.export-menu button{{display:block;width:100%;text-align:left;padding:8px 14px;font-size:0.75rem;border:none;background:none;cursor:pointer;color:#374151;}}
+.export-menu button:hover{{background:#f1f5f9;}}
 
 @media(max-width:768px){{
   .header{{padding:12px 16px;}}
@@ -267,8 +272,8 @@ body{{font-family:'Inter',-apple-system,sans-serif;background:#f8fafc;color:#1e2
     <select id="maxStale">
       <option value="">No Stale Limit</option>
       <option value="14">Hide &gt; 14d stale</option>
-      <option value="30" selected>Hide &gt; 30d stale</option>
-      <option value="60">Hide &gt; 60d stale</option>
+      <option value="30">Hide &gt; 30d stale</option>
+      <option value="60" selected>Hide &gt; 60d stale</option>
       <option value="90">Hide &gt; 90d stale</option>
     </select>
     <input type="text" id="searchBox" placeholder="Search seller, rep, AE…" />
@@ -309,7 +314,14 @@ body{{font-family:'Inter',-apple-system,sans-serif;background:#f8fafc;color:#1e2
       </div>
       <div id="trackerBoard" class="tracker-board"></div>
       <div style="text-align:right;margin-top:8px;">
-        <button class="export-btn" id="exportCsvBtn">📥 Export CSV</button>
+        <div class="export-group">
+          <button class="export-btn" onclick="toggleMenu('trackerExportMenu')">📥 Export ▾</button>
+          <div class="export-menu" id="trackerExportMenu">
+            <button onclick="exportData('tracker','csv')">📄 CSV</button>
+            <button onclick="exportData('tracker','excel')">📊 Excel</button>
+            <button onclick="exportData('tracker','pdf')">📑 PDF</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -318,7 +330,17 @@ body{{font-family:'Inter',-apple-system,sans-serif;background:#f8fafc;color:#1e2
   <div class="tab-content" id="tab-pipeline">
     <div id="pipelineKpis" class="kpi-row"></div>
     <div class="card">
-      <div class="card-title">Active Pipeline</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="card-title">Active Pipeline</div>
+        <div class="export-group">
+          <button class="export-btn" onclick="toggleMenu('pipelineExportMenu')">📥 Export ▾</button>
+          <div class="export-menu" id="pipelineExportMenu">
+            <button onclick="exportData('pipeline','csv')">📄 CSV</button>
+            <button onclick="exportData('pipeline','excel')">📊 Excel</button>
+            <button onclick="exportData('pipeline','pdf')">📑 PDF</button>
+          </div>
+        </div>
+      </div>
       <div class="table-wrap"><table class="data-table" id="pipelineTable"><thead></thead><tbody></tbody></table></div>
     </div>
   </div>
@@ -327,8 +349,17 @@ body{{font-family:'Inter',-apple-system,sans-serif;background:#f8fafc;color:#1e2
   <div class="tab-content" id="tab-completed">
     <div id="completedKpis" class="kpi-row"></div>
     <div class="card">
-      <div class="card-title">Recent Completions</div>
-      <div class="card-subtitle">Last 90 days</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div><div class="card-title">Recent Completions</div><div class="card-subtitle">Last 90 days</div></div>
+        <div class="export-group">
+          <button class="export-btn" onclick="toggleMenu('completedExportMenu')">📥 Export ▾</button>
+          <div class="export-menu" id="completedExportMenu">
+            <button onclick="exportData('completed','csv')">📄 CSV</button>
+            <button onclick="exportData('completed','excel')">📊 Excel</button>
+            <button onclick="exportData('completed','pdf')">📑 PDF</button>
+          </div>
+        </div>
+      </div>
       <div class="table-wrap"><table class="data-table" id="completedTable"><thead></thead><tbody></tbody></table></div>
     </div>
   </div>
@@ -342,7 +373,17 @@ body{{font-family:'Inter',-apple-system,sans-serif;background:#f8fafc;color:#1e2
       <div id="weeklyTrend"></div>
     </div>
     <div class="card">
-      <div class="card-title">📊 Completion Time by Work Type</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="card-title">📊 Completion Time by Work Type</div>
+        <div class="export-group">
+          <button class="export-btn" onclick="toggleMenu('perfExportMenu')">📥 Export ▾</button>
+          <div class="export-menu" id="perfExportMenu">
+            <button onclick="exportData('performance','csv')">📄 CSV</button>
+            <button onclick="exportData('performance','excel')">📊 Excel</button>
+            <button onclick="exportData('performance','pdf')">📑 PDF</button>
+          </div>
+        </div>
+      </div>
       <div class="table-wrap"><table class="data-table" id="wtTable"><thead></thead><tbody></tbody></table></div>
     </div>
   </div>
@@ -938,19 +979,129 @@ document.getElementById('searchBox').addEventListener('input',function(){{
 document.getElementById('trackerSort').addEventListener('change',function(){{renderTracker(getActive());}});
 document.addEventListener('keydown',function(e){{if(e.key==='Escape')closeSellerDetail();}});
 
-// CSV Export
-document.getElementById('exportCsvBtn').addEventListener('click',function(){{
-  var facts=window._exportActive||[];
-  if(!facts.length)return alert('No data');
-  var cols=['Seller','Rep','Team Lead','Status','Work Type','Days Open','Days Stale','GPV','AE','Country','Created','DSR ID'];
-  var rows=[cols.join(',')];
-  facts.forEach(function(f){{
-    rows.push([f.seller,f.rep,f.teamLead,f.status,f.workType,f.daysOpen,f.daysStale,f.gpvUsd,f.oppOwner,f.country,f.createdDate,f.id].map(function(v){{return'"'+String(v||'').replace(/"/g,'""')+'"';}}).join(','));
-  }});
-  var blob=new Blob([rows.join('\\n')],{{type:'text/csv'}});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='gso-rep-export.csv';a.click();
+// ============================================================
+// EXPORT ENGINE (CSV, Excel, PDF)
+// ============================================================
+function toggleMenu(id){{
+  document.querySelectorAll('.export-menu').forEach(function(m){{if(m.id!==id)m.classList.remove('show');}});
+  document.getElementById(id).classList.toggle('show');
+}}
+document.addEventListener('click',function(e){{
+  if(!e.target.closest('.export-group'))document.querySelectorAll('.export-menu').forEach(function(m){{m.classList.remove('show');}});
 }});
+
+function getExportData(source){{
+  var cols,rows;
+  if(source==='tracker'||source==='pipeline'){{
+    var facts=window._exportActive||[];
+    cols=['Seller','Rep','Team Lead','Status','Work Type','Days Open','Days Stale','GPV (USD)','AE','Country','Created','Salesforce Link'];
+    rows=facts.map(function(f){{return[f.seller,f.rep,f.teamLead,f.status,f.workType,f.daysOpen,f.daysStale,f.gpvUsd,f.oppOwner,f.country,f.createdDate,sfUrl(f.id)];}});
+  }}else if(source==='completed'){{
+    var facts=getCompleted();
+    cols=['Seller','Rep','Work Type','Days to Complete','Completed Date','GPV (USD)','AE','Country','Salesforce Link'];
+    rows=facts.map(function(f){{return[f.seller,f.rep,f.workType,f.daysToComplete,f.completedDate,f.gpvUsd,f.oppOwner,f.country,sfUrl(f.id)];}});
+  }}else if(source==='performance'){{
+    var allFacts=getFiltered().filter(function(f){{return f.category==='completed'&&ROSTER.has(f.rep);}});
+    var d90=new Date();d90.setDate(d90.getDate()-90);var cut=d90.toISOString().substring(0,10);
+    var recent=allFacts.filter(function(f){{return f.completedDate>=cut;}});
+    cols=['Seller','Rep','Work Type','Days to Complete','Completed Date','GPV (USD)','AE','Salesforce Link'];
+    rows=recent.map(function(f){{return[f.seller,f.rep,f.workType,f.daysToComplete,f.completedDate,f.gpvUsd,f.oppOwner,sfUrl(f.id)];}});
+  }}
+  return{{cols:cols,rows:rows}};
+}}
+
+function exportData(source,format){{
+  var data=getExportData(source);
+  if(!data.rows||!data.rows.length)return alert('No data to export');
+  document.querySelectorAll('.export-menu').forEach(function(m){{m.classList.remove('show');}});
+
+  var repVal=document.getElementById('repFilter').value;
+  var teamVal=document.getElementById('teamFilter').value;
+  var label=repVal||teamVal||'all';
+  var safeName='gso-'+source+'-'+label.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase();
+
+  if(format==='csv'){{
+    var csvRows=[data.cols.join(',')];
+    data.rows.forEach(function(r){{
+      csvRows.push(r.map(function(v){{return'"'+String(v==null?'':v).replace(/"/g,'""')+'"';}}).join(','));
+    }});
+    downloadBlob(csvRows.join('\\n'),'text/csv;charset=utf-8;',safeName+'.csv');
+  }}
+  else if(format==='excel'){{
+    // Build Excel XML (SpreadsheetML) — works in Excel without libraries
+    var xml='<?xml version="1.0"?>\\n<?mso-application progid="Excel.Sheet"?>\\n';
+    xml+='<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\\n';
+    xml+='<Styles><Style ss:ID="hdr"><Font ss:Bold="1" ss:Size="11"/><Interior ss:Color="#E2E8F0" ss:Pattern="Solid"/></Style>';
+    xml+='<Style ss:ID="num"><NumberFormat ss:Format="#,##0"/></Style>';
+    xml+='<Style ss:ID="usd"><NumberFormat ss:Format="$#,##0"/></Style></Styles>\\n';
+    xml+='<Worksheet ss:Name="'+source+'"><Table>\\n';
+    // Header
+    xml+='<Row>';
+    data.cols.forEach(function(c){{xml+='<Cell ss:StyleID="hdr"><Data ss:Type="String">'+escXml(c)+'</Data></Cell>';}});
+    xml+='</Row>\\n';
+    // Data rows
+    data.rows.forEach(function(r){{
+      xml+='<Row>';
+      r.forEach(function(v,i){{
+        var col=data.cols[i]||'';
+        if(v==null)v='';
+        if(typeof v==='number'&&!isNaN(v)){{
+          var style=col.includes('GPV')||col.includes('USD')?'usd':'num';
+          xml+='<Cell ss:StyleID="'+style+'"><Data ss:Type="Number">'+v+'</Data></Cell>';
+        }}else{{
+          xml+='<Cell><Data ss:Type="String">'+escXml(String(v))+'</Data></Cell>';
+        }}
+      }});
+      xml+='</Row>\\n';
+    }});
+    xml+='</Table></Worksheet></Workbook>';
+    downloadBlob(xml,'application/vnd.ms-excel',safeName+'.xls');
+  }}
+  else if(format==='pdf'){{
+    // Build printable HTML and trigger print dialog
+    var w=window.open('','_blank','width=1000,height=700');
+    var h='<!DOCTYPE html><html><head><title>'+escXml(safeName)+'</title>';
+    h+='<style>body{{font-family:Inter,-apple-system,sans-serif;padding:24px;color:#1e293b;}}';
+    h+='h1{{font-size:16px;margin-bottom:4px;}}p{{font-size:11px;color:#64748b;margin-bottom:12px;}}';
+    h+='table{{width:100%;border-collapse:collapse;font-size:10px;}}';
+    h+='th{{text-align:left;padding:6px 8px;background:#f1f5f9;border-bottom:2px solid #cbd5e1;font-weight:700;font-size:9px;text-transform:uppercase;}}';
+    h+='td{{padding:5px 8px;border-bottom:1px solid #f1f5f9;}}';
+    h+='tr:nth-child(even){{background:#fafafa;}}';
+    h+='.footer{{margin-top:16px;font-size:9px;color:#94a3b8;text-align:center;}}';
+    h+='@media print{{body{{padding:12px;}}@page{{margin:0.5in;size:landscape;}}}}</style></head><body>';
+    var filterDesc=[];
+    if(teamVal)filterDesc.push('Team: '+teamVal);
+    if(repVal)filterDesc.push('Rep: '+repVal);
+    var maxS=document.getElementById('maxStale').value;
+    if(maxS)filterDesc.push('Max stale: '+maxS+'d');
+    h+='<h1>GSO '+source.charAt(0).toUpperCase()+source.slice(1)+' Report</h1>';
+    h+='<p>'+(filterDesc.length?filterDesc.join(' · ')+' · ':'')+data.rows.length+' records · Generated '+new Date().toLocaleDateString()+'</p>';
+    h+='<table><thead><tr>';
+    data.cols.forEach(function(c){{if(c!=='Salesforce Link')h+='<th>'+escXml(c)+'</th>';}});
+    h+='</tr></thead><tbody>';
+    data.rows.forEach(function(r){{
+      h+='<tr>';
+      r.forEach(function(v,i){{
+        if(data.cols[i]==='Salesforce Link')return;
+        var val=v==null?'':typeof v==='number'&&data.cols[i].includes('GPV')?fmtUSD(v):String(v);
+        h+='<td>'+escXml(val)+'</td>';
+      }});
+      h+='</tr>';
+    }});
+    h+='</tbody></table>';
+    h+='<div class="footer">GSO Rep Dashboard · '+new Date().toLocaleString()+'</div>';
+    h+='<script>setTimeout(function(){{window.print();}},300);</'+'script></body></html>';
+    w.document.write(h);w.document.close();
+  }}
+}}
+
+function downloadBlob(content,type,filename){{
+  var blob=new Blob([content],{{type:type}});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=filename;a.click();URL.revokeObjectURL(a.href);
+}}
+
+function escXml(s){{return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}}
 
 // Initial render
 renderAll();
