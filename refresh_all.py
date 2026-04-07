@@ -277,9 +277,12 @@ def backup_dashboard():
     backup_path = os.path.join(BACKUP_DIR, f"dashboard_{ts}.html")
     shutil.copy2(DASHBOARD, backup_path)
     print(f"✅ Backup: {backup_path}")
-    # Keep only last 10 backups
-    backups = sorted([f for f in os.listdir(BACKUP_DIR) if f.startswith("dashboard_")])
-    for old in backups[:-10]:
+    # Keep only last 15 backups (sort by mtime to avoid deleting the just-created backup)
+    all_backups = sorted(
+        [f for f in os.listdir(BACKUP_DIR) if f.endswith(".html")],
+        key=lambda f: os.path.getmtime(os.path.join(BACKUP_DIR, f))
+    )
+    for old in all_backups[:-15]:
         os.remove(os.path.join(BACKUP_DIR, old))
     return backup_path
 
