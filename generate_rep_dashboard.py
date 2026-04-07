@@ -641,6 +641,49 @@ function renderAll(){{
 }}
 
 // ============================================================
+// NEXT STEP DETECTION
+// ============================================================
+var _dsaByDsr={{}};
+(GSO_DATA.dsaRecords||[]).forEach(function(d){{if(d.dr){{if(!_dsaByDsr[d.dr])_dsaByDsr[d.dr]=[];_dsaByDsr[d.dr].push(d);}} }});
+(GSO_DATA.bpoActivities||[]).forEach(function(d){{if(d.dr){{if(!_dsaByDsr[d.dr])_dsaByDsr[d.dr]=[];_dsaByDsr[d.dr].push(d);}} }});
+
+var SCHED_ST=new Set(['Tech Scheduled','Dispatch Submitted','Dispatch Acknowledged','Dispatch Accepted',
+  'Kickoff Call Pending','Received Seller Availability','Pending Seller Availability','In Progress','Initiating','Assigned','Reviewing']);
+var NEXT_MAP={{
+  'Submitted':'Assign to rep','Assigned':'Seller outreach','Seller Outreach Complete':'Schedule consultation',
+  'Consultation Complete':'Schedule first call','First Call Complete':'Dashboard training',
+  'Dashboard Training Complete':'App training','App Training Complete':'SO training',
+  'SO Training Complete':'Post-impl training','Trainings Complete - Post Implementation':'Go live',
+  '3P Service In Progress':'Awaiting partner','Task In Progress':'Complete task',
+  '1st Q&A Completed':'2nd Q&A','2nd Q&A Completed':'Implementation complete'
+}};
+
+function getNextStep(f){{
+  var dsas=_dsaByDsr[f.id]||[];
+  var upcoming=dsas.filter(function(d){{return SCHED_ST.has(d.st||'');}});
+  if(upcoming.length>0){{
+    upcoming.sort(function(a,b){{return(b.cd||'')>(a.cd||'')?1:-1;}});
+    var nx=upcoming[0];
+    return{{text:nx.at||'Activity',status:(nx.st||'').replace('Tech ','').replace('Dispatch ',''),type:'scheduled'}};
+  }}
+  var ss=f.subStatus||'';
+  if(ss&&ss!=='None'){{
+    if(ss.includes('Missing Info'))return{{text:'Missing info needed',status:'',type:'blocked'}};
+    if(ss.includes('Non-Responsive'))return{{text:'Seller non-responsive',status:'',type:'blocked'}};
+    if(ss.includes('Waiting on AE'))return{{text:'Waiting on AE',status:'',type:'blocked'}};
+    if(ss.includes('Site')||ss.includes('Premise'))return{{text:'Site work needed',status:'',type:'blocked'}};
+    if(ss.includes('Product Blocker'))return{{text:'Product blocker',status:'',type:'blocked'}};
+    if(ss.includes('Pushed Live'))return{{text:'Seller pushed date',status:'',type:'waiting'}};
+    if(ss.includes('Timeline'))return{{text:'Timeline TBD',status:'',type:'waiting'}};
+    if(ss.includes('Incorrect'))return{{text:'Incorrect escalation',status:'',type:'blocked'}};
+    return{{text:ss,status:'',type:'info'}};
+  }}
+  var implied=NEXT_MAP[f.status];
+  if(implied)return{{text:implied,status:'',type:'next'}};
+  return null;
+}}
+
+// ============================================================
 // RENDER: TRACKER BOARD
 // ============================================================
 function renderTracker(active){{
@@ -677,9 +720,19 @@ function renderTracker(active){{
       var h=health(f.daysStale);
       var cc=h==='red'?'tracker-card-red':h==='yellow'?'tracker-card-yellow':'';
       var sc=h==='red'?'color:#ef4444':h==='yellow'?'color:#ca8a04':'color:#22c55e';
+      var ns=getNextStep(f);
+      var nsHtml='';
+      if(ns){{
+        var icon=ns.type==='scheduled'?'📅':ns.type==='blocked'?'🚫':ns.type==='waiting'?'⏳':'➡️';
+        var nc=ns.type==='scheduled'?'#1d4ed8':ns.type==='blocked'?'#dc2626':ns.type==='waiting'?'#ca8a04':'#6366f1';
+        nsHtml='<div style="font-size:10px;color:'+nc+';font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+esc(ns.text)+(ns.status?' — '+esc(ns.status):'')+'">'+icon+' '+esc(ns.text);
+        if(ns.status)nsHtml+=' <span style="font-weight:400;opacity:0.7;">· '+esc(ns.status)+'</span>';
+        nsHtml+='</div>';
+      }}
       html+='<div class="tracker-card '+cc+'" onclick="openSellerDetail(\\''+esc(f.id)+'\\')">'+
         '<div class="tracker-card-seller">'+esc(f.seller||'Unknown')+'</div>'+
         '<div class="tracker-card-meta">'+esc(f.rep||'')+' · AE: '+esc(f.oppOwner||'—')+'</div>'+
+        nsHtml+
         '<div class="tracker-card-stale" style="'+sc+'">'+(f.daysStale||0)+'d stale</div>'+
         (f.gpvUsd?'<div style="font-size:0.65rem;color:#64748b;">'+fmtUSD(f.gpvUsd)+'</div>':'')+
         '</div>';
