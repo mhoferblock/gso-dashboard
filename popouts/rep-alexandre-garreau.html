@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alexandre Garreau — GSO Project Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; padding: 16px; }
+  
+  .popout-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+  .popout-title { font-size: 1.2rem; font-weight: 800; color: #0f172a; }
+  .popout-subtitle { font-size: 0.8rem; color: #64748b; }
+  .popout-badge { display: inline-block; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; font-size: 0.65rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 4px 12px; border-radius: 12px; }
+  .popout-updated { font-size: 0.65rem; color: #94a3b8; }
+  
+  /* Readiness Panel */
+  .readiness-panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .readiness-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .readiness-title { font-size: 0.9rem; font-weight: 700; color: #1e293b; }
+  .readiness-kpis { display: flex; gap: 8px; flex-wrap: wrap; }
+  .r-kpi { text-align: center; padding: 6px 14px; border-radius: 8px; min-width: 70px; }
+  .r-kpi-val { font-size: 1.2rem; font-weight: 800; }
+  .r-kpi-label { font-size: 0.6rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; }
+  .r-kpi-green { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .r-kpi-green .r-kpi-val { color: #16a34a; }
+  .r-kpi-yellow { background: #fefce8; border: 1px solid #fde68a; }
+  .r-kpi-yellow .r-kpi-val { color: #ca8a04; }
+  .r-kpi-red { background: #fef2f2; border: 1px solid #fecaca; }
+  .r-kpi-red .r-kpi-val { color: #dc2626; }
+  .r-kpi-blue { background: #eff6ff; border: 1px solid #bfdbfe; }
+  .r-kpi-blue .r-kpi-val { color: #2563eb; }
+  .r-gauge { width: 100%; height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; display: flex; margin-top: 6px; }
+  .r-gauge-seg { height: 100%; }
+  
+  /* Alerts */
+  .alert-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
+  .alert-card { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.15s; border-left: 4px solid #e2e8f0; }
+  .alert-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); transform: translateX(2px); }
+  .alert-card-red { border-left-color: #ef4444; }
+  .alert-card-yellow { border-left-color: #eab308; }
+  .alert-seller { font-size: 0.8rem; font-weight: 700; color: #0f172a; }
+  .alert-meta { font-size: 0.7rem; color: #64748b; }
+  .alert-score { font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 5px; white-space: nowrap; }
+  .alert-score-red { background: #fee2e2; color: #dc2626; }
+  .alert-score-yellow { background: #fef3c7; color: #ca8a04; }
+  
+  /* Tracker */
+  .tracker-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .tracker-controls select, .tracker-controls input { font-size: 0.75rem; padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; color: #374151; }
+  .tracker-controls input { min-width: 180px; }
+  .tracker-legend { display: flex; gap: 10px; font-size: 0.65rem; color: #64748b; margin-left: auto; }
+  .tracker-legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; vertical-align: middle; }
+  .tracker-board { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; min-height: 200px; }
+  .tracker-col { min-width: 200px; max-width: 240px; flex-shrink: 0; background: #f8fafc; border-radius: 8px; padding: 8px; }
+  .tracker-col-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .tracker-col-title { font-size: 0.7rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tracker-col-badge { font-size: 0.65rem; font-weight: 700; padding: 1px 7px; border-radius: 10px; color: #fff; }
+  .tracker-health-bar { width: 100%; height: 3px; background: #e2e8f0; border-radius: 2px; overflow: hidden; display: flex; margin-bottom: 6px; }
+  .tracker-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; transition: box-shadow 0.15s; border-left: 3px solid #22c55e; }
+  .tracker-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .tracker-card-yellow { border-left-color: #eab308; }
+  .tracker-card-red { border-left-color: #ef4444; }
+  .tracker-card-seller { font-size: 0.78rem; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tracker-card-meta { font-size: 0.65rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tracker-card-stale { font-size: 0.65rem; font-weight: 600; }
+  
+  /* Seller Detail Modal */
+  .sd-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.5); z-index: 9999; display: none; justify-content: flex-end; }
+  .sd-panel { width: min(600px, 90vw); height: 100vh; background: #fff; overflow-y: auto; box-shadow: -4px 0 24px rgba(0,0,0,0.15); animation: sdSlideIn 0.2s ease-out; }
+  @keyframes sdSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  .sd-close { position: absolute; top: 12px; right: 16px; font-size: 1.5rem; color: #94a3b8; cursor: pointer; background: none; border: none; z-index: 10; }
+  .sd-close:hover { color: #475569; }
+  .sd-hero { background: linear-gradient(135deg, #f8fafc, #eef2ff); padding: 20px; position: relative; }
+  .sd-hero h2 { font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; padding-right: 30px; }
+  .sd-hero-sub { font-size: 0.8rem; color: #64748b; margin-bottom: 12px; }
+  .sd-badge { display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; margin-bottom: 8px; }
+  .sd-badge-active { background: #dbeafe; color: #1d4ed8; }
+  .sd-badge-completed { background: #dcfce7; color: #166534; }
+  .sd-badge-cancelled { background: #fee2e2; color: #991b1b; }
+  .sd-badge-onhold { background: #fef3c7; color: #92400e; }
+  .sd-kpis { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sd-kpi { text-align: center; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; min-width: 70px; }
+  .sd-kpi-val { font-size: 1rem; font-weight: 800; color: #0f172a; }
+  .sd-kpi-val.red { color: #dc2626; }
+  .sd-kpi-val.yellow { color: #ca8a04; }
+  .sd-kpi-val.green { color: #16a34a; }
+  .sd-kpi-label { font-size: 0.55rem; color: #94a3b8; text-transform: uppercase; }
+  .sd-section { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; }
+  .sd-section-title { font-size: 0.85rem; font-weight: 700; color: #1e293b; margin-bottom: 10px; }
+  .sd-timeline { display: flex; align-items: center; gap: 0; overflow-x: auto; padding: 8px 0; }
+  .sd-tl-stage { display: flex; flex-direction: column; align-items: center; min-width: 60px; position: relative; }
+  .sd-tl-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #d1d5db; background: #fff; z-index: 1; }
+  .sd-tl-dot.done { background: #22c55e; border-color: #22c55e; }
+  .sd-tl-dot.current { background: #6366f1; border-color: #6366f1; animation: sdPulse 1.5s infinite; }
+  @keyframes sdPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); } 50% { box-shadow: 0 0 0 6px rgba(99,102,241,0); } }
+  .sd-tl-label { font-size: 0.55rem; color: #94a3b8; text-align: center; margin-top: 4px; max-width: 70px; }
+  .sd-tl-label.current { color: #4f46e5; font-weight: 700; }
+  .sd-tl-line { flex: 1; height: 2px; background: #e2e8f0; min-width: 10px; }
+  .sd-tl-line.done { background: #22c55e; }
+  .sd-tl-days { font-size: 0.5rem; color: #6366f1; font-weight: 600; }
+  .sd-field-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .sd-field { background: #f8fafc; border-radius: 6px; padding: 8px 10px; }
+  .sd-field-label { font-size: 0.6rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.3px; }
+  .sd-field-value { font-size: 0.8rem; font-weight: 600; color: #1e293b; }
+  .sd-dsa-card { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid #f1f5f9; border-radius: 6px; margin-bottom: 4px; border-left: 3px solid #e2e8f0; }
+  .sd-dsa-completed { border-left-color: #22c55e; }
+  .sd-dsa-scheduled { border-left-color: #3b82f6; }
+  .sd-dsa-cancelled { border-left-color: #ef4444; }
+  .sd-dsa-type { font-size: 0.8rem; font-weight: 600; color: #1e293b; }
+  .sd-dsa-meta { font-size: 0.65rem; color: #94a3b8; }
+  .sd-dsa-status { font-size: 0.65rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; white-space: nowrap; margin-left: auto; }
+  .sd-dsa-status.sd-dsa-completed { background: #dcfce7; color: #166534; }
+  .sd-dsa-status.sd-dsa-scheduled { background: #dbeafe; color: #1d4ed8; }
+  .sd-dsa-status.sd-dsa-cancelled { background: #fee2e2; color: #991b1b; }
+  .sd-dsa-status.sd-dsa-other { background: #f1f5f9; color: #475569; }
+  .sd-empty { text-align: center; padding: 16px; color: #94a3b8; font-size: 0.8rem; }
+  .sd-csat-card { padding: 10px 12px; border: 1px solid #f1f5f9; border-radius: 6px; margin-bottom: 4px; }
+  .sd-csat-stars { color: #eab308; font-size: 0.9rem; }
+  .sd-csat-comment { font-size: 0.8rem; color: #475569; margin-top: 4px; font-style: italic; }
+  .sd-csat-meta { font-size: 0.65rem; color: #94a3b8; margin-top: 2px; }
+  
+  /* Export button */
+  .export-btn { font-size: 0.7rem; padding: 4px 10px; border: 1px solid #d1d5db; border-radius: 5px; background: #fff; color: #475569; cursor: pointer; }
+  .export-btn:hover { background: #f1f5f9; }
+  
+  @media print {
+    body { padding: 0; }
+    .sd-overlay { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="popout-header">
+  <div>
+    <span class="popout-badge">GSO Project Tracker</span>
+    <div class="popout-title">Alexandre Garreau</div>
+    <div class="popout-subtitle">Team: Caleb Cunningham</div>
+  </div>
+  <div style="text-align:right;">
+    <div class="popout-updated">Last refreshed: 2026-04-07 09:59</div>
+  </div>
+</div>
+
+<!-- Readiness Panel -->
+<div id="readinessPanel" class="readiness-panel" style="display:none;"></div>
+
+<!-- Stale Alerts -->
+<div id="staleAlertsPanel" class="readiness-panel" style="display:none;"></div>
+
+<!-- Tracker -->
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:16px;">
+  <div class="tracker-controls">
+    <select id="trackerMaxStale">
+      <option value="">No Stale Limit</option>
+      <option value="14">Exclude &gt; 14d stale</option>
+      <option value="30" selected>Exclude &gt; 30d stale</option>
+      <option value="60">Exclude &gt; 60d stale</option>
+      <option value="90">Exclude &gt; 90d stale</option>
+      <option value="180">Exclude &gt; 180d stale</option>
+    </select>
+    <input type="text" id="trackerSearch" placeholder="Search seller, rep, or AE…" />
+    <select id="trackerSortBy">
+      <option value="stale">Sort: Most Stale First</option>
+      <option value="open">Sort: Longest Open First</option>
+      <option value="gpv">Sort: Highest GPV First</option>
+      <option value="recent">Sort: Most Recent First</option>
+    </select>
+    <div class="tracker-legend">
+      <span><span class="tracker-legend-dot" style="background:#22c55e;"></span>Fresh (&lt;7d)</span>
+      <span><span class="tracker-legend-dot" style="background:#eab308;"></span>Aging (7–14d)</span>
+      <span><span class="tracker-legend-dot" style="background:#ef4444;"></span>Stale (&gt;14d)</span>
+    </div>
+  </div>
+  <div id="trackerBoard" class="tracker-board"></div>
+  <div style="text-align:right;margin-top:8px;">
+    <button class="export-btn" id="trackerExportBtn">📥 Export CSV</button>
+  </div>
+</div>
+
+<!-- Seller Detail Modal -->
+<div id="sellerDetailOverlay" class="sd-overlay" onclick="if(event.target===this)closeSellerDetail();">
+  <div class="sd-panel" id="sellerDetailPanel"></div>
+</div>
+
+<script src="gso-data.js"></script>
+<script>
+
+// Filter config
+const FILTER_TYPE = 'rep';
+const FILTER_VALUE = 'Alexandre Garreau';
+const TEAMS = {"Ben Pomeroy": ["Ashley McDonald", "Janayra Rivera Algarin", "Jasmine Johnson", "John Tudhope", "Kalani Cuaresma", "Kat Gleason", "Michael Bavaro", "Olignne Diaz", "Paul Kim", "Ruben Reynoso", "Taylar Jones", "Travis Castroman"], "Caleb Cunningham": ["Alexandre Garreau", "Arantxa Abellan", "Eugeniu Vascu", "Francisco Alvarez", "Igor Rusu", "Kerry Nelson", "Lupe Buitrago Echeverria", "Merve Oancea", "Oleg Gnatovski", "Olga Kanna"], "Kamilla Warr": ["Ben Braun", "Chandreyee Bose", "Jamahl G", "Josh stoffels", "Kristian Bojsen-Moller", "Macarena Castillo", "Mary Hirata McJilton", "Misho Arai", "Takao Kinjo"], "Meaghan Biederman": ["Andrea Guevara", "Austin Crittenden", "Brandon Redmond", "Chelsea Falato", "Griffin Ulsh", "Joe Pharaon", "Josie Vogt", "Lee Williamson", "Livia Horn-Scarpulla", "Meven Le Corre", "Miles McMillin", "Moussa Kamakate", "Paige Benik"], "Vendor Ops": ["Megan Martchink", "Kyle Rominger", "Jean-Christophe Arthur", "Meri Fakraufon"]};
+
+// ============================================================
+// CORE UTILITIES
+// ============================================================
+const EXCHANGE_RATES = GSO_DATA.exchangeRates || {};
+function toUSD(v, curr) {
+  if (!v || !curr || curr === 'USD') return v || 0;
+  return (v || 0) * (EXCHANGE_RATES[curr] || 1);
+}
+function fmtNum(n) { return n == null ? '—' : Number(n).toLocaleString(); }
+function fmtUSD(n) {
+  if (n == null) return '—';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(0) + 'K';
+  return '$' + Math.round(n);
+}
+function esc(s) { return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+// Salesforce links
+const SF_BASE = 'https://squareinc.lightning.force.com/lightning/r/';
+function sfDsrUrl(id) { return SF_BASE + encodeURIComponent(id) + '/view'; }
+function sfLink(url, label) { return '<a href="' + url + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#4f46e5;text-decoration:none;font-size:0.7rem;font-weight:600;display:inline-flex;align-items:center;gap:3px;" title="Open in Salesforce">🔗 ' + esc(label || 'Salesforce') + '</a>'; }
+
+// Status classification
+const COMPLETED_STATUSES = new Set(['Implementation Complete', 'Transitioned', 'Completed']);
+const CANCELLED_STATUSES = new Set(['Rejected', 'Lost', 'Lost - No Seller Contact', 'Lost - Churn']);
+function classifyStatus(s) {
+  if (COMPLETED_STATUSES.has(s)) return 'completed';
+  if (CANCELLED_STATUSES.has(s)) return 'cancelled';
+  if (s === 'On Hold') return 'onHold';
+  if (s === 'Draft') return 'draft';
+  return 'active';
+}
+
+// Expand compressed fact
+function expandFact(r) {
+  if (r._expanded) return r;
+  r.id = r.id || r.i || '';
+  r.rep = r.rep || r.r || '';
+  r.teamLead = r.teamLead || r.tl || '';
+  r.seller = r.seller || r.s || '';
+  r.workType = r.workType || r.wt || '';
+  r.status = r.status || r.st || '';
+  r.subStatus = r.subStatus || r.ss || '';
+  r.country = r.country || r.co || '';
+  r.channel = r.channel || r.ch || '';
+  r.createdDate = r.createdDate || r.cd || '';
+  r.completedDate = r.completedDate || r.cpd || '';
+  r.goLiveDate = r.goLiveDate || r.gld || '';
+  r.daysOpen = r.daysOpen != null ? r.daysOpen : (r.do_ != null ? r.do_ : null);
+  r.daysToComplete = r.daysToComplete != null ? r.daysToComplete : (r.dtc != null ? r.dtc : null);
+  r.daysStale = r.daysStale != null ? r.daysStale : (r.ds != null ? r.ds : null);
+  r.gpvUsd = r.gpvUsd != null ? r.gpvUsd : (r.gpv != null ? r.gpv : null);
+  r.oppOwner = r.oppOwner || r.oo || '';
+  r.oppOwnerRole = r.oppOwnerRole || r.oor || '';
+  r.requestReason = r.requestReason || r.rr || '';
+  r.competitorPos = r.competitorPos || r.cp || '';
+  r.complexityScore = r.complexityScore != null ? r.complexityScore : (r.cx != null ? r.cx : null);
+  r.numLocations = r.numLocations != null ? r.numLocations : (r.nl != null ? r.nl : null);
+  r.category = classifyStatus(r.status);
+  r._expanded = true;
+  return r;
+}
+
+// Expand all facts
+const DSR_FACTS = (GSO_DATA.dsrFacts || []).map(expandFact);
+
+// Build roster for this popout
+const ROSTER = new Set();
+if (FILTER_TYPE === 'team') {
+  const teamReps = TEAMS[FILTER_VALUE] || [];
+  ROSTER.add(FILTER_VALUE);
+  teamReps.forEach(r => ROSTER.add(r));
+} else if (FILTER_TYPE === 'rep') {
+  ROSTER.add(FILTER_VALUE);
+} else {
+  // All
+  Object.keys(TEAMS).forEach(lead => {
+    ROSTER.add(lead);
+    (TEAMS[lead] || []).forEach(r => ROSTER.add(r));
+  });
+}
+
+// Get active pipeline for this view
+function getPipeFacts() {
+  return DSR_FACTS.filter(f =>
+    (f.category === 'active' || f.category === 'onHold') && ROSTER.has(f.rep)
+  );
+}
+
+// DSA count map
+const _dsaDsrCount = {};
+(GSO_DATA.dsaRecords || []).forEach(d => {
+  if (d.dr) _dsaDsrCount[d.dr] = (_dsaDsrCount[d.dr] || 0) + 1;
+});
+
+// ============================================================
+// 14-DAY READINESS SCORE
+// ============================================================
+const WT_TARGET_DAYS = {
+  'Optimization Call': 3, 'Tasks Only': 5, 'Plus': 5,
+  'Payroll': 5, 'Premium': 8, 'In-Person Refresh': 8,
+  'Half-day 3rd Party Vendor Install': 10, 'Onsite': 10,
+  'Full-day 3rd Party Vendor Install': 14
+};
+const STAGE_PROGRESS = {
+  'Submitted': 0, 'Assigned': 1, 'Seller Outreach Complete': 2,
+  'Consultation Complete': 3, 'First Call Complete': 4,
+  'Dashboard Training Complete': 5, 'App Training Complete': 6,
+  'SO Training Complete': 7, 'Trainings Complete - Post Implementation': 8,
+  '3P Service In Progress': 5, 'Task In Progress': 5,
+  '1st Q&A Completed': 9, '2nd Q&A Completed': 10, 'On Hold': -1
+};
+
+function compute14DayScore(f) {
+  var daysOpen = f.daysOpen || 0;
+  var daysStale = f.daysStale || 0;
+  var target = WT_TARGET_DAYS[f.workType] || 14;
+  var stageIdx = STAGE_PROGRESS[f.status] || 0;
+  var hasDsas = (_dsaDsrCount[f.id] || 0) > 0;
+  var cat = f.category || 'active';
+  var pace = daysOpen <= target ? 100 - (daysOpen / Math.max(target, 1) * 50) : Math.max(0, 50 - (daysOpen - target) * 3);
+  var fresh = daysStale <= 3 ? 100 : daysStale <= 7 ? 75 : daysStale <= 14 ? 40 : Math.max(0, 20 - (daysStale - 14));
+  var progress = cat === 'onHold' ? 10 : Math.min(100, stageIdx * 12);
+  var activity = hasDsas ? 50 : 0;
+  var score = Math.round(pace * 0.35 + fresh * 0.30 + progress * 0.20 + activity * 0.15);
+  var risk = score >= 60 ? 'on-track' : score >= 35 ? 'at-risk' : 'off-track';
+  return { score, risk, target };
+}
+
+// ============================================================
+// TRACKER STAGES
+// ============================================================
+const TRACKER_STAGES = [
+  'Submitted', 'Assigned', 'Seller Outreach Complete',
+  'Consultation Complete', 'First Call Complete',
+  'Dashboard Training Complete', 'App Training Complete',
+  'SO Training Complete', 'Trainings Complete - Post Implementation',
+  '3P Service In Progress', 'Task In Progress',
+  '1st Q&A Completed', '2nd Q&A Completed', 'On Hold'
+];
+const TRACKER_STAGE_SHORT = {
+  'Submitted': 'Submitted', 'Assigned': 'Assigned',
+  'Seller Outreach Complete': 'Seller Outreach', 'Consultation Complete': 'Consultation',
+  'First Call Complete': 'First Call', 'Dashboard Training Complete': 'Dash Training',
+  'App Training Complete': 'App Training', 'SO Training Complete': 'SO Training',
+  'Trainings Complete - Post Implementation': 'Post-Impl Training',
+  '3P Service In Progress': '3P Service', 'Task In Progress': 'Task In Progress',
+  '1st Q&A Completed': '1st Q&A', '2nd Q&A Completed': '2nd Q&A', 'On Hold': 'On Hold'
+};
+
+function trackerHealth(ds) {
+  if (ds == null) return 'green';
+  if (ds > 14) return 'red';
+  if (ds > 7) return 'yellow';
+  return 'green';
+}
+
+// ============================================================
+// RENDER FUNCTIONS
+// ============================================================
+function renderAll() {
+  var pipeFacts = getPipeFacts();
+  var maxStaleVal = parseInt(document.getElementById('trackerMaxStale')?.value || '0', 10);
+  var searchVal = (document.getElementById('trackerSearch')?.value || '').toLowerCase();
+  var sortVal = document.getElementById('trackerSortBy')?.value || 'stale';
+
+  var filtered = pipeFacts;
+  if (maxStaleVal > 0) filtered = filtered.filter(f => (f.daysStale || 0) <= maxStaleVal);
+  if (searchVal) filtered = filtered.filter(f =>
+    (f.seller || '').toLowerCase().includes(searchVal) ||
+    (f.rep || '').toLowerCase().includes(searchVal) ||
+    (f.oppOwner || '').toLowerCase().includes(searchVal)
+  );
+
+  // Sort
+  var sortFn = {
+    stale: (a, b) => (b.daysStale || 0) - (a.daysStale || 0),
+    open: (a, b) => (b.daysOpen || 0) - (a.daysOpen || 0),
+    gpv: (a, b) => (b.gpvUsd || 0) - (a.gpvUsd || 0),
+    recent: (a, b) => ((b.createdDate || '') > (a.createdDate || '') ? 1 : -1)
+  };
+
+  // Readiness panel
+  var rPanel = document.getElementById('readinessPanel');
+  if (rPanel && filtered.length > 0) {
+    var onTrack = 0, atRisk = 0, offTrack = 0, totalScore = 0;
+    filtered.forEach(f => {
+      var r = compute14DayScore(f); f._readiness = r; totalScore += r.score;
+      if (r.risk === 'on-track') onTrack++; else if (r.risk === 'at-risk') atRisk++; else offTrack++;
+    });
+    var avg = Math.round(totalScore / filtered.length);
+    var pOn = Math.round(onTrack / filtered.length * 100);
+    var pAt = Math.round(atRisk / filtered.length * 100);
+    var pOff = Math.round(offTrack / filtered.length * 100);
+    var h = '<div class="readiness-header"><div class="readiness-title">🎯 14-Day Readiness Score</div>';
+    h += '<div class="readiness-kpis">';
+    h += '<div class="r-kpi r-kpi-blue"><div class="r-kpi-val">' + avg + '</div><div class="r-kpi-label">Avg Score</div></div>';
+    h += '<div class="r-kpi r-kpi-green"><div class="r-kpi-val">' + onTrack + '</div><div class="r-kpi-label">On Track</div></div>';
+    h += '<div class="r-kpi r-kpi-yellow"><div class="r-kpi-val">' + atRisk + '</div><div class="r-kpi-label">At Risk</div></div>';
+    h += '<div class="r-kpi r-kpi-red"><div class="r-kpi-val">' + offTrack + '</div><div class="r-kpi-label">Off Track</div></div>';
+    h += '</div></div>';
+    h += '<div class="r-gauge"><div class="r-gauge-seg" style="width:' + pOn + '%;background:#22c55e;"></div>';
+    h += '<div class="r-gauge-seg" style="width:' + pAt + '%;background:#eab308;"></div>';
+    h += '<div class="r-gauge-seg" style="width:' + pOff + '%;background:#ef4444;"></div></div>';
+    rPanel.innerHTML = h; rPanel.style.display = 'block';
+  }
+
+  // Stale alerts
+  var aPanel = document.getElementById('staleAlertsPanel');
+  if (aPanel) {
+    var scored = filtered.map(f => ({ fact: f, score: (f._readiness || compute14DayScore(f)).score, risk: (f._readiness || compute14DayScore(f)).risk }))
+      .filter(s => s.risk !== 'on-track').sort((a, b) => a.score - b.score);
+    if (scored.length > 0) {
+      var h2 = '<div class="readiness-header"><div class="readiness-title">🚨 Needs Attention</div>';
+      h2 += '<div style="font-size:0.7rem;color:#64748b;">' + scored.length + ' at risk or off track</div></div>';
+      h2 += '<div class="alert-list">';
+      scored.slice(0, 10).forEach(s => {
+        var f = s.fact;
+        var cc = s.risk === 'off-track' ? 'alert-card-red' : 'alert-card-yellow';
+        var sc = s.risk === 'off-track' ? 'alert-score-red' : 'alert-score-yellow';
+        h2 += '<div class="alert-card ' + cc + '" onclick="openSellerDetail('' + esc(f.id) + '')">';
+        h2 += '<div style="flex:1;min-width:0;"><div class="alert-seller">' + esc(f.seller || 'Unknown') + ' <a href="' + sfDsrUrl(f.id) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#4f46e5;text-decoration:none;font-size:0.65rem;">🔗</a></div>';
+        h2 += '<div class="alert-meta">' + esc(f.rep || '') + ' · ' + esc(f.status || '') + ' · ' + (f.daysOpen||0) + 'd open · ' + (f.daysStale||0) + 'd stale' + (f.gpvUsd ? ' · ' + fmtUSD(f.gpvUsd) : '') + '</div></div>';
+        h2 += '<div class="alert-score ' + sc + '">' + s.score + '</div></div>';
+      });
+      h2 += '</div>';
+      aPanel.innerHTML = h2; aPanel.style.display = 'block';
+    } else { aPanel.style.display = 'none'; }
+  }
+
+  // Tracker board
+  var board = document.getElementById('trackerBoard');
+  if (board) {
+    var stages = {};
+    TRACKER_STAGES.forEach(st => { stages[st] = []; });
+    filtered.forEach(f => {
+      var st = f.category === 'onHold' ? 'On Hold' : f.status;
+      if (stages[st]) stages[st].push(f); else stages['On Hold'] = stages['On Hold'] || [], stages['On Hold'].push(f);
+    });
+
+    var bh = '';
+    TRACKER_STAGES.forEach(st => {
+      var cards = stages[st];
+      if (cards.length === 0) return;
+      cards.sort(sortFn[sortVal] || sortFn.stale);
+      var g = 0, y = 0, r = 0;
+      cards.forEach(f => { var h = trackerHealth(f.daysStale); if (h==='green') g++; else if (h==='yellow') y++; else r++; });
+      var total = cards.length;
+      var badgeColor = r > total*0.5 ? '#ef4444' : y + r > total*0.5 ? '#eab308' : '#22c55e';
+      bh += '<div class="tracker-col">';
+      bh += '<div class="tracker-col-header"><span class="tracker-col-title">' + (TRACKER_STAGE_SHORT[st]||st) + '</span>';
+      bh += '<span class="tracker-col-badge" style="background:' + badgeColor + ';">' + total + '</span></div>';
+      bh += '<div class="tracker-health-bar">';
+      bh += '<div style="width:' + (g/total*100) + '%;height:100%;background:#22c55e;"></div>';
+      bh += '<div style="width:' + (y/total*100) + '%;height:100%;background:#eab308;"></div>';
+      bh += '<div style="width:' + (r/total*100) + '%;height:100%;background:#ef4444;"></div></div>';
+      cards.forEach(f => {
+        var health = trackerHealth(f.daysStale);
+        var cardClass = health === 'red' ? 'tracker-card-red' : health === 'yellow' ? 'tracker-card-yellow' : '';
+        var staleColor = health === 'red' ? 'color:#ef4444' : health === 'yellow' ? 'color:#ca8a04' : 'color:#22c55e';
+        bh += '<div class="tracker-card ' + cardClass + '" onclick="openSellerDetail('' + esc(f.id) + '')">';
+        bh += '<div class="tracker-card-seller">' + esc(f.seller || 'Unknown') + '</div>';
+        bh += '<div class="tracker-card-meta">' + esc(f.rep || '') + ' · AE: ' + esc(f.oppOwner || '—') + '</div>';
+        bh += '<div class="tracker-card-stale" style="' + staleColor + '">' + (f.daysStale||0) + 'd stale</div>';
+        if (f.gpvUsd) bh += '<div style="font-size:0.65rem;color:#64748b;">' + fmtUSD(f.gpvUsd) + '</div>';
+        bh += '</div>';
+      });
+      bh += '</div>';
+    });
+    board.innerHTML = bh;
+  }
+
+  // CSV export
+  window._exportFacts = filtered;
+}
+
+// ============================================================
+// SELLER DETAIL MODAL
+// ============================================================
+const SD_STAGE_PROGRESSION = [
+  'Submitted', 'Assigned', 'Seller Outreach Complete', 'Consultation Complete',
+  'First Call Complete', 'Dashboard Training Complete', 'App Training Complete',
+  'SO Training Complete', 'Implementation Complete'
+];
+
+function openSellerDetail(dsrId) {
+  var fact = DSR_FACTS.find(f => f.id === dsrId);
+  if (!fact) return;
+
+  var overlay = document.getElementById('sellerDetailOverlay');
+  var panel = document.getElementById('sellerDetailPanel');
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  var cat = fact.category || 'active';
+  var badgeClass = cat === 'completed' ? 'sd-badge-completed' : cat === 'cancelled' ? 'sd-badge-cancelled' : cat === 'onHold' ? 'sd-badge-onhold' : 'sd-badge-active';
+  var now = new Date();
+  var lastUpdated = fact.daysStale != null ? new Date(now - fact.daysStale * 86400000).toISOString().substring(0,10) : '—';
+
+  var html = '<button class="sd-close" onclick="closeSellerDetail()">&times;</button>';
+  html += '<div class="sd-hero">';
+  html += '<h2>' + esc(fact.seller || 'Unknown Seller') + ' ' + sfLink(sfDsrUrl(fact.id), 'Open in Salesforce') + '</h2>';
+  html += '<div class="sd-hero-sub">' + esc(fact.rep || '') + ' · ' + esc(fact.teamLead || '') + ' · ' + esc(fact.country || '') + '</div>';
+  html += '<span class="sd-badge ' + badgeClass + '">' + esc(fact.status || 'Unknown') + '</span>';
+  if (fact.subStatus && fact.subStatus !== 'None') html += ' <span class="sd-badge" style="background:#f1f5f9;color:#475569;">' + esc(fact.subStatus) + '</span>';
+
+  // KPIs
+  var staleColor = (fact.daysStale||0) > 14 ? 'red' : (fact.daysStale||0) > 7 ? 'yellow' : 'green';
+  html += '<div class="sd-kpis">';
+  html += '<div class="sd-kpi"><div class="sd-kpi-val">' + fmtUSD(fact.gpvUsd) + '</div><div class="sd-kpi-label">Annual GPV</div></div>';
+  html += '<div class="sd-kpi"><div class="sd-kpi-val">' + (fact.daysOpen||0) + '</div><div class="sd-kpi-label">Days Open</div></div>';
+  html += '<div class="sd-kpi"><div class="sd-kpi-val ' + staleColor + '">' + (fact.daysStale||0) + '</div><div class="sd-kpi-label">Days Stale</div></div>';
+  html += '<div class="sd-kpi"><div class="sd-kpi-val">' + lastUpdated + '</div><div class="sd-kpi-label">Last Updated</div></div>';
+  var dsaCount = (GSO_DATA.dsaRecords||[]).filter(d => d.dr === fact.id || (d.sl && fact.seller && d.sl.toLowerCase() === fact.seller.toLowerCase())).length;
+  html += '<div class="sd-kpi"><div class="sd-kpi-val">' + dsaCount + '</div><div class="sd-kpi-label">Activities</div></div>';
+  html += '</div></div>';
+
+  // Timeline
+  html += '<div class="sd-section"><div class="sd-section-title">📍 Onboarding Journey</div><div class="sd-timeline">';
+  var currentIdx = SD_STAGE_PROGRESSION.indexOf(fact.status);
+  if (currentIdx === -1 && cat === 'completed') currentIdx = SD_STAGE_PROGRESSION.length;
+  SD_STAGE_PROGRESSION.forEach((st, i) => {
+    if (i > 0) html += '<div class="sd-tl-line' + (i <= currentIdx ? ' done' : '') + '"></div>';
+    var dotClass = i < currentIdx ? 'done' : i === currentIdx ? 'current' : '';
+    html += '<div class="sd-tl-stage"><div class="sd-tl-dot ' + dotClass + '"></div>';
+    html += '<div class="sd-tl-label' + (i === currentIdx ? ' current' : '') + '">' + st.replace(' Complete','').replace(' Completed','') + '</div>';
+    if (i === currentIdx && fact.daysStale != null) html += '<div class="sd-tl-days">' + fact.daysStale + 'd in stage</div>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  // Project details
+  html += '<div class="sd-section"><div class="sd-section-title">📋 Project Details</div><div class="sd-field-grid">';
+  var fields = [
+    ['GSO Rep', fact.rep], ['Team Lead', fact.teamLead], ['Work Type', fact.workType],
+    ['AE Name', fact.oppOwner], ['AE Role', fact.oppOwnerRole], ['Country', fact.country],
+    ['Created', fact.createdDate], ['Last Updated', lastUpdated], ['Channel', fact.channel || 'GSO'],
+    ['DSR ID', null, '<a href="' + sfDsrUrl(fact.id) + '" target="_blank" rel="noopener" style="color:#4f46e5;text-decoration:none;font-weight:600;">' + esc(fact.id) + ' 🔗</a>']
+  ];
+  fields.forEach(pair => {
+    var val = pair[1]; var rawHtml = pair[2];
+    if (!rawHtml && (val == null || val === '' || val === 'None')) return;
+    html += '<div class="sd-field"><div class="sd-field-label">' + esc(pair[0]) + '</div><div class="sd-field-value">' + (rawHtml || esc(String(val))) + '</div></div>';
+  });
+  html += '</div></div>';
+
+  // Associated Activities
+  var allActivities = [];
+  var seen = new Set();
+  (GSO_DATA.dsaRecords || []).forEach(d => {
+    if (d.dr === fact.id) { var key = d.at + '|' + d.cd + '|' + d.p; if (!seen.has(key)) { seen.add(key); allActivities.push(Object.assign({}, d, {source:'DSA (linked)'})); } }
+  });
+  (GSO_DATA.dsaRecords || []).forEach(d => {
+    if (d.sl && fact.seller && d.sl.toLowerCase() === fact.seller.toLowerCase() && d.dr !== fact.id) {
+      var key = d.at + '|' + d.cd + '|' + d.p; if (!seen.has(key)) { seen.add(key); allActivities.push(Object.assign({}, d, {source:'DSA (seller match)'})); }
+    }
+  });
+  (GSO_DATA.bpoActivities || []).forEach(d => {
+    if (d.sl && fact.seller && d.sl.toLowerCase() === fact.seller.toLowerCase()) {
+      var key = d.at + '|' + d.cd + '|BPO'; if (!seen.has(key)) { seen.add(key); allActivities.push(Object.assign({}, d, {source:'BPO'})); }
+    }
+  });
+  allActivities.sort((a, b) => ((b.cd||'') > (a.cd||'') ? 1 : -1));
+
+  html += '<div class="sd-section"><div class="sd-section-title">🔧 Associated Activities (' + allActivities.length + ')</div>';
+  if (allActivities.length > 0) {
+    var comp = 0, sched = 0, canc = 0, other = 0;
+    allActivities.forEach(d => {
+      var st = (d.st||'').toLowerCase();
+      if (st.includes('completed') || st.includes('complete')) comp++;
+      else if (st.includes('scheduled') || st.includes('confirmed')) sched++;
+      else if (st.includes('cancel')) canc++;
+      else other++;
+    });
+    html += '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">';
+    if (comp) html += '<span style="font-size:0.7rem;font-weight:600;color:#166534;background:#dcfce7;padding:2px 8px;border-radius:4px;">✓ ' + comp + ' Completed</span>';
+    if (sched) html += '<span style="font-size:0.7rem;font-weight:600;color:#1d4ed8;background:#dbeafe;padding:2px 8px;border-radius:4px;">📅 ' + sched + ' Scheduled</span>';
+    if (canc) html += '<span style="font-size:0.7rem;font-weight:600;color:#991b1b;background:#fee2e2;padding:2px 8px;border-radius:4px;">✕ ' + canc + ' Cancelled</span>';
+    if (other) html += '<span style="font-size:0.7rem;font-weight:600;color:#475569;background:#f1f5f9;padding:2px 8px;border-radius:4px;">● ' + other + ' Other</span>';
+    html += '</div>';
+    allActivities.forEach(d => {
+      var st = (d.st||'').toLowerCase();
+      var stClass = (st.includes('completed')||st.includes('complete')) ? 'sd-dsa-completed' : (st.includes('scheduled')||st.includes('confirmed')) ? 'sd-dsa-scheduled' : st.includes('cancel') ? 'sd-dsa-cancelled' : 'sd-dsa-other';
+      html += '<div class="sd-dsa-card">';
+      html += '<div style="flex:1;min-width:0;"><div class="sd-dsa-type">' + esc(d.at||'Unknown');
+      if (d.dr) html += ' <a href="' + sfDsrUrl(d.dr) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#4f46e5;text-decoration:none;font-size:0.65rem;">🔗</a>';
+      html += '</div>';
+      html += '<div class="sd-dsa-meta">' + [d.p, d.cd, d.cpd ? 'Done: '+d.cpd : ''].filter(Boolean).join(' · ') + '</div></div>';
+      html += '<div class="sd-dsa-status ' + stClass + '">' + esc(d.st||'Unknown') + '</div></div>';
+    });
+  } else {
+    html += '<div class="sd-empty">No partner activities found for this seller</div>';
+  }
+  html += '</div>';
+
+  // CSAT
+  var csatRecords = (GSO_DATA.csatResponses || []).filter(c => {
+    var cSeller = (c.sl || c.seller || '').toLowerCase();
+    return cSeller && fact.seller && cSeller === fact.seller.toLowerCase();
+  });
+  html += '<div class="sd-section"><div class="sd-section-title">⭐ Customer Feedback (' + csatRecords.length + ')</div>';
+  if (csatRecords.length > 0) {
+    csatRecords.forEach(c => {
+      html += '<div class="sd-csat-card">';
+      if (c.r) html += '<div class="sd-csat-stars">' + '★'.repeat(Math.round(c.r)) + '☆'.repeat(5 - Math.round(c.r)) + ' ' + c.r + '/5</div>';
+      if (c.c) html += '<div class="sd-csat-comment">"' + esc(c.c) + '"</div>';
+      html += '<div class="sd-csat-meta">' + [c.d, c.at].filter(Boolean).join(' · ') + '</div></div>';
+    });
+  } else {
+    html += '<div class="sd-empty">No CSAT feedback found for this seller</div>';
+  }
+  html += '</div>';
+
+  // Seller history
+  var otherDsrs = DSR_FACTS.filter(f => f.seller && fact.seller && f.seller.toLowerCase() === fact.seller.toLowerCase() && f.id !== fact.id);
+  if (otherDsrs.length > 0) {
+    html += '<div class="sd-section"><div class="sd-section-title">📁 Seller History (' + otherDsrs.length + ' other DSR' + (otherDsrs.length > 1 ? 's' : '') + ')</div>';
+    otherDsrs.slice(0, 10).forEach(f => {
+      var oCat = f.category || 'active';
+      var oBadge = oCat === 'completed' ? 'sd-badge-completed' : oCat === 'cancelled' ? 'sd-badge-cancelled' : oCat === 'onHold' ? 'sd-badge-onhold' : 'sd-badge-active';
+      html += '<div class="sd-dsa-card" style="cursor:pointer;" onclick="openSellerDetail('' + esc(f.id) + '')">';
+      html += '<div style="flex:1;min-width:0;"><div class="sd-dsa-type">' + esc(f.status||'Unknown') + ' <a href="' + sfDsrUrl(f.id) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#4f46e5;text-decoration:none;font-size:0.65rem;">🔗</a></div>';
+      html += '<div class="sd-dsa-meta">' + esc(f.rep||'') + ' · ' + esc(f.createdDate||'') + (f.gpvUsd ? ' · ' + fmtUSD(f.gpvUsd) : '') + '</div></div>';
+      html += '<span class="sd-badge ' + oBadge + '">' + esc(oCat) + '</span></div>';
+    });
+    html += '</div>';
+  }
+
+  panel.innerHTML = html;
+}
+
+function closeSellerDetail() {
+  document.getElementById('sellerDetailOverlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+window.openSellerDetail = openSellerDetail;
+window.closeSellerDetail = closeSellerDetail;
+
+// Escape key handler
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeSellerDetail();
+});
+
+// ============================================================
+// INIT
+// ============================================================
+renderAll();
+
+// Event listeners
+document.getElementById('trackerMaxStale')?.addEventListener('change', renderAll);
+document.getElementById('trackerSearch')?.addEventListener('input', function() {
+  clearTimeout(window._debounce);
+  window._debounce = setTimeout(renderAll, 200);
+});
+document.getElementById('trackerSortBy')?.addEventListener('change', renderAll);
+
+// CSV Export
+document.getElementById('trackerExportBtn')?.addEventListener('click', function() {
+  var facts = window._exportFacts || [];
+  if (!facts.length) return alert('No data to export');
+  var cols = ['Seller','Rep','Team Lead','Status','Work Type','Days Open','Days Stale','GPV (USD)','AE','Country','Created','DSR ID'];
+  var rows = [cols.join(',')];
+  facts.forEach(f => {
+    rows.push([f.seller,f.rep,f.teamLead,f.status,f.workType,f.daysOpen,f.daysStale,f.gpvUsd,f.oppOwner,f.country,f.createdDate,f.id].map(v => '"' + String(v||'').replace(/"/g,'""') + '"').join(','));
+  });
+  var blob = new Blob([rows.join('\n')], {type:'text/csv'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'gso-tracker-alexandre-garreau.csv'; a.click();
+});
+</script>
+</body>
+</html>
