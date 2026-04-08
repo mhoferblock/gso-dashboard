@@ -24,3 +24,5 @@ chunk_*.json
 *_raw.json
 *_pull.json
 *_sellers.json
+_sf_delta.json
+_sf_raw.txt

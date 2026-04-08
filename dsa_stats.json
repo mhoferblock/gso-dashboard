@@ -1,146 +1,122 @@
 {
-  "dsaTotal": 5226,
+  "dsaTotal": 1108,
   "dsaByPartner": {
-    "Absolute POS": 1366,
-    "Sora Partners": 1146,
-    "One World Rental AU": 147,
-    "Tech Pantry": 580,
-    "One World Rental UK": 215,
-    "Eposability": 122,
-    "F3 Technologies": 682,
-    "Solio Marlow": 915,
-    "Akae": 9,
-    "SVO": 5,
+    "Sora Partners": 309,
+    "F3 Technologies": 150,
+    "Absolute POS": 269,
+    "One World Rental AU": 2,
+    "Solio Marlow": 197,
+    "Tech Pantry": 101,
+    "Eposability": 17,
     "FiTech": 32,
-    "Ovation": 7
+    "Akae": 7,
+    "Ovation": 24
   },
   "dsaByActivity": {
-    "POS Training (remote)": 369,
-    "Site Survey": 783,
-    "Menu Review Call": 213,
-    "Installation": 1311,
-    "Optimization call": 174,
-    "Post Live Service (in person)": 198,
-    "Dashboard Training": 570,
-    "POS Training (in person)": 329,
-    "SO Training Call": 162,
-    "Q&A Call": 17,
-    "Misc/Not Listed": 95,
-    "Go Live Support": 230,
-    "Cabling (Square pays)": 62,
-    "Cabling (seller pays)": 5,
-    "Networking Equipment Installation": 14,
-    "Menu Build": 3,
-    "Unknown": 32,
-    "Post Live Service (remote)": 23,
-    "Hardware Refresh": 29,
-    "SO Training": 1,
-    "Onsite Installation (Small) + POS Training": 134,
-    "Networking Only Site Survey": 146,
-    "POS Training": 79,
-    "Post Live (Break/Fix Service Call)": 25,
-    "Onsite Installation (Medium) + POS Training": 86,
-    "Onsite Installation (Medium)": 25,
-    "Onsite Installation (Large) + POS Training": 37,
-    "Onsite Installation (Small)": 46,
-    "Networking Only Equipment Installation": 7,
-    "Onsite Installation (Large)": 21
+    "Networking Only Site Survey": 209,
+    "Onsite Installation (Small) + POS Training": 196,
+    "Onsite Installation (Medium) + POS Training": 175,
+    "Hardware Refresh": 13,
+    "Onsite Installation (Large) + POS Training": 94,
+    "Onsite Installation (Large)": 24,
+    "Misc/Not Listed": 75,
+    "Networking Only Equipment Installation": 10,
+    "Onsite Installation (Medium)": 32,
+    "POS Training": 86,
+    "Dashboard Training": 40,
+    "Unknown": 4,
+    "Post Live (Break/Fix Service Call)": 83,
+    "Onsite Installation (Small)": 66,
+    "Low Voltage Cabling Request (Square Pays)": 1
   },
   "dsaMonthly": {
-    "2026-04": 355,
-    "2026-03": 1832,
-    "2026-02": 1046,
-    "2026-01": 698,
-    "2025-12": 264,
-    "2025-11": 269,
-    "2025-10": 189,
-    "2025-09": 83,
-    "2025-08": 73,
-    "2025-07": 78,
-    "2025-06": 67,
-    "2025-05": 81,
-    "2025-04": 106,
-    "2025-03": 73,
+    "2025-01": 1,
     "2025-02": 11,
-    "2025-01": 1
+    "2025-03": 73,
+    "2025-04": 106,
+    "2025-05": 83,
+    "2025-06": 67,
+    "2025-07": 84,
+    "2025-08": 76,
+    "2025-09": 83,
+    "2025-10": 182,
+    "2025-11": 257,
+    "2025-12": 85
   },
   "dsaNormStatus": {
-    "Dispatch Submitted": 466,
-    "Tech Scheduled": 740,
-    "Dispatch Acknowledged": 97,
-    "Dispatch Rejected": 229,
-    "Received Seller Availability": 35,
-    "Unknown": 88,
-    "Appointment Completed": 2599,
-    "Cancelled": 274,
-    "Appointment Cannot Complete": 219,
-    "In Progress": 50,
-    "Completed": 199,
-    "Kickoff Call Pending": 11,
-    "Appointment Cancelled": 204,
-    "Pending Seller Availability": 7,
-    "Dispatch Accepted": 8
+    "Unknown": 29,
+    "Dispatch Submitted": 283,
+    "In Progress": 7,
+    "Tech Scheduled": 186,
+    "Appointment Completed": 497,
+    "Dispatch Accepted": 3,
+    "Cancelled": 4,
+    "Completed": 5,
+    "Dispatch Rejected": 1,
+    "Appointment Cancelled": 64,
+    "Kickoff Call Pending": 9,
+    "Appointment Cannot Complete": 20
   },
   "dsaPartnerPerf": {
-    "Absolute POS": {
-      "total": 1366,
-      "completed": 734,
-      "cancelled": 134
-    },
     "Sora Partners": {
-      "total": 1146,
-      "completed": 677,
-      "cancelled": 107
-    },
-    "One World Rental AU": {
-      "total": 147,
-      "completed": 83,
-      "cancelled": 14
-    },
-    "Tech Pantry": {
-      "total": 580,
-      "completed": 321,
-      "cancelled": 23
-    },
-    "One World Rental UK": {
-      "total": 215,
-      "completed": 68,
-      "cancelled": 11
-    },
-    "Eposability": {
-      "total": 122,
-      "completed": 55,
-      "cancelled": 6
+      "total": 309,
+      "completed": 122,
+      "cancelled": 21,
+      "active": 157
     },
     "F3 Technologies": {
-      "total": 682,
-      "completed": 388,
-      "cancelled": 112
+      "total": 150,
+      "completed": 72,
+      "cancelled": 20,
+      "active": 58
+    },
+    "Absolute POS": {
+      "total": 269,
+      "completed": 137,
+      "cancelled": 10,
+      "active": 113
+    },
+    "One World Rental AU": {
+      "total": 2,
+      "completed": 0,
+      "cancelled": 0,
+      "active": 2
     },
     "Solio Marlow": {
-      "total": 915,
-      "completed": 654,
-      "cancelled": 68
+      "total": 197,
+      "completed": 80,
+      "cancelled": 12,
+      "active": 96
     },
-    "Akae": {
-      "total": 9,
-      "completed": 4,
-      "cancelled": 1
+    "Tech Pantry": {
+      "total": 101,
+      "completed": 60,
+      "cancelled": 0,
+      "active": 39
     },
-    "SVO": {
-      "total": 5,
-      "completed": 2,
-      "cancelled": 0
+    "Eposability": {
+      "total": 17,
+      "completed": 11,
+      "cancelled": 0,
+      "active": 6
     },
     "FiTech": {
       "total": 32,
-      "completed": 25,
-      "cancelled": 2
+      "completed": 24,
+      "cancelled": 2,
+      "active": 6
+    },
+    "Akae": {
+      "total": 7,
+      "completed": 2,
+      "cancelled": 1,
+      "active": 4
     },
     "Ovation": {
-      "total": 7,
-      "completed": 6,
-      "cancelled": 0
+      "total": 24,
+      "completed": 14,
+      "cancelled": 2,
+      "active": 8
     }
   }
 }
