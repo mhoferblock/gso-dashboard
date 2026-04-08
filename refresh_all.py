@@ -407,6 +407,12 @@ def embed_dsr_facts(content, facts_json_path):
         if f_rec.get("oppOwner"): r["ao"] = f_rec["oppOwner"]
         if f_rec.get("oppOwnerRole"): r["ar"] = f_rec["oppOwnerRole"]
         if f_rec.get("channel"): r["ch"] = f_rec["channel"]
+        if f_rec.get("nextStep"): r["ns"] = f_rec["nextStep"]
+        if f_rec.get("nextStepDate"): r["nsd"] = f_rec["nextStepDate"]
+        if f_rec.get("desiredGoLiveDate"): r["dgl"] = f_rec["desiredGoLiveDate"]
+        if f_rec.get("numLocations"): r["nl"] = f_rec["numLocations"]
+        if f_rec.get("complexityScore"): r["cx"] = f_rec["complexityScore"]
+        if f_rec.get("competitorPos"): r["cp"] = f_rec["competitorPos"]
         slim.append(r)
     
     slim_json = json.dumps(slim, separators=(",", ":"))

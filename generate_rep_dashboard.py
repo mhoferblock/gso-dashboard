@@ -430,8 +430,10 @@ const DSR_FACTS=(GSO_DATA.dsrFacts||[]).map(function(r){{
   r.status=r.status||r.st||'';r.subStatus=r.subStatus||r.ss||'';
   r.country=r.country||r.co||'';r.channel=r.channel||r.ch||'';
   r.createdDate=r.createdDate||r.cd||'';r.completedDate=r.completedDate||r.cpd||'';
-  r.goLiveDate=r.goLiveDate||r.gld||'';
-  r.daysOpen=r.daysOpen!=null?r.daysOpen:r.do_!=null?r.do_:null;
+  r.goLiveDate=r.goLiveDate||r.gld||r.gl||'';
+  r.nextStep=r.nextStep||r.ns||'';r.nextStepDate=r.nextStepDate||r.nsd||'';
+  r.desiredGoLiveDate=r.desiredGoLiveDate||r.dgl||'';
+  r.daysOpen=r.daysOpen!=null?r.daysOpen:r.do_!=null?r.do_:r['do']!=null?r['do']:null;
   r.daysToComplete=r.daysToComplete!=null?r.daysToComplete:r.dtc!=null?r.dtc:null;
   r.daysStale=r.daysStale!=null?r.daysStale:r.ds!=null?r.ds:null;
   r.gpvUsd=r.gpvUsd!=null?r.gpvUsd:r.gpv!=null?r.gpv:r.g!=null?r.g:null;
@@ -659,6 +661,11 @@ var NEXT_MAP={{
 }};
 
 function getNextStep(f){{
+  // Priority 0: Salesforce Next Step field
+  var sfNext=f.nextStep||'';
+  var sfNextDate=f.nextStepDate||'';
+  if(sfNext)return{{text:sfNext,status:'',date:sfNextDate,type:'sfdc'}};
+
   var dsas=_dsaByDsr[f.id]||[];
   var upcoming=dsas.filter(function(d){{return SCHED_ST.has(d.st||'');}});
   if(upcoming.length>0){{
@@ -721,7 +728,7 @@ function renderTracker(active){{
       var cc=h==='red'?'tracker-card-red':h==='yellow'?'tracker-card-yellow':'';
       var sc=h==='red'?'color:#ef4444':h==='yellow'?'color:#ca8a04':'color:#22c55e';
       var ns=getNextStep(f);
-      var goLive=f.goLiveDate||'';
+      var goLive=f.desiredGoLiveDate||f.goLiveDate||'';
       var glHtml='';
       if(goLive){{
         var glDate=new Date(goLive+'T00:00:00');var now=new Date();
@@ -732,8 +739,8 @@ function renderTracker(active){{
       }}
       var nsHtml='';
       if(ns){{
-        var icon=ns.type==='scheduled'?'📅':ns.type==='blocked'?'🚫':ns.type==='waiting'?'⏳':'➡️';
-        var nc=ns.type==='scheduled'?'#1d4ed8':ns.type==='blocked'?'#dc2626':ns.type==='waiting'?'#ca8a04':'#6366f1';
+        var icon=ns.type==='sfdc'?'📋':ns.type==='scheduled'?'📅':ns.type==='blocked'?'🚫':ns.type==='waiting'?'⏳':'➡️';
+        var nc=ns.type==='sfdc'?'#0d9488':ns.type==='scheduled'?'#1d4ed8':ns.type==='blocked'?'#dc2626':ns.type==='waiting'?'#ca8a04':'#6366f1';
         nsHtml='<div style="font-size:10px;color:'+nc+';font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+esc(ns.text)+(ns.status?' — '+esc(ns.status):'')+(ns.date?' · '+esc(ns.date):'')+'">'+icon+' '+esc(ns.text);
         if(ns.status)nsHtml+=' <span style="font-weight:400;opacity:0.7;">· '+esc(ns.status)+'</span>';
         if(ns.date)nsHtml+=' <span style="font-weight:400;opacity:0.7;">· '+esc(ns.date)+'</span>';
@@ -942,7 +949,11 @@ function openSellerDetail(dsrId){{
   // Project details
   h+='<div class="sd-section"><div class="sd-section-title">📋 Project Details</div><div class="sd-field-grid">';
   [['GSO Rep',fact.rep],['Team Lead',fact.teamLead],['Work Type',fact.workType],['AE',fact.oppOwner],
-   ['Country',fact.country],['Created',fact.createdDate],['Last Updated',lastUp],['Channel',fact.channel||'GSO'],
+   ['Country',fact.country],['Created',fact.createdDate],['Last Updated',lastUp],
+   ['Desired Go-Live',fact.desiredGoLiveDate||fact.goLiveDate],
+   ['Next Step',null,fact.nextStep?'<span style="color:#0d9488;font-weight:600;">📋 '+esc(fact.nextStep)+'</span>':null],
+   ['Next Step Date',fact.nextStepDate],
+   ['Channel',fact.channel||'GSO'],
    ['DSR ID',null,'<a href="'+sfUrl(fact.id)+'" target="_blank" style="color:#4f46e5;text-decoration:none;font-weight:600;">'+esc(fact.id)+' 🔗</a>']
   ].forEach(function(p){{
     var val=p[1],raw=p[2];
