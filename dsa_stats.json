@@ -1,58 +1,101 @@
 {
-  "total_records": 1069,
-  "unique_partners": 8,
-  "records_with_scheduled_date": 894,
-  "by_partner": {
-    "Sora Partners": 309,
-    "Absolute POS": 269,
-    "Solio Marlow": 197,
-    "F3": 150,
-    "Tech Pantry": 101,
-    "Boomtown": 24,
-    "Eposability": 17,
-    "One World Rental UK": 2
+  "dsaTotal": 1000,
+  "dsaByPartner": {
+    "Absolute POS": 314,
+    "Sora Partners": 177,
+    "Solio Marlow": 138,
+    "F3 Technologies": 113,
+    "Tech Pantry": 95,
+    "One World Rental AU": 69,
+    "One World Rental UK": 59,
+    "Eposability": 33,
+    "Akae": 2
   },
-  "by_activity_type": {
-    "Networking Only Site Survey": 203,
-    "Onsite Installation (Small) + POS Training": 186,
-    "Onsite Installation (Medium) + POS Training": 171,
-    "Onsite Installation (Large) + POS Training": 89,
-    "POS Training": 82,
-    "Post Live (Break/Fix Service Call)": 82,
-    "Misc/Not Listed": 71,
-    "Onsite Installation (Small)": 65,
-    "Dashboard Training": 40,
-    "Onsite Installation (Medium)": 29,
-    "Onsite Installation (Large)": 24,
-    "Hardware Refresh": 13,
-    "Networking Only Equipment Installation": 9,
-    "Low Voltage Cabling Request (Square Pays)": 1
+  "dsaByActivity": {
+    "Installation": 315,
+    "Dashboard Training": 131,
+    "Site Survey": 117,
+    "POS Training (remote)": 95,
+    "Go Live Support": 71,
+    "Menu Review Call": 52,
+    "Optimization call": 51,
+    "POS Training (in person)": 49,
+    "SO Training Call": 47,
+    "Post Live Service (in person)": 22,
+    "Cabling (Square pays)": 14,
+    "Q&A Call": 12,
+    "Post Live Service (remote)": 11,
+    "null": 5,
+    "Misc/Not Listed": 4,
+    "Cabling (seller pays)": 2,
+    "Networking Equipment Installation": 1,
+    "Menu Build": 1
   },
-  "by_month": {
-    "2025-01": 1,
-    "2025-02": 10,
-    "2025-03": 70,
-    "2025-04": 97,
-    "2025-05": 80,
-    "2025-06": 60,
-    "2025-07": 82,
-    "2025-08": 75,
-    "2025-09": 81,
-    "2025-10": 179,
-    "2025-11": 249,
-    "2025-12": 85
+  "dsaMonthly": {
+    "2026-03": 336,
+    "2026-04": 664
   },
-  "by_status": {
-    "Appointment Completed": 472,
-    "Dispatch Submitted": 278,
-    "Tech Scheduled": 181,
-    "Appointment Cancelled": 61,
-    "Appointment Cannot Complete": 19,
-    "Kickoff Call Pending": 9,
-    "In Progress": 7,
-    "Completed": 5,
-    "Cancelled": 4,
-    "Dispatch Accepted": 3,
-    "Dispatch Rejected": 1
+  "dsaNormStatus": {
+    "Tech Scheduled": 364,
+    "Appointment Completed": 209,
+    "Dispatch Submitted": 191,
+    "Dispatch Acknowledged": 78,
+    "Dispatch Rejected": 37,
+    "Cancelled": 26,
+    "Appointment Cannot Complete": 25,
+    "Unknown": 18,
+    "In Progress": 16,
+    "Appointment Cancelled": 16,
+    "Received Seller Availability": 11,
+    "Completed": 6,
+    "Kickoff Call Pending": 2,
+    "Dispatch Accepted": 1
+  },
+  "dsaPartnerPerf": {
+    "Absolute POS": {
+      "total": 314,
+      "completed": 79,
+      "cancelled": 19
+    },
+    "Tech Pantry": {
+      "total": 95,
+      "completed": 14,
+      "cancelled": 0
+    },
+    "One World Rental UK": {
+      "total": 59,
+      "completed": 16,
+      "cancelled": 0
+    },
+    "One World Rental AU": {
+      "total": 69,
+      "completed": 7,
+      "cancelled": 2
+    },
+    "Sora Partners": {
+      "total": 177,
+      "completed": 46,
+      "cancelled": 10
+    },
+    "F3 Technologies": {
+      "total": 113,
+      "completed": 32,
+      "cancelled": 5
+    },
+    "Solio Marlow": {
+      "total": 138,
+      "completed": 38,
+      "cancelled": 6
+    },
+    "Eposability": {
+      "total": 33,
+      "completed": 8,
+      "cancelled": 0
+    },
+    "Akae": {
+      "total": 2,
+      "completed": 0,
+      "cancelled": 0
+    }
   }
 }
