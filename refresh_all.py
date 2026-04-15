@@ -413,6 +413,9 @@ def embed_dsr_facts(content, facts_json_path):
         if f_rec.get("numLocations"): r["nl"] = f_rec["numLocations"]
         if f_rec.get("complexityScore"): r["cx"] = f_rec["complexityScore"]
         if f_rec.get("competitorPos"): r["cp"] = f_rec["competitorPos"]
+        if f_rec.get("assignedDate"): r["ad"] = f_rec["assignedDate"]
+        if f_rec.get("holdDays") is not None and f_rec["holdDays"] > 0: r["hd"] = f_rec["holdDays"]
+        if f_rec.get("daysAssignedExclHold") is not None: r["dae"] = f_rec["daysAssignedExclHold"]
         slim.append(r)
     
     slim_json = json.dumps(slim, separators=(",", ":"))
