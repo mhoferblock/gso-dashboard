@@ -1019,6 +1019,27 @@ if __name__ == "__main__":
     new_size = len(content)
     print(f"\n✅ Dashboard updated: {original_size/1024/1024:.1f} MB → {new_size/1024/1024:.1f} MB")
     print(f"   Backup at: {backup_path}")
+
+    # ── Generate sub-dashboards ──
+    print("\n" + "=" * 60)
+    print("Generating sub-dashboards")
+    print("=" * 60)
+    import subprocess
+    for script in ['generate_leadtime_dashboard.py', 'generate_kickoff_dashboard.py']:
+        script_path = os.path.join(data_dir, script)
+        if os.path.exists(script_path):
+            try:
+                result = subprocess.run([sys.executable, script_path], capture_output=True, text=True, cwd=data_dir)
+                print(result.stdout.strip())
+                if result.returncode != 0:
+                    print(f"  ⚠️ {script} exited with code {result.returncode}")
+                    if result.stderr:
+                        print(f"     {result.stderr.strip()}")
+            except Exception as e:
+                print(f"  ⚠️ Failed to run {script}: {e}")
+        else:
+            print(f"  ⏭️  {script} not found, skipping")
+
     print("\nNext steps:")
-    print("  1. Upload to Blockcell")
+    print("  1. Upload to Blockcell (main + rep + ae + leadtime + kickoff)")
     print("  2. Git commit and push")
