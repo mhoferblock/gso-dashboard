@@ -821,6 +821,11 @@ if __name__ == "__main__":
     if os.path.exists(csat_path):
         content = embed_json_file(content, "csatResponses", csat_path)
     
+    # Kickoff Data (time to first consultation/kickoff call per DSR)
+    kickoff_path = os.path.join(data_dir, "kickoff_data.json")
+    if os.path.exists(kickoff_path):
+        content = embed_json_file(content, "kickoffData", kickoff_path)
+
     # Late Cancels — enrich summary before embedding
     lc_path = os.path.join(data_dir, "late_cancels.json")
     lc_detail_path = os.path.join(data_dir, "late_cancel_records.json")
